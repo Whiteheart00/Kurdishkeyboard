@@ -148,6 +148,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
         if (lower.endsWith(".ogg")) return "audio/ogg";
         if (lower.endsWith(".woff2")) return "font/woff2";
         if (lower.endsWith(".ttf")) return "font/ttf";
+        if (lower.endsWith(".otf")) return "font/otf";
         return "application/octet-stream";
     }
 

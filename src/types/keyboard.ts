@@ -1,5 +1,5 @@
 export type LanguageCode = string;
-export type AppLanguageCode = 'ckb' | 'kmr' | 'en';
+export type AppLanguageCode = 'ckb' | 'kmr' | 'en' | 'ar' | 'fa';
 
 export type KeyShapeStyle =
   | 'default'

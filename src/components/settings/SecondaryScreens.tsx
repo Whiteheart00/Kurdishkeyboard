@@ -846,14 +846,14 @@ export const MoreSettingsScreen: React.FC<MoreSettingsProps> = ({
           </div>
         )}
 
-        {/* Official 3-Language App UI Selector (Sorani / Kurmanji / English) */}
+        {/* Official 5-Language App UI Selector (Sorani / Kurmanji / English / Arabic / Persian) */}
         <div className="py-2.5 border-b border-white/5 space-y-3">
           <div className="flex items-center gap-3">
             <KurdiIcon name="ic_language" className="w-5 h-5 text-zinc-400 shrink-0" />
             <div className="text-right">
               <div className="text-sm font-bold">زمانی ڕووکاری بەرنامە</div>
               <div className="text-xs text-zinc-400 mt-0.5">
-                کوردی سۆرانی · Kurdî (Kurmancî) · English
+                کوردی سۆرانی · Kurmancî · English · العربية · فارسی
               </div>
             </div>
           </div>
@@ -863,6 +863,8 @@ export const MoreSettingsScreen: React.FC<MoreSettingsProps> = ({
                 { code: 'ckb', label: 'کوردی سۆرانی' },
                 { code: 'kmr', label: 'Kurmancî' },
                 { code: 'en', label: 'English' },
+                { code: 'ar', label: 'العربية' },
+                { code: 'fa', label: 'فارسی' },
               ] as { code: AppLanguageCode; label: string }[]
             ).map((opt) => {
               const active = settings.appLanguage === opt.code;

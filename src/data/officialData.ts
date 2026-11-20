@@ -9,7 +9,8 @@ export function tOfficial(
   key: string,
   fallback: string
 ): string {
-  const code: AppLanguageCode = lang === 'kmr' || lang === 'en' ? lang : 'ckb';
+  const code: AppLanguageCode =
+    lang === 'kmr' || lang === 'en' || lang === 'ar' || lang === 'fa' ? lang : 'ckb';
   const val =
     OFFICIAL_STRINGS[code]?.[key] ||
     OFFICIAL_STRINGS.ckb?.[key] ||
