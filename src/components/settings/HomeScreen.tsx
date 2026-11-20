@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { ChevronLeft, Star, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CheckCircle2, ChevronLeft, Star, X } from 'lucide-react';
 import { KeyboardSettings, SettingsRoute } from '../../types/keyboard';
 import { getAppDirection, tOfficial } from '../../data/officialData';
-import { downloadProjectZip } from '../../utils/downloadZip';
 import { KurdiIcon, KurdiIconName, KurdiLogo, PremiumBadgeIcon } from '../icons/KurdiIcons';
 import { NotificationBanner } from './SettingsUI';
 
@@ -21,16 +20,41 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenProModal,
   isLightApp,
 }) => {
-  const [downloadingZip, setDownloadingZip] = useState(false);
+  const isAndroidApk = typeof window !== 'undefined' && Boolean(window.AndroidAppSetup);
+  const [imeEnabled, setImeEnabled] = useState<boolean>(() =>
+    typeof window !== 'undefined' && window.AndroidAppSetup
+      ? Boolean(window.AndroidAppSetup.isImeEnabled())
+      : false
+  );
+  const [imeSelected, setImeSelected] = useState<boolean>(() =>
+    typeof window !== 'undefined' && window.AndroidAppSetup
+      ? Boolean(window.AndroidAppSetup.isImeSelected())
+      : false
+  );
+
+  useEffect(() => {
+    if (!isAndroidApk) return;
+    const refreshStatus = () => {
+      try {
+        setImeEnabled(Boolean(window.AndroidAppSetup?.isImeEnabled()));
+        setImeSelected(Boolean(window.AndroidAppSetup?.isImeSelected()));
+      } catch {
+        // ignore bridge error
+      }
+    };
+    refreshStatus();
+    window.__onAndroidImeStatusChanged = refreshStatus;
+    window.addEventListener('focus', refreshStatus);
+    document.addEventListener('visibilitychange', refreshStatus);
+    return () => {
+      delete window.__onAndroidImeStatusChanged;
+      window.removeEventListener('focus', refreshStatus);
+      document.removeEventListener('visibilitychange', refreshStatus);
+    };
+  }, [isAndroidApk]);
+
   const lang = settings.appLanguage || 'ckb';
   const dir = getAppDirection(lang);
-
-  const handleDownloadZip = async () => {
-    if (downloadingZip) return;
-    setDownloadingZip(true);
-    await downloadProjectZip();
-    setDownloadingZip(false);
-  };
   const cardSurface = isLightApp
     ? 'bg-white border-slate-200 text-slate-900'
     : 'bg-[#121316] border-white/[0.06] text-white';
@@ -120,39 +144,86 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <ChevronLeft className="w-5 h-5 text-zinc-400 shrink-0" />
       </button>
 
-      {/* 1-Click GitHub APK ZIP Download Card */}
-      <div
-        className={`rounded-3xl p-4 border space-y-2.5 ${
-          isLightApp
-            ? 'bg-sky-50 border-sky-200 text-slate-900'
-            : 'bg-gradient-to-l from-[#0B2340] via-[#0B1B30] to-[#091320] border-sky-400/30 text-white'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-2xl bg-[#0B5FA8]/30 border border-sky-400/25 flex items-center justify-center shrink-0">
-            <KurdiIcon name="ic_download" className="w-5 h-5 text-[#9AC5FF]" />
-          </span>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-extrabold">دابەزاندنی فایلی ZIP بۆ APK (GitHub)</div>
-            <div className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">
-              تەواوی پڕۆژەکە + کۆدی تەختەکلیلی سیستەمی ئەندرۆید (Direct Boot)
+      {/* Native Android System Keyboard 2-Step Activation Card (shown inside installed APK) */}
+      {isAndroidApk && (
+        <div
+          className={`rounded-3xl p-4 border space-y-3 ${
+            imeEnabled && imeSelected
+              ? isLightApp
+                ? 'bg-emerald-50 border-emerald-200 text-slate-900'
+                : 'bg-gradient-to-l from-emerald-950/70 to-[#0B1418] border-emerald-500/30 text-white'
+              : isLightApp
+              ? 'bg-sky-50 border-sky-200 text-slate-900'
+              : 'bg-gradient-to-l from-[#0B2340] via-[#0B1B30] to-[#091320] border-sky-400/35 text-white'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                imeEnabled && imeSelected
+                  ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300'
+                  : 'bg-[#0B5FA8]/30 border-sky-400/25 text-[#9AC5FF]'
+              }`}
+            >
+              {imeEnabled && imeSelected ? (
+                <CheckCircle2 className="w-5 h-5" />
+              ) : (
+                <KurdiIcon name="ic_keyboards" className="w-5 h-5" />
+              )}
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-extrabold">
+                {imeEnabled && imeSelected
+                  ? 'تەختەکلیلی کوردی چالاکە لە هەموو مۆبایلدا'
+                  : 'چالاککردنی وەک کیبۆردی سەرەکی مۆبایل'}
+              </div>
+              <div className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">
+                {imeEnabled && imeSelected
+                  ? 'ئێستا لە واتساپ، تێلیگرام، کرۆم و هەموو بەرنامەکاندا کار دەکات'
+                  : 'بۆ بەکارهێنان لە هەموو بەرنامەکانی مۆبایلدا ئەم دوو هەنگاوە تەواو بکە:'}
+              </div>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 gap-2">
+            <button
+              type="button"
+              onClick={() => window.AndroidAppSetup?.openImeSettings()}
+              className={`w-full h-11 px-3.5 rounded-2xl text-xs font-extrabold flex items-center justify-between transition-all active:scale-[0.98] ${
+                imeEnabled
+                  ? 'bg-emerald-500/20 border border-emerald-400/30 text-emerald-300'
+                  : 'bg-[#0B5FA8] hover:bg-[#0E70C4] text-white shadow-md'
+              }`}
+            >
+              <span>١. چالاککردنی تەختەکلیلی کوردی لە ڕێکخستنی مۆبایل</span>
+              {imeEnabled ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <ChevronLeft className="w-4 h-4 shrink-0" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => window.AndroidAppSetup?.openImePicker()}
+              className={`w-full h-11 px-3.5 rounded-2xl text-xs font-extrabold flex items-center justify-between transition-all active:scale-[0.98] ${
+                imeSelected
+                  ? 'bg-emerald-500/20 border border-emerald-400/30 text-emerald-300'
+                  : imeEnabled
+                  ? 'bg-[#0B5FA8] hover:bg-[#0E70C4] text-white shadow-md'
+                  : 'bg-white/[0.06] border border-white/10 text-zinc-300'
+              }`}
+            >
+              <span>٢. هەڵبژاردنی وەک تەختەکلیلی سەرەکی (Switch)</span>
+              {imeSelected ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <ChevronLeft className="w-4 h-4 shrink-0" />
+              )}
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={handleDownloadZip}
-          disabled={downloadingZip}
-          className="w-full h-10 rounded-2xl bg-[#0B5FA8] hover:bg-[#0E70C4] active:scale-[0.98] disabled:opacity-60 text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-md"
-        >
-          <KurdiIcon name="ic_download" className="w-4 h-4" />
-          <span>
-            {downloadingZip
-              ? 'خەریکی ئامادەکردنی فایلی ZIP...'
-              : 'دابەزاندنی kurdikeyboard-github-apk.zip'}
-          </span>
-        </button>
-      </div>
+      )}
 
       {/* Rate App Card with Official 4-Color Google Play Vector */}
       {!settings.ratingDismissed && (

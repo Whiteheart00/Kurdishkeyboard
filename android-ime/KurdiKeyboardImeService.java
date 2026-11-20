@@ -26,17 +26,24 @@ import android.widget.FrameLayout;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * KurdiKeyboard native Android InputMethodService (Direct Boot Aware).
- * Renders the full KurdiKeyboard web deck offline from assets/public/index.html?ime=1
- * and bridges all key events directly to Android's InputConnection.
+ * Uses the exact same https://localhost origin as Capacitor's MainActivity so
+ * settings, themes, custom shortcuts, and permanent clipboard history are shared seamlessly.
  */
 public class KurdiKeyboardImeService extends InputMethodService {
-    private static final String VIRTUAL_HOST = "kurdikebord.local";
+    private static final String VIRTUAL_HOST = "localhost";
     private WebView webView;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private int keyboardHeightDp = 365;
+
+    @Override
+    public boolean onEvaluateFullscreenMode() {
+        return false;
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -48,6 +55,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
         webView.setBackgroundColor(Color.BLACK);
         webView.setVerticalScrollBarEnabled(false);
         webView.setHorizontalScrollBarEnabled(false);
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
         WebSettings ws = webView.getSettings();
         ws.setJavaScriptEnabled(true);
@@ -70,11 +78,11 @@ public class KurdiKeyboardImeService extends InputMethodService {
                     String assetPath = "public" + path;
                     try {
                         InputStream is = getAssets().open(assetPath);
-                        return new WebResourceResponse(guessMimeType(path), "UTF-8", is);
+                        return buildAssetResponse(guessMimeType(path), is);
                     } catch (IOException e) {
                         try {
                             InputStream fallback = getAssets().open("public/index.html");
-                            return new WebResourceResponse("text/html", "UTF-8", fallback);
+                            return buildAssetResponse("text/html", fallback);
                         } catch (IOException ignored) {
                             return null;
                         }
@@ -94,10 +102,25 @@ public class KurdiKeyboardImeService extends InputMethodService {
         return container;
     }
 
+    private WebResourceResponse buildAssetResponse(String mimeType, InputStream stream) {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Access-Control-Allow-Origin", "*");
+        headers.put("Cache-Control", "no-cache");
+        return new WebResourceResponse(mimeType, "UTF-8", 200, "OK", headers, stream);
+    }
+
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
         syncLatestSystemClipboard();
+        mainHandler.post(() -> {
+            if (webView != null) {
+                webView.evaluateJavascript(
+                        "window.__onAndroidImeRefresh && window.__onAndroidImeRefresh();",
+                        null
+                );
+            }
+        });
     }
 
     private void syncLatestSystemClipboard() {

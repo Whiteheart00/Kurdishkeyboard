@@ -4,7 +4,6 @@ import { AppLanguageCode, AppThemeMode, KeyboardSettings, TextShortcut } from '.
 import { playKeyFeedback, preloadSoundPack, SOUND_PACKS } from '../../utils/sound';
 import { getAppDirection, getFaqItems, tOfficial } from '../../data/officialData';
 import { KurdiIcon, KurdiIconName, KurdiLogo, PremiumBadgeIcon } from '../icons/KurdiIcons';
-import { downloadProjectZip } from '../../utils/downloadZip';
 import { AppToggle, NotificationBanner, ProBadge, SubPageHeader } from './SettingsUI';
 
 interface BaseSubProps {
@@ -982,33 +981,6 @@ export const MoreSettingsScreen: React.FC<MoreSettingsProps> = ({
             onChange={(v) => onUpdate({ physicalKeyboardSync: v })}
             label="تەختەکلیلی دەرەکی"
           />
-        </div>
-
-        {/* Download GitHub APK-Ready Project ZIP */}
-        <div
-          className={`rounded-2xl p-4 border space-y-2.5 ${
-            isLightApp
-              ? 'bg-sky-50 border-sky-200 text-slate-900'
-              : 'bg-gradient-to-br from-[#0B1E36] to-[#0A1320] border-sky-400/25 text-white'
-          }`}
-        >
-          <div className="flex items-start gap-3">
-            <KurdiIcon name="ic_download" className="w-5 h-5 text-[#9AC5FF] mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <div className="text-sm font-extrabold">دابەزاندنی پرۆژەکە بۆ GitHub (APK)</div>
-              <div className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
-                فایلی ZIPـی تەواوی پرۆژەکە لەگەڵ GitHub Actions بۆ دروستکردنی خۆکاری فایلی ئەندرۆید (APK) بە پشتگیری تەواوی کیبۆردی سیستەم و Direct Boot.
-              </div>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => void downloadProjectZip()}
-            className="w-full h-10 rounded-xl bg-[#0B5FA8] hover:bg-[#0E70C4] active:scale-[0.98] text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-md"
-          >
-            <KurdiIcon name="ic_download" className="w-4 h-4" />
-            <span>دابەزاندنی kurdikeyboard-github-apk.zip</span>
-          </button>
         </div>
 
         <button

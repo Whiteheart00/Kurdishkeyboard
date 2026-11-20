@@ -9,14 +9,18 @@ if (!fs.existsSync(androidMain)) {
   process.exit(1);
 }
 
-// 1. Copy KurdiKeyboardImeService.java into Java package folder
+// 1. Copy KurdiKeyboardImeService.java & MainActivity.java into Java package folder
 const javaPkgDir = path.join(androidMain, 'java', 'io', 'kurdikebord', 'app');
 fs.mkdirSync(javaPkgDir, { recursive: true });
 fs.copyFileSync(
   path.join(root, 'android-ime', 'KurdiKeyboardImeService.java'),
   path.join(javaPkgDir, 'KurdiKeyboardImeService.java')
 );
-console.log('Copied KurdiKeyboardImeService.java');
+fs.copyFileSync(
+  path.join(root, 'android-ime', 'MainActivity.java'),
+  path.join(javaPkgDir, 'MainActivity.java')
+);
+console.log('Copied KurdiKeyboardImeService.java and MainActivity.java');
 
 // 2. Copy res/xml/method.xml
 const xmlDir = path.join(androidMain, 'res', 'xml');

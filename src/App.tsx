@@ -57,16 +57,26 @@ interface AndroidImeBridge {
   setKeyboardHeightDp: (dp: number) => void;
 }
 
+interface AndroidAppSetupBridge {
+  isImeEnabled: () => boolean;
+  isImeSelected: () => boolean;
+  openImeSettings: () => void;
+  openImePicker: () => void;
+}
+
 declare global {
   interface Window {
     AndroidIME?: AndroidImeBridge;
+    AndroidAppSetup?: AndroidAppSetupBridge;
     __onAndroidClipboardSync?: (text: string) => void;
+    __onAndroidImeRefresh?: () => void;
+    __onAndroidImeStatusChanged?: () => void;
   }
 }
 
 function hydrateSettings(partial: Partial<KeyboardSettings>): KeyboardSettings {
   const merged: KeyboardSettings = { ...DEFAULT_SETTINGS, ...partial };
-  const validLangs: AppLanguageCode[] = ['ckb', 'kmr', 'en'];
+  const validLangs: AppLanguageCode[] = ['ckb', 'kmr', 'en', 'ar', 'fa'];
   if (!validLangs.includes(merged.appLanguage)) {
     merged.appLanguage = 'ckb';
   }
@@ -125,6 +135,9 @@ function loadEditorText(): string {
 
 function loadMobileView(): 'settings' | 'keyboard' {
   try {
+    if (typeof window !== 'undefined' && window.AndroidAppSetup) {
+      return 'settings';
+    }
     const raw = localStorage.getItem(STORAGE_KEY_MOBILE_VIEW);
     return raw === 'settings' ? 'settings' : 'keyboard';
   } catch {
@@ -746,11 +759,16 @@ export default function App() {
     }
   };
 
-  // Native Android InputMethodService (?ime=1) clipboard sync & dynamic height bridge
+  // Native Android InputMethodService (?ime=1) clipboard sync, live settings refresh & dynamic height bridge
   useEffect(() => {
     if (!isNativeImeMode) return;
     window.__onAndroidClipboardSync = (text: string) => {
       if (text) saveToClipboard(text);
+    };
+    window.__onAndroidImeRefresh = () => {
+      setSettings(loadSettings());
+      setClipboardItems(loadClipboard());
+      setEditorText('');
     };
     const activeLangCfg = settings.enabledLanguages.find(
       (l) => l.code === settings.activeLanguage
@@ -764,6 +782,7 @@ export default function App() {
     window.AndroidIME?.setKeyboardHeightDp(totalDp);
     return () => {
       delete window.__onAndroidClipboardSync;
+      delete window.__onAndroidImeRefresh;
     };
   }, [
     isNativeImeMode,
