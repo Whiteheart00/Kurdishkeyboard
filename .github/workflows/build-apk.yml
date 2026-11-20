@@ -45,11 +45,35 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Inject Native Kurdish IME Service (Direct Boot Aware)
+      - name: Restore optional custom signing keystore from GitHub Secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android-ime/kurdikeyboard-debug.keystore
+            echo "Loaded custom keystore from ANDROID_KEYSTORE_BASE64 secret"
+          else
+            echo "Using repository persistent signing keystore (android-ime/kurdikeyboard-debug.keystore)"
+          fi
+
+      - name: Inject Native Kurdish IME Service & Persistent Signing Config
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: node scripts/setup-android-ime.mjs
 
-      - name: Build Android Debug APK
+      - name: Verify Persistent APK Signing Keystore
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          PASS="${ANDROID_KEYSTORE_PASSWORD:-android}"
+          keytool -list -keystore android/app/kurdikeyboard-debug.keystore -storepass "$PASS"
+
+      - name: Build Android Debug APK (In-Place Updatable)
         working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon

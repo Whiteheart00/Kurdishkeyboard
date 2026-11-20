@@ -69,4 +69,62 @@ if (fs.existsSync(bundledAistudioDir)) {
   console.log(`Trimmed ${removed} non-runtime files from Android APK assets (kept runtime sound packs)`);
 }
 
+// 5. Copy persistent signing keystore & patch android/app/build.gradle for seamless in-place APK updates
+const androidAppDir = path.join(root, 'android', 'app');
+const srcKeystore = path.join(root, 'android-ime', 'kurdikeyboard-debug.keystore');
+const dstKeystore = path.join(androidAppDir, 'kurdikeyboard-debug.keystore');
+
+if (fs.existsSync(srcKeystore)) {
+  fs.copyFileSync(srcKeystore, dstKeystore);
+  console.log('Copied persistent signing keystore -> android/app/kurdikeyboard-debug.keystore');
+} else {
+  console.warn('WARNING: android-ime/kurdikeyboard-debug.keystore not found! APK updates may require reinstall.');
+}
+
+const buildGradlePath = path.join(androidAppDir, 'build.gradle');
+if (fs.existsSync(buildGradlePath)) {
+  let gradle = fs.readFileSync(buildGradlePath, 'utf8');
+
+  const rawRunNumber = Number(process.env.APP_VERSION_CODE || process.env.GITHUB_RUN_NUMBER || 1);
+  const runNumber = Number.isFinite(rawRunNumber) && rawRunNumber > 0 ? Math.floor(rawRunNumber) : 1;
+  // Base 100 ensures versionCode is always strictly higher than initial versionCode 1 and grows on every build
+  const versionCode = 100 + runNumber;
+  const versionName = `2.0.${runNumber}`;
+
+  gradle = gradle.replace(/\bversionCode\s+\d+/, `versionCode ${versionCode}`);
+  gradle = gradle.replace(/\bversionName\s+"[^"]+"/, `versionName "${versionName}"`);
+
+  if (fs.existsSync(dstKeystore) && !gradle.includes('kurdikeyboard-debug.keystore')) {
+    const signingBlock = `    signingConfigs {
+        debug {
+            storeFile file('kurdikeyboard-debug.keystore')
+            storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: 'android'
+            keyAlias System.getenv('ANDROID_KEY_ALIAS') ?: 'androiddebugkey'
+            keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: 'android'
+        }
+    }
+    buildTypes {`;
+
+    if (gradle.includes('buildTypes {')) {
+      gradle = gradle.replace('buildTypes {', signingBlock);
+    }
+
+    // Explicitly bind debug buildType to our persistent signingConfigs.debug
+    if (!/buildTypes\s*\{[\s\S]*?\bdebug\s*\{/.test(gradle)) {
+      gradle = gradle.replace(
+        'buildTypes {',
+        `buildTypes {\n        debug {\n            signingConfig signingConfigs.debug\n        }`
+      );
+    } else if (!gradle.includes('signingConfig signingConfigs.debug')) {
+      gradle = gradle.replace(
+        /(buildTypes\s*\{[\s\S]*?\bdebug\s*\{)/,
+        `$1\n            signingConfig signingConfigs.debug`
+      );
+    }
+  }
+
+  fs.writeFileSync(buildGradlePath, gradle, 'utf8');
+  console.log(`Patched android/app/build.gradle (versionCode=${versionCode}, versionName=${versionName}, persistent keystore signing enabled)`);
+}
+
 console.log('KurdiKeyboard Android IME setup completed successfully!');

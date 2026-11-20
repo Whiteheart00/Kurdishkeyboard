@@ -26,7 +26,7 @@ import {
 } from '../../types/keyboard';
 import { ARABIC_HARAKAT_OPTIONS, SPACEBAR_CUSTOM_MENU_OPTIONS } from '../../data/gestures';
 import { findThemeById } from '../../data/themes';
-import { composeHangul, resolveLayoutRows } from '../../data/layouts';
+import { composeHangul, EMAIL_DOMAIN_POPUP_OPTIONS, resolveLayoutRows } from '../../data/layouts';
 import {
   EMOJI_CATEGORIES,
   EMOJI_KEYWORD_MAP,
@@ -301,8 +301,25 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     const shortcutsEnabled = settings.textShortcutsEnabled ?? true;
     if (!settings.wordSuggestions && !shortcutsEnabled) return [];
 
-    const results: { value: string; isShortcut?: boolean; shortcutKey?: string }[] = [];
+    const results: { value: string; isShortcut?: boolean; shortcutKey?: string; isEmail?: boolean }[] = [];
     const seen = new Set<string>();
+
+    // 0. Live Email Domain Suggestions when typing after "@" (e.g. "name@" or "name@g")
+    const emailMatch = editorText.match(/([^\s]*@)([a-zA-Z0-9.-]*)$/);
+    if (emailMatch) {
+      const partialDomain = (emailMatch[2] || '').toLowerCase();
+      for (const opt of EMAIL_DOMAIN_POPUP_OPTIONS) {
+        const domainWithoutAt = opt.value.slice(1);
+        if (!partialDomain || domainWithoutAt.startsWith(partialDomain)) {
+          if (!seen.has(opt.value)) {
+            seen.add(opt.value);
+            results.push({ value: opt.value, isEmail: true });
+            if (results.length >= 8) break;
+          }
+        }
+      }
+      if (results.length > 0) return results;
+    }
 
     // 1. Custom Text Shortcuts (Exact match first, then prefix match)
     if (shortcutsEnabled && currentWord && Array.isArray(settings.textShortcuts)) {
@@ -379,6 +396,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 
     return results.slice(0, 5);
   }, [
+    editorText,
     currentWord,
     settings.wordSuggestions,
     settings.textShortcutsEnabled,
@@ -605,6 +623,16 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       }
     }
 
+    // Email domain insertion (e.g. "@gmail.com"): keep plain Latin & prevent double "@@"
+    if (raw.startsWith('@') && raw.includes('.')) {
+      const textToInsert = editorText.endsWith('@') ? raw.slice(1) : raw;
+      onInsertText(textToInsert);
+      if (shiftState === 'once') {
+        setShiftState('off');
+      }
+      return;
+    }
+
     const decorated = applyActiveDecorator(raw);
     onInsertText(decorated);
     if (shiftState === 'once') {
@@ -612,8 +640,18 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     }
   };
 
-  const handleSuggestionTap = (word: string) => {
+  const handleSuggestionTap = (word: string, isEmail?: boolean) => {
     triggerSound('char');
+    if (isEmail && word.startsWith('@')) {
+      const emailMatch = editorText.match(/@[a-zA-Z0-9.-]*$/);
+      if (emailMatch) {
+        const replaced = editorText.slice(0, editorText.length - emailMatch[0].length) + word;
+        onReplaceText(replaced);
+        return;
+      }
+      onInsertText(word);
+      return;
+    }
     if (!currentWord) {
       onInsertText(`${word} `);
       return;
@@ -1058,6 +1096,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const borderWidth = theme.keyBorderWidth ?? (theme.hasKeyBorder ? 1 : 0);
   const keyBorderCss = borderWidth > 0 ? `${borderWidth}px solid ${theme.keyBorder}` : 'none';
   const keyShadowCss = theme.keyShadow || undefined;
+  const isEmailLongPress = Boolean(
+    longPressMenu &&
+      longPressMenu.options.some((o) => o.value.startsWith('@') && o.value.includes('.'))
+  );
 
   return (
     <div
@@ -1629,11 +1671,16 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 <button
                   key={`${item.value}_${idx}`}
                   type="button"
-                  onClick={() => handleSuggestionTap(item.value)}
+                  onClick={() => handleSuggestionTap(item.value, item.isEmail)}
                   title={item.isShortcut ? `${item.shortcutKey} : ${item.value}` : item.value}
-                  dir="auto"
+                  dir={item.isEmail ? 'ltr' : 'auto'}
+                  style={item.isEmail ? { unicodeBidi: 'isolate' } : undefined}
                   className={`h-7 px-2.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-colors flex items-center gap-1.5 ${
-                    item.isShortcut
+                    item.isEmail
+                      ? isLight
+                        ? 'bg-sky-100 text-sky-900 border border-sky-300 font-semibold'
+                        : 'bg-sky-500/20 text-sky-200 border border-sky-400/35 font-semibold'
+                      : item.isShortcut
                       ? isLight
                         ? 'bg-sky-100 text-sky-900 border border-sky-300 font-bold max-w-[210px]'
                         : 'bg-sky-500/20 text-sky-200 border border-sky-400/35 font-bold max-w-[210px]'
@@ -1805,6 +1852,60 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                   ))}
                 </div>
               )}
+
+              {/* Full-Width LTR Email Accounts Picker on @ Long-Press */}
+              {isEmailLongPress && longPressMenu && (
+                <div
+                  className="absolute inset-x-1.5 bottom-2 z-50 rounded-2xl shadow-2xl p-2 flex flex-col gap-2"
+                  style={{
+                    backgroundColor: theme.popupBg || (isLight ? '#FFFFFF' : '#181C24'),
+                    border: `1px solid ${theme.popupBorder || 'rgba(56,189,248,0.35)'}`,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between px-1" dir="rtl">
+                    <span className="text-[11px] font-bold text-sky-400">
+                      هەژمارەکانی ئیمەیڵ (@)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setLongPressMenu(null)}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                        isLight ? 'bg-slate-200 text-slate-800' : 'bg-white/10 text-white'
+                      }`}
+                      title="داخستن"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div
+                    className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto custom-scroll p-0.5"
+                    dir="ltr"
+                  >
+                    {longPressMenu.options.map((opt, oIdx) => (
+                      <button
+                        key={`${opt.value}_${oIdx}`}
+                        type="button"
+                        dir="ltr"
+                        onClick={() => {
+                          triggerSound('char');
+                          commitCharacter(opt.value);
+                          setLongPressMenu(null);
+                        }}
+                        className={`h-8 px-2.5 rounded-xl text-[12px] font-semibold whitespace-nowrap transition-colors border ${
+                          isLight
+                            ? 'bg-slate-100 hover:bg-sky-500 hover:text-white text-slate-900 border-slate-200'
+                            : 'bg-white/[0.07] hover:bg-sky-500 hover:text-white text-white border-white/10'
+                        }`}
+                        style={{ unicodeBidi: 'isolate' }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {resolvedLayout.rows.map((row, rIdx) => {
                 const isLastRow = rIdx === resolvedLayout.rows.length - 1;
                 const isCompactMidRow =
@@ -1917,7 +2018,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                           )}
 
                           {/* Long-Press Alternate Picker Popup */}
-                          {longPressMenu?.keyId === key.id && (
+                          {!isEmailLongPress && longPressMenu?.keyId === key.id && (
                             <div
                               className={`absolute -top-14 ${popupAlignClass} z-50 flex items-center gap-1 p-1.5 rounded-2xl shadow-2xl max-w-[300px] overflow-x-auto custom-scroll`}
                               style={{
@@ -1930,21 +2031,30 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                               onClick={(e) => e.stopPropagation()}
                               dir="rtl"
                             >
-                              {longPressMenu.options.map((opt, oIdx) => (
-                                <button
-                                  key={`${opt.label}_${oIdx}`}
-                                  type="button"
-                                  onClick={() => {
-                                    triggerSound('char');
-                                    commitCharacter(opt.value);
-                                    setLongPressMenu(null);
-                                  }}
-                                  className="min-w-[36px] h-9 px-2.5 rounded-xl text-xs font-bold whitespace-nowrap hover:bg-sky-500 hover:text-white transition-colors shrink-0"
-                                  style={{ color: isLight ? '#0F172A' : '#FFFFFF' }}
-                                >
-                                  {opt.label}
-                                </button>
-                              ))}
+                              {longPressMenu.options.map((opt, oIdx) => {
+                                const isLtrOpt =
+                                  opt.value.startsWith('@') ||
+                                  /^[a-zA-Z0-9.@_+-]+$/.test(opt.label);
+                                return (
+                                  <button
+                                    key={`${opt.label}_${oIdx}`}
+                                    type="button"
+                                    dir={isLtrOpt ? 'ltr' : 'auto'}
+                                    onClick={() => {
+                                      triggerSound('char');
+                                      commitCharacter(opt.value);
+                                      setLongPressMenu(null);
+                                    }}
+                                    className="min-w-[36px] h-9 px-2.5 rounded-xl text-xs font-bold whitespace-nowrap hover:bg-sky-500 hover:text-white transition-colors shrink-0"
+                                    style={{
+                                      color: isLight ? '#0F172A' : '#FFFFFF',
+                                      unicodeBidi: isLtrOpt ? 'isolate' : undefined,
+                                    }}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                );
+                              })}
                             </div>
                           )}
 

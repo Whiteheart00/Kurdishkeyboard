@@ -233,6 +233,28 @@ export const EXTRA_EDITOR_KEYS: string[] = [
   'ـ', '؟', '،', '؛', '«', '»', 'ئە', 'لا', 'ڵا', 'ﷺ', '۞', 'ـَ', 'ـِ', 'ـُ', 'ـّ',
 ];
 
+export const EMAIL_DOMAIN_POPUP_OPTIONS: PopupOption[] = [
+  { label: '@gmail.com', value: '@gmail.com' },
+  { label: '@outlook.com', value: '@outlook.com' },
+  { label: '@yahoo.com', value: '@yahoo.com' },
+  { label: '@hotmail.com', value: '@hotmail.com' },
+  { label: '@icloud.com', value: '@icloud.com' },
+  { label: '@apple.com', value: '@apple.com' },
+  { label: '@live.com', value: '@live.com' },
+  { label: '@proton.me', value: '@proton.me' },
+  { label: '@protonmail.com', value: '@protonmail.com' },
+  { label: '@me.com', value: '@me.com' },
+  { label: '@aol.com', value: '@aol.com' },
+  { label: '@yandex.com', value: '@yandex.com' },
+  { label: '@mail.com', value: '@mail.com' },
+  { label: '@zoho.com', value: '@zoho.com' },
+  { label: '@msn.com', value: '@msn.com' },
+  { label: '@gmx.com', value: '@gmx.com' },
+  { label: '@fastmail.com', value: '@fastmail.com' },
+  { label: '@pm.me', value: '@pm.me' },
+  { label: '@edu.iq', value: '@edu.iq' },
+];
+
 function getCurrencySlots(currencySetId: string): { code: number; label: string }[] {
   const found = bundle.currencySets.find((c) => c.id === currencySetId);
   return found?.slots || bundle.currencySets[1]?.slots || [
@@ -545,7 +567,11 @@ function convertRawKeyToSpec(
 
   const mergedAlts: PopupOption[] = [];
   const seen = new Set<string>();
-  for (const item of [...inlinePop.alts, ...extPop.alts]) {
+  const isAtKey = node.code === 64 || label === '@' || output === '@';
+  const sourceAlts = isAtKey
+    ? [...EMAIL_DOMAIN_POPUP_OPTIONS, ...inlinePop.alts, ...extPop.alts]
+    : [...inlinePop.alts, ...extPop.alts];
+  for (const item of sourceAlts) {
     const k = `${item.label}::${item.value}`;
     if (!seen.has(k)) {
       seen.add(k);
@@ -567,7 +593,7 @@ function convertRawKeyToSpec(
     code: node.code,
     primary: displayPrimary,
     output,
-    secondary: inlinePop.secondary || extPop.secondary,
+    secondary: isAtKey ? '.com' : inlinePop.secondary || extPop.secondary,
     alts: mergedAlts,
     width: getDefaultKeyWidth(keyType, node.code, node.width),
     type: keyType,
