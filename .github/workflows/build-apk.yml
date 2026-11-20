@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-apk:
@@ -52,14 +52,27 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      - name: Prepare APK artifact
+      - name: Prepare APK file
         run: |
           mkdir -p release-apk
           cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/KurdiKeyboard-debug.apk
 
-      - name: Upload KurdiKeyboard APK
+      - name: Publish APK to GitHub Releases (No Storage Limit)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view latest-apk >/dev/null 2>&1; then
+            gh release upload latest-apk release-apk/KurdiKeyboard-debug.apk --clobber
+          else
+            gh release create latest-apk release-apk/KurdiKeyboard-debug.apk \
+              --title "KurdiKeyboard Android APK (Latest)" \
+              --notes "تەختەکلیلی کوردی — فایلی ئەندرۆید (APK) بە پشتگیری Direct Boot و ١٠ فۆنتە کوردییەکە."
+          fi
+
+      - name: Upload KurdiKeyboard APK Artifact (Optional)
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: KurdiKeyboard-APK
           path: release-apk/KurdiKeyboard-debug.apk
-          retention-days: 30
+          retention-days: 1
