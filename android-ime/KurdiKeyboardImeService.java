@@ -38,7 +38,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
     private static final String VIRTUAL_HOST = "localhost";
     private WebView webView;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private int keyboardHeightDp = 365;
+    private int keyboardHeightDp = 390;
 
     @Override
     public boolean onEvaluateFullscreenMode() {
@@ -310,7 +310,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
         @JavascriptInterface
         public void setKeyboardHeightDp(final int dp) {
             mainHandler.post(() -> {
-                if (webView != null && dp >= 280 && dp <= 520) {
+                if (webView != null && dp >= 220 && dp <= 640 && dp != keyboardHeightDp) {
                     keyboardHeightDp = dp;
                     ViewGroup.LayoutParams lp = webView.getLayoutParams();
                     if (lp != null) {

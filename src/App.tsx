@@ -160,6 +160,7 @@ export default function App() {
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imeDeckRef = useRef<HTMLDivElement>(null);
   const idbHydratedRef = useRef(false);
 
   const currentRoute = routeStack[routeStack.length - 1];
@@ -167,6 +168,8 @@ export default function App() {
   const isNativeImeMode =
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).get('ime') === '1';
+  const isAndroidApk =
+    typeof window !== 'undefined' && Boolean(window.AndroidAppSetup);
 
   // Request browser persistent storage and recover from IndexedDB if localStorage was cleared after restart
   useEffect(() => {
@@ -759,7 +762,7 @@ export default function App() {
     }
   };
 
-  // Native Android InputMethodService (?ime=1) clipboard sync, live settings refresh & dynamic height bridge
+  // Native Android InputMethodService (?ime=1) clipboard sync, live settings refresh & exact ResizeObserver height bridge
   useEffect(() => {
     if (!isNativeImeMode) return;
     window.__onAndroidClipboardSync = (text: string) => {
@@ -770,17 +773,27 @@ export default function App() {
       setClipboardItems(loadClipboard());
       setEditorText('');
     };
-    const activeLangCfg = settings.enabledLanguages.find(
-      (l) => l.code === settings.activeLanguage
-    );
-    const extraNumRow = activeLangCfg?.numberRow ? 36 : 0;
-    const extraToolbar = settings.showTopToolbar ? 46 : 0;
-    const totalDp = Math.max(
-      280,
-      Math.min(500, Math.round((settings.keyboardHeightPx || 280) + extraToolbar + extraNumRow))
-    );
-    window.AndroidIME?.setKeyboardHeightDp(totalDp);
+
+    const syncExactHeight = () => {
+      const el = imeDeckRef.current;
+      if (!el) return;
+      const measured = Math.ceil(el.getBoundingClientRect().height);
+      if (measured >= 220 && measured <= 640) {
+        window.AndroidIME?.setKeyboardHeightDp(measured);
+      }
+    };
+
+    syncExactHeight();
+    const rafId = requestAnimationFrame(syncExactHeight);
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && imeDeckRef.current) {
+      observer = new ResizeObserver(syncExactHeight);
+      observer.observe(imeDeckRef.current);
+    }
+
     return () => {
+      cancelAnimationFrame(rafId);
+      observer?.disconnect();
       delete window.__onAndroidClipboardSync;
       delete window.__onAndroidImeRefresh;
     };
@@ -795,47 +808,49 @@ export default function App() {
 
   if (isNativeImeMode) {
     return (
-      <div className="w-screen h-screen bg-black overflow-hidden flex flex-col justify-end select-none">
-        <KeyboardView
-          settings={settings}
-          onUpdateSettings={updateSettings}
-          editorText={editorText}
-          onInsertText={handleInsertText}
-          onReplaceText={handleReplaceText}
-          onBackspace={handleBackspace}
-          onDeleteWord={handleDeleteWord}
-          onMoveCursor={handleMoveCursor}
-          onSelectAll={handleSelectAll}
-          onCopy={handleCopy}
-          onCut={handleCut}
-          onPaste={handlePaste}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          onEnter={() => {
-            if (window.AndroidIME) {
-              window.AndroidIME.sendEnter();
-            } else {
-              handleInsertText('\n');
+      <div className="w-screen min-h-screen bg-black overflow-hidden flex flex-col justify-end select-none">
+        <div ref={imeDeckRef} className="w-full">
+          <KeyboardView
+            settings={settings}
+            onUpdateSettings={updateSettings}
+            editorText={editorText}
+            onInsertText={handleInsertText}
+            onReplaceText={handleReplaceText}
+            onBackspace={handleBackspace}
+            onDeleteWord={handleDeleteWord}
+            onMoveCursor={handleMoveCursor}
+            onSelectAll={handleSelectAll}
+            onCopy={handleCopy}
+            onCut={handleCut}
+            onPaste={handlePaste}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            onEnter={() => {
+              if (window.AndroidIME) {
+                window.AndroidIME.sendEnter();
+              } else {
+                handleInsertText('\n');
+              }
+            }}
+            clipboardItems={clipboardItems}
+            onSaveToClipboard={(txt) => saveToClipboard(txt)}
+            onTogglePinClipboard={(id) =>
+              setClipboardItems((prev) =>
+                prev.map((it) => (it.id === id ? { ...it, pinned: !it.pinned } : it))
+              )
             }
-          }}
-          clipboardItems={clipboardItems}
-          onSaveToClipboard={(txt) => saveToClipboard(txt)}
-          onTogglePinClipboard={(id) =>
-            setClipboardItems((prev) =>
-              prev.map((it) => (it.id === id ? { ...it, pinned: !it.pinned } : it))
-            )
-          }
-          onEditClipboard={handleEditClipboard}
-          onDeleteClipboard={(id) =>
-            setClipboardItems((prev) => prev.filter((it) => it.id !== id))
-          }
-          onClearUnpinnedClipboard={() =>
-            setClipboardItems((prev) => prev.filter((it) => it.pinned))
-          }
-          onOpenSettingsRoute={() => window.AndroidIME?.openSettings()}
-          onHideKeyboard={() => window.AndroidIME?.hideKeyboard()}
-          highlightedPhysicalKey={highlightedKey}
-        />
+            onEditClipboard={handleEditClipboard}
+            onDeleteClipboard={(id) =>
+              setClipboardItems((prev) => prev.filter((it) => it.id !== id))
+            }
+            onClearUnpinnedClipboard={() =>
+              setClipboardItems((prev) => prev.filter((it) => it.pinned))
+            }
+            onOpenSettingsRoute={() => window.AndroidIME?.openSettings()}
+            onHideKeyboard={() => window.AndroidIME?.hideKeyboard()}
+            highlightedPhysicalKey={highlightedKey}
+          />
+        </div>
       </div>
     );
   }
@@ -858,7 +873,12 @@ export default function App() {
         <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.06] border border-white/10">
           <button
             type="button"
-            onClick={() => setMobileView('keyboard')}
+            onClick={() => {
+              setMobileView('keyboard');
+              if (isAndroidApk) {
+                requestAnimationFrame(() => textareaRef.current?.focus());
+              }
+            }}
             className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
               mobileView === 'keyboard'
                 ? 'bg-[#0B5FA8] text-white'
@@ -924,6 +944,16 @@ export default function App() {
               </div>
 
               <div className="flex items-center gap-2">
+                {isAndroidApk && (
+                  <button
+                    type="button"
+                    onClick={() => window.AndroidAppSetup?.openImePicker()}
+                    className="h-9 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 bg-[#0B5FA8] hover:bg-[#0E70C4] text-white transition-colors"
+                  >
+                    <KurdiIcon name="ic_keyboards" className="w-3.5 h-3.5" />
+                    <span>گۆڕینی کیبۆرد</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleCopy}
@@ -975,7 +1005,12 @@ export default function App() {
                 value={editorText}
                 onChange={(e) => setEditorText(e.target.value)}
                 dir="auto"
-                placeholder="لێرە بنووسە یان تەختەکلیلی خوارەوە تاقیبکەرەوە..."
+                inputMode={isAndroidApk ? 'text' : 'none'}
+                placeholder={
+                  isAndroidApk
+                    ? 'کلیک لێرە بکە بۆ تاقیکردنەوەی تەختەکلیلی کوردی...'
+                    : 'لێرە بنووسە یان تەختەکلیلی خوارەوە تاقیبکەرەوە...'
+                }
                 className={`w-full flex-1 bg-transparent resize-none outline-none text-base sm:text-lg leading-relaxed placeholder:text-zinc-500 font-style-${settings.fontStyle}`}
               />
 
@@ -1033,48 +1068,50 @@ export default function App() {
             </div>
           </div>
 
-          {/* Anchored Full Interactive Keyboard Deck */}
-          <div className="w-full max-w-[540px] lg:max-w-[660px] mx-auto w-full lg:px-6 lg:pb-5 shrink-0">
-            <div className="lg:rounded-3xl overflow-hidden lg:border lg:border-white/10 shadow-2xl">
-              <KeyboardView
-                settings={settings}
-                onUpdateSettings={updateSettings}
-                editorText={editorText}
-                onInsertText={handleInsertText}
-                onReplaceText={handleReplaceText}
-                onBackspace={handleBackspace}
-                onDeleteWord={handleDeleteWord}
-                onMoveCursor={handleMoveCursor}
-                onSelectAll={handleSelectAll}
-                onCopy={handleCopy}
-                onCut={handleCut}
-                onPaste={handlePaste}
-                onUndo={handleUndo}
-                onRedo={handleRedo}
-                onEnter={() => handleInsertText('\n')}
-                clipboardItems={clipboardItems}
-                onSaveToClipboard={(txt) => {
-                  saveToClipboard(txt);
-                  showToast('پاشەکەوت کرا لە لەبەرگیراوەکان');
-                }}
-                onTogglePinClipboard={(id) =>
-                  setClipboardItems((prev) =>
-                    prev.map((it) => (it.id === id ? { ...it, pinned: !it.pinned } : it))
-                  )
-                }
-                onEditClipboard={handleEditClipboard}
-                onDeleteClipboard={(id) =>
-                  setClipboardItems((prev) => prev.filter((it) => it.id !== id))
-                }
-                onClearUnpinnedClipboard={() =>
-                  setClipboardItems((prev) => prev.filter((it) => it.pinned))
-                }
-                onOpenSettingsRoute={(r) => navigateTo(r)}
-                onHideKeyboard={() => setMobileView('settings')}
-                highlightedPhysicalKey={highlightedKey}
-              />
+          {/* Anchored Full Interactive Keyboard Deck (hidden inside installed Android APK so only the real system IME appears) */}
+          {!isAndroidApk && (
+            <div className="w-full max-w-[540px] lg:max-w-[660px] mx-auto w-full lg:px-6 lg:pb-5 shrink-0">
+              <div className="lg:rounded-3xl overflow-hidden lg:border lg:border-white/10 shadow-2xl">
+                <KeyboardView
+                  settings={settings}
+                  onUpdateSettings={updateSettings}
+                  editorText={editorText}
+                  onInsertText={handleInsertText}
+                  onReplaceText={handleReplaceText}
+                  onBackspace={handleBackspace}
+                  onDeleteWord={handleDeleteWord}
+                  onMoveCursor={handleMoveCursor}
+                  onSelectAll={handleSelectAll}
+                  onCopy={handleCopy}
+                  onCut={handleCut}
+                  onPaste={handlePaste}
+                  onUndo={handleUndo}
+                  onRedo={handleRedo}
+                  onEnter={() => handleInsertText('\n')}
+                  clipboardItems={clipboardItems}
+                  onSaveToClipboard={(txt) => {
+                    saveToClipboard(txt);
+                    showToast('پاشەکەوت کرا لە لەبەرگیراوەکان');
+                  }}
+                  onTogglePinClipboard={(id) =>
+                    setClipboardItems((prev) =>
+                      prev.map((it) => (it.id === id ? { ...it, pinned: !it.pinned } : it))
+                    )
+                  }
+                  onEditClipboard={handleEditClipboard}
+                  onDeleteClipboard={(id) =>
+                    setClipboardItems((prev) => prev.filter((it) => it.id !== id))
+                  }
+                  onClearUnpinnedClipboard={() =>
+                    setClipboardItems((prev) => prev.filter((it) => it.pinned))
+                  }
+                  onOpenSettingsRoute={(r) => navigateTo(r)}
+                  onHideKeyboard={() => setMobileView('settings')}
+                  highlightedPhysicalKey={highlightedKey}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </main>
       </div>
 
