@@ -198,11 +198,12 @@ async function startServer() {
 
   app.post('/api/ai/translate', async (req, res) => {
     try {
-      const { text, sourceLang, targetLang, engine } = req.body as {
+      const { text, sourceLang, targetLang, engine, stream } = req.body as {
         text?: string;
         sourceLang?: string;
         targetLang?: string;
         engine?: 'google_fast' | 'ai_fluent';
+        stream?: boolean;
       };
 
       if (!text || !text.trim()) {
@@ -219,30 +220,44 @@ async function startServer() {
       }
 
       const langLabels: Record<string, string> = {
-        auto: 'Auto-detect',
-        ckb: 'Central Kurdish (Sorani, Arabic script)',
+        auto: 'Auto',
+        ckb: 'Kurdish Sorani',
         en: 'English',
         ar: 'Arabic',
         fa: 'Persian',
         tr: 'Turkish',
       };
 
-      const src = langLabels[sourceLang || 'auto'] || sourceLang || 'Auto-detect';
+      const src = langLabels[sourceLang || 'auto'] || sourceLang || 'Auto';
       const tgt = langLabels[targetLang || 'en'] || targetLang || 'English';
-      const styleNote =
-        engine === 'ai_fluent'
-          ? 'Produce a natural, idiomatic, fluent translation with proper Kurdish/target phrasing.'
-          : 'Produce a direct, fast, accurate translation.';
+      const styleNote = engine === 'ai_fluent' ? 'Natural, fluent phrasing.' : 'Direct, accurate translation.';
+      const systemInstruction = `Translate from ${src} to ${tgt}. ${styleNote} Output ONLY the translation.`;
+
+      if (stream === true) {
+        res.status(200);
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache');
+        const chunkStream = await ai.models.generateContentStream({
+          model: 'gemini-3.1-flash-lite',
+          contents: text.trim(),
+          config: {
+            thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+            systemInstruction,
+          },
+        });
+        for await (const chunk of chunkStream) {
+          if (chunk.text) res.write(chunk.text);
+        }
+        res.end();
+        return;
+      }
 
       const response = await ai.models.generateContent({
-        model: 'gemini-4-hydrogen',
+        model: 'gemini-3.1-flash-lite',
         contents: text.trim(),
         config: {
-          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-          systemInstruction: `You are an expert Kurdish Sorani and multilingual keyboard translator.
-Translate the user's text from ${src} into ${tgt}.
-${styleNote}
-Return ONLY the translated text without quotes, explanations, or markdown.`,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+          systemInstruction,
         },
       });
 
@@ -250,15 +265,20 @@ Return ONLY the translated text without quotes, explanations, or markdown.`,
       res.json({ translated });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'هەڵە لە کاتی وەرگێڕاندا ڕوویدا.';
-      res.status(500).json({ error: message });
+      if (!res.headersSent) {
+        res.status(500).json({ error: message });
+      } else {
+        res.end();
+      }
     }
   });
 
   app.post('/api/ai/rewrite', async (req, res) => {
     try {
-      const { text, mode } = req.body as {
+      const { text, mode, stream } = req.body as {
         text?: string;
         mode?: 'fix' | 'formal' | 'friendly' | 'shorten' | 'reply';
+        stream?: boolean;
       };
 
       if (!text || !text.trim()) {
@@ -275,23 +295,41 @@ Return ONLY the translated text without quotes, explanations, or markdown.`,
       }
 
       const modeInstructions: Record<string, string> = {
-        fix: 'Fix spelling, grammar, and punctuation while preserving the original language (Kurdish Sorani, English, or Arabic) and meaning. Keep it clean and natural.',
-        formal: 'Rewrite the text in a polite, professional, formal tone in the same language as the input.',
-        friendly: 'Rewrite the text in a warm, friendly, conversational tone in the same language as the input.',
-        shorten: 'Make the text concise and clear while preserving the core message, in the same language as the input.',
-        reply: 'Write a natural, helpful, polite short reply to the message in the exact same language as the input (e.g., Kurdish Sorani if input is Kurdish Sorani).',
+        fix: 'Fix spelling, grammar, and punctuation in the same language (Kurdish Sorani, English, or Arabic).',
+        formal: 'Rewrite in a polite, formal tone in the same language.',
+        friendly: 'Rewrite in a warm, friendly tone in the same language.',
+        shorten: 'Make concise and clear in the same language.',
+        reply: 'Write a brief, natural polite reply in the same language.',
       };
 
       const instruction = modeInstructions[mode || 'fix'] || modeInstructions.fix;
+      const systemInstruction = `${instruction} Output ONLY the final text with no quotes or notes.`;
+
+      if (stream === true) {
+        res.status(200);
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache');
+        const chunkStream = await ai.models.generateContentStream({
+          model: 'gemini-3.1-flash-lite',
+          contents: text.trim(),
+          config: {
+            thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+            systemInstruction,
+          },
+        });
+        for await (const chunk of chunkStream) {
+          if (chunk.text) res.write(chunk.text);
+        }
+        res.end();
+        return;
+      }
 
       const response = await ai.models.generateContent({
-        model: 'gemini-4-hydrogen',
+        model: 'gemini-3.1-flash-lite',
         contents: text.trim(),
         config: {
-          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-          systemInstruction: `You are an intelligent Kurdish & multilingual mobile keyboard writing assistant.
-${instruction}
-Return ONLY the resulting text with no preamble, quotes, or extra commentary.`,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+          systemInstruction,
         },
       });
 
@@ -299,7 +337,11 @@ Return ONLY the resulting text with no preamble, quotes, or extra commentary.`,
       res.json({ result });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'هەڵە لە کاتی پەیوەندی بە ژیری دەسکرددا ڕوویدا.';
-      res.status(500).json({ error: message });
+      if (!res.headersSent) {
+        res.status(500).json({ error: message });
+      } else {
+        res.end();
+      }
     }
   });
 

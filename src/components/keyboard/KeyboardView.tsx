@@ -41,6 +41,7 @@ interface KeyboardViewProps {
   editorText: string;
   onInsertText: (text: string) => void;
   onReplaceText: (text: string) => void;
+  onReplaceAllText?: (text: string) => void;
   onBackspace: () => void;
   onDeleteWord: () => void;
   onMoveCursor: (delta: number) => void;
@@ -68,6 +69,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   editorText,
   onInsertText,
   onReplaceText,
+  onReplaceAllText,
   onBackspace,
   onDeleteWord,
   onMoveCursor,
@@ -911,7 +913,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           editorText={editorText}
           onSelectDecorator={(id) => setActiveDecoratorId(id)}
           onApplyToEditor={(transformed) => {
-            onReplaceText(transformed);
+            (onReplaceAllText || onReplaceText)(transformed);
             setActivePanel('keys');
           }}
           onClose={() => setActivePanel('keys')}
@@ -940,8 +942,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           settings={settings}
           editorText={editorText}
           initialText={translateInitialText}
+          onUpdateSettings={onUpdateSettings}
           onInsertTranslated={(text, replaceAll) => {
-            if (replaceAll) onReplaceText(text);
+            if (replaceAll) (onReplaceAllText || onReplaceText)(text);
             else onInsertText(text);
           }}
           onClose={() => {
@@ -955,7 +958,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           settings={settings}
           editorText={editorText}
           onApplyText={(text, replaceAll) => {
-            if (replaceAll) onReplaceText(text);
+            if (replaceAll) (onReplaceAllText || onReplaceText)(text);
             else onInsertText(text);
           }}
           onClose={() => setActivePanel('keys')}

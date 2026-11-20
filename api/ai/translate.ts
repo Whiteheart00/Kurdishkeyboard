@@ -9,10 +9,10 @@ function setCors(res: ServerResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
 }
 
 function sendJson(res: ServerResponse, status: number, payload: unknown) {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.statusCode = status;
   res.end(JSON.stringify(payload));
 }
@@ -53,6 +53,7 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
     const sourceLang = typeof body.sourceLang === 'string' ? body.sourceLang : 'auto';
     const targetLang = typeof body.targetLang === 'string' ? body.targetLang : 'en';
     const engine = body.engine === 'ai_fluent' ? 'ai_fluent' : 'google_fast';
+    const wantStream = body.stream === true;
 
     if (!text.trim()) {
       sendJson(res, 400, { error: 'تکایە دەقێک بنووسە بۆ وەرگێڕان.' });
@@ -77,30 +78,46 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
     });
 
     const langLabels: Record<string, string> = {
-      auto: 'Auto-detect',
-      ckb: 'Central Kurdish (Sorani, Arabic script)',
+      auto: 'Auto',
+      ckb: 'Kurdish Sorani',
       en: 'English',
       ar: 'Arabic',
       fa: 'Persian',
       tr: 'Turkish',
     };
 
-    const src = langLabels[sourceLang] || sourceLang || 'Auto-detect';
+    const src = langLabels[sourceLang] || sourceLang || 'Auto';
     const tgt = langLabels[targetLang] || targetLang || 'English';
-    const styleNote =
-      engine === 'ai_fluent'
-        ? 'Produce a natural, idiomatic, fluent translation with proper Kurdish/target phrasing.'
-        : 'Produce a direct, fast, accurate translation.';
+    const styleNote = engine === 'ai_fluent' ? 'Natural, fluent phrasing.' : 'Direct, accurate translation.';
+    const systemInstruction = `Translate from ${src} to ${tgt}. ${styleNote} Output ONLY the translation.`;
+
+    if (wantStream) {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache');
+      const stream = await ai.models.generateContentStream({
+        model: 'gemini-3.1-flash-lite',
+        contents: text.trim(),
+        config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+          systemInstruction,
+        },
+      });
+      for await (const chunk of stream) {
+        if (chunk.text) {
+          res.write(chunk.text);
+        }
+      }
+      res.end();
+      return;
+    }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-4-hydrogen',
+      model: 'gemini-3.1-flash-lite',
       contents: text.trim(),
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-        systemInstruction: `You are an expert Kurdish Sorani and multilingual keyboard translator.
-Translate the user's text from ${src} into ${tgt}.
-${styleNote}
-Return ONLY the translated text without quotes, explanations, or markdown.`,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+        systemInstruction,
       },
     });
 
@@ -108,6 +125,10 @@ Return ONLY the translated text without quotes, explanations, or markdown.`,
     sendJson(res, 200, { translated });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'هەڵە لە کاتی وەرگێڕاندا ڕوویدا.';
-    sendJson(res, 500, { error: message });
+    if (!res.headersSent) {
+      sendJson(res, 500, { error: message });
+    } else {
+      res.end();
+    }
   }
 }

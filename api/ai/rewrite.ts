@@ -9,10 +9,10 @@ function setCors(res: ServerResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
 }
 
 function sendJson(res: ServerResponse, status: number, payload: unknown) {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.statusCode = status;
   res.end(JSON.stringify(payload));
 }
@@ -51,6 +51,7 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
     const body = await readJsonBody(req);
     const text = typeof body.text === 'string' ? body.text : '';
     const mode = typeof body.mode === 'string' ? body.mode : 'fix';
+    const wantStream = body.stream === true;
 
     if (!text.trim()) {
       sendJson(res, 400, { error: 'تکایە دەقێک بنووسە بۆ داڕشتنەوە.' });
@@ -75,23 +76,43 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
     });
 
     const modeInstructions: Record<string, string> = {
-      fix: 'Fix spelling, grammar, and punctuation while preserving the original language (Kurdish Sorani, English, or Arabic) and meaning. Keep it clean and natural.',
-      formal: 'Rewrite the text in a polite, professional, formal tone in the same language as the input.',
-      friendly: 'Rewrite the text in a warm, friendly, conversational tone in the same language as the input.',
-      shorten: 'Make the text concise and clear while preserving the core message, in the same language as the input.',
-      reply: 'Write a natural, helpful, polite short reply to the message in the exact same language as the input (e.g., Kurdish Sorani if input is Kurdish Sorani).',
+      fix: 'Fix spelling, grammar, and punctuation in the same language (Kurdish Sorani, English, or Arabic).',
+      formal: 'Rewrite in a polite, formal tone in the same language.',
+      friendly: 'Rewrite in a warm, friendly tone in the same language.',
+      shorten: 'Make concise and clear in the same language.',
+      reply: 'Write a brief, natural polite reply in the same language.',
     };
 
     const instruction = modeInstructions[mode] || modeInstructions.fix;
+    const systemInstruction = `${instruction} Output ONLY the final text with no quotes or notes.`;
+
+    if (wantStream) {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache');
+      const stream = await ai.models.generateContentStream({
+        model: 'gemini-3.1-flash-lite',
+        contents: text.trim(),
+        config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+          systemInstruction,
+        },
+      });
+      for await (const chunk of stream) {
+        if (chunk.text) {
+          res.write(chunk.text);
+        }
+      }
+      res.end();
+      return;
+    }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-4-hydrogen',
+      model: 'gemini-3.1-flash-lite',
       contents: text.trim(),
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-        systemInstruction: `You are an intelligent Kurdish & multilingual mobile keyboard writing assistant.
-${instruction}
-Return ONLY the resulting text with no preamble, quotes, or extra commentary.`,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+        systemInstruction,
       },
     });
 
@@ -99,6 +120,10 @@ Return ONLY the resulting text with no preamble, quotes, or extra commentary.`,
     sendJson(res, 200, { result });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'هەڵە لە کاتی پەیوەندی بە ژیری دەسکرددا ڕوویدا.';
-    sendJson(res, 500, { error: message });
+    if (!res.headersSent) {
+      sendJson(res, 500, { error: message });
+    } else {
+      res.end();
+    }
   }
 }

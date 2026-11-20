@@ -15,6 +15,8 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.ExtractedText;
+import android.view.inputmethod.ExtractedTextRequest;
 import android.view.inputmethod.InputConnection;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -28,6 +30,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * KurdiKeyboard native Android InputMethodService (Direct Boot Aware).
@@ -109,14 +114,51 @@ public class KurdiKeyboardImeService extends InputMethodService {
         return new WebResourceResponse(mimeType, "UTF-8", 200, "OK", headers, stream);
     }
 
+    private String readCurrentFieldText(boolean preferSelection) {
+        try {
+            InputConnection ic = getCurrentInputConnection();
+            if (ic == null) return "";
+            if (preferSelection) {
+                CharSequence selected = ic.getSelectedText(0);
+                if (!TextUtils.isEmpty(selected)) {
+                    return selected.toString();
+                }
+            }
+            ExtractedText et = ic.getExtractedText(new ExtractedTextRequest(), 0);
+            if (et != null && !TextUtils.isEmpty(et.text)) {
+                return et.text.toString();
+            }
+            CharSequence before = ic.getTextBeforeCursor(4000, 0);
+            CharSequence after = ic.getTextAfterCursor(4000, 0);
+            StringBuilder sb = new StringBuilder();
+            if (before != null) sb.append(before);
+            if (after != null) sb.append(after);
+            return sb.toString();
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    private String escapeForJsString(String raw) {
+        if (raw == null) return "";
+        return raw
+                .replace("\\", "\\\\")
+                .replace("'", "\\'")
+                .replace("\n", "\\n")
+                .replace("\r", "")
+                .replace("\u2028", "\\u2028")
+                .replace("\u2029", "\\u2029");
+    }
+
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
         syncLatestSystemClipboard();
+        final String currentFieldText = escapeForJsString(readCurrentFieldText(false));
         mainHandler.post(() -> {
             if (webView != null) {
                 webView.evaluateJavascript(
-                        "window.__onAndroidImeRefresh && window.__onAndroidImeRefresh();",
+                        "window.__onAndroidImeRefresh && window.__onAndroidImeRefresh('" + currentFieldText + "');",
                         null
                 );
             }
@@ -303,6 +345,58 @@ public class KurdiKeyboardImeService extends InputMethodService {
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
                 } catch (Exception ignored) {
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public String getEditorText(final boolean preferSelection) {
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                return readCurrentFieldText(preferSelection);
+            }
+            final AtomicReference<String> result = new AtomicReference<>("");
+            final CountDownLatch latch = new CountDownLatch(1);
+            mainHandler.post(() -> {
+                try {
+                    result.set(readCurrentFieldText(preferSelection));
+                } finally {
+                    latch.countDown();
+                }
+            });
+            try {
+                latch.await(250, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+            return result.get();
+        }
+
+        @JavascriptInterface
+        public void replaceAllText(final String newText, final boolean preferSelection) {
+            if (newText == null) return;
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic == null) return;
+                try {
+                    if (preferSelection) {
+                        CharSequence selected = ic.getSelectedText(0);
+                        if (!TextUtils.isEmpty(selected)) {
+                            ic.commitText(newText, 1);
+                            return;
+                        }
+                    }
+                    ic.beginBatchEdit();
+                    CharSequence before = ic.getTextBeforeCursor(4000, 0);
+                    CharSequence after = ic.getTextAfterCursor(4000, 0);
+                    int beforeLen = before != null ? before.length() : 0;
+                    int afterLen = after != null ? after.length() : 0;
+                    if (beforeLen > 0 || afterLen > 0) {
+                        ic.deleteSurroundingText(beforeLen, afterLen);
+                    }
+                    ic.commitText(newText, 1);
+                    ic.endBatchEdit();
+                } catch (Exception ignored) {
+                    ic.commitText(newText, 1);
                 }
             });
         }

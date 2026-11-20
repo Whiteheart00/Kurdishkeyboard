@@ -1451,11 +1451,78 @@ export const ResizePanel: React.FC<ResizePanelProps> = ({
   );
 };
 
+const translateCache = new Map<string, string>();
+const rewriteCache = new Map<string, string>();
+
+function setBoundedCache(cache: Map<string, string>, key: string, val: string) {
+  if (cache.size >= 60) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) cache.delete(firstKey);
+  }
+  cache.set(key, val);
+}
+
+function readLiveEditorText(preferSelection: boolean, fallbackText: string): string {
+  if (typeof window !== 'undefined' && window.AndroidIME?.getEditorText) {
+    try {
+      const live = window.AndroidIME.getEditorText(preferSelection);
+      if (typeof live === 'string' && live.trim()) {
+        return live;
+      }
+    } catch {
+      // Fallback to React state
+    }
+  }
+  return fallbackText;
+}
+
+async function consumeTextOrJsonStream(
+  res: Response,
+  jsonKey: 'translated' | 'result',
+  fallbackError: string,
+  onPartial: (text: string) => void
+): Promise<string> {
+  const ct = (res.headers.get('content-type') || '').toLowerCase();
+  if (!res.ok) {
+    if (ct.includes('application/json')) {
+      const errData = (await res.json()) as { error?: string };
+      throw new Error(errData.error || fallbackError);
+    }
+    const errText = (await res.text()).trim();
+    throw new Error(errText || fallbackError);
+  }
+
+  if (ct.includes('application/json') || !res.body) {
+    const data = (await res.json()) as Record<string, unknown>;
+    const finalVal = typeof data[jsonKey] === 'string' ? (data[jsonKey] as string).trim() : '';
+    if (finalVal) onPartial(finalVal);
+    return finalVal;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let acc = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) {
+      acc += decoder.decode(value, { stream: true });
+      const trimmedStart = acc.trimStart();
+      if (trimmedStart) onPartial(trimmedStart);
+    }
+  }
+  acc += decoder.decode();
+  const finalVal = acc.trim();
+  if (finalVal) onPartial(finalVal);
+  return finalVal;
+}
+
 interface TranslatePanelProps {
   theme: KeyboardTheme;
   settings: KeyboardSettings;
   editorText: string;
   initialText?: string | null;
+  onUpdateSettings?: (patch: Partial<KeyboardSettings>) => void;
   onInsertTranslated: (text: string, replaceAll: boolean) => void;
   onClose: () => void;
 }
@@ -1473,16 +1540,23 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
   settings,
   editorText,
   initialText,
+  onUpdateSettings,
   onInsertTranslated,
   onClose,
 }) => {
   const isLight = Boolean(theme.isLight);
+  const preferSelection = settings.aiTextSource === 'selected_or_all';
   const [sourceLang, setSourceLang] = useState('ckb');
   const [targetLang, setTargetLang] = useState('en');
-  const [input, setInput] = useState(initialText ?? editorText);
+  const [input, setInput] = useState(() =>
+    initialText !== null && initialText !== undefined
+      ? initialText
+      : readLiveEditorText(preferSelection, editorText)
+  );
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (initialText !== null && initialText !== undefined) {
@@ -1490,25 +1564,54 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
     }
   }, [initialText]);
 
+  // Pre-warm Vercel serverless function in background when AI fluent mode is active
+  useEffect(() => {
+    const resolved = resolveAiServer(settings.aiServerUrl);
+    if (settings.translationEngine === 'ai_fluent' && resolved.source !== 'none') {
+      fetch(`${resolved.baseUrl}/api/health`).catch(() => {});
+    }
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, [settings.aiServerUrl, settings.translationEngine]);
+
   const handleTranslate = async () => {
-    const textToTranslate = (input || editorText).trim();
+    const liveFallback = readLiveEditorText(preferSelection, editorText);
+    const textToTranslate = (input || liveFallback).trim();
     if (!textToTranslate) {
       setError('تکایە دەقێک بنووسە بۆ وەرگێڕان.');
       return;
     }
+    if (!input.trim() && liveFallback.trim()) {
+      setInput(liveFallback.trim());
+    }
+
+    const engine = settings.translationEngine;
+    const cacheKey = `${engine}|${sourceLang}|${targetLang}|${textToTranslate}`;
+    const cached = translateCache.get(cacheKey);
+    if (cached) {
+      setError(null);
+      setOutput(cached);
+      return;
+    }
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
 
     const resolved = resolveAiServer(settings.aiServerUrl);
 
-    const translateKeylessOnline = async (): Promise<string> => {
+    const translateGoogleDirect = async (): Promise<string> => {
       const sl = sourceLang || 'auto';
       const tl = targetLang || 'en';
       const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(
         sl
       )}&tl=${encodeURIComponent(tl)}&dt=t&q=${encodeURIComponent(textToTranslate)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('هەڵە لە پەیوەندی بە وەرگێڕەوە ڕوویدا.');
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) throw new Error('هەڵە لە پەیوەندی بە وەرگێڕی گوگڵەوە ڕوویدا.');
       const json = (await res.json()) as unknown[];
       const segments = Array.isArray(json?.[0]) ? (json[0] as unknown[][]) : [];
       const joined = segments
@@ -1519,51 +1622,73 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
       return joined;
     };
 
+    const translateWithGeminiServer = async (): Promise<string> => {
+      const res = await fetch(`${resolved.baseUrl}/api/ai/translate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          text: textToTranslate,
+          sourceLang,
+          targetLang,
+          engine,
+          stream: true,
+        }),
+      });
+      return consumeTextOrJsonStream(
+        res,
+        'translated',
+        'هەڵە لە سێرڤەری AI ـدا ڕوویدا.',
+        (partial) => setOutput(partial)
+      );
+    };
+
     try {
-      if (resolved.source !== 'none') {
+      // Fast Google mode: hit Google Translate directly (~150-300ms) instead of waiting for Vercel + LLM!
+      if (engine === 'google_fast') {
         try {
-          const res = await fetch(`${resolved.baseUrl}/api/ai/translate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text: textToTranslate,
-              sourceLang,
-              targetLang,
-              engine: settings.translationEngine,
-            }),
-          });
-          const data = (await res.json()) as { translated?: string; error?: string };
-          if (res.ok && data.translated) {
-            setOutput(data.translated);
-            return;
+          const fastResult = await translateGoogleDirect();
+          setBoundedCache(translateCache, cacheKey, fastResult);
+          setOutput(fastResult);
+          return;
+        } catch (googleErr: unknown) {
+          if (controller.signal.aborted) return;
+          if (resolved.source !== 'none') {
+            const aiFallback = await translateWithGeminiServer();
+            if (aiFallback) {
+              setBoundedCache(translateCache, cacheKey, aiFallback);
+              setOutput(aiFallback);
+              return;
+            }
           }
-          if (
-            (resolved.source === 'settings' || resolved.source === 'env') &&
-            settings.translationEngine === 'ai_fluent'
-          ) {
-            throw new Error(data.error || 'هەڵە لە سێرڤەری AI ـدا ڕوویدا.');
-          }
-        } catch (serverErr: unknown) {
-          if (
-            (resolved.source === 'settings' || resolved.source === 'env') &&
-            settings.translationEngine === 'ai_fluent'
-          ) {
-            throw serverErr;
-          }
-          // Fall through to keyless public translation for fast mode
+          throw googleErr;
         }
       }
 
-      const fallbackTranslated = await translateKeylessOnline();
+      // Fluent Gemini AI mode: stream from Vercel/server first, fallback to Google direct if no server configured
+      if (resolved.source !== 'none') {
+        const streamed = await translateWithGeminiServer();
+        if (streamed) {
+          setBoundedCache(translateCache, cacheKey, streamed);
+          setOutput(streamed);
+          return;
+        }
+      }
+
+      const fallbackTranslated = await translateGoogleDirect();
+      setBoundedCache(translateCache, cacheKey, fallbackTranslated);
       setOutput(fallbackTranslated);
     } catch (e: unknown) {
+      if (controller.signal.aborted) return;
       setError(
         e instanceof Error
           ? e.message
           : 'هەڵەی پەیوەندی ڕوویدا. دڵنیابە لە بوونی ئینتەرنێت.'
       );
     } finally {
-      setLoading(false);
+      if (abortRef.current === controller) {
+        setLoading(false);
+      }
     }
   };
 
@@ -1576,20 +1701,42 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
       }}
       dir="rtl"
     >
-      <div className="flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <KurdiIcon name="ic_translate" className="w-4 h-4 text-sky-400" />
-          <span className={`text-sm font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+      <div className="flex items-center justify-between shrink-0 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <KurdiIcon name="ic_translate" className="w-4 h-4 text-sky-400 shrink-0" />
+          <span className={`text-sm font-bold shrink-0 ${isLight ? 'text-slate-900' : 'text-white'}`}>
             وەرگێڕان
           </span>
-          <span className="text-[11px] text-zinc-400">
-            · {settings.translationEngine === 'ai_fluent' ? 'ژیری دەسکرد (ڕەوان)' : 'خێرا'}
-          </span>
+          {onUpdateSettings ? (
+            <button
+              type="button"
+              onClick={() =>
+                onUpdateSettings({
+                  translationEngine:
+                    settings.translationEngine === 'google_fast' ? 'ai_fluent' : 'google_fast',
+                })
+              }
+              className={`h-6 px-2.5 rounded-full text-[10.5px] font-bold transition-colors truncate ${
+                settings.translationEngine === 'ai_fluent'
+                  ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30'
+                  : isLight
+                  ? 'bg-slate-200 text-slate-700'
+                  : 'bg-white/10 text-zinc-300'
+              }`}
+              title="گۆڕینی بزوێنەری وەرگێڕان"
+            >
+              {settings.translationEngine === 'ai_fluent' ? 'Gemini زیرەک' : 'گوگڵ خێرا'}
+            </button>
+          ) : (
+            <span className="text-[11px] text-zinc-400 truncate">
+              · {settings.translationEngine === 'ai_fluent' ? 'Gemini زیرەک' : 'گوگڵ خێرا'}
+            </span>
+          )}
         </div>
         <button
           type="button"
           onClick={onClose}
-          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
             isLight ? 'bg-slate-200 text-slate-900' : 'bg-zinc-800 text-white'
           }`}
         >
@@ -1676,7 +1823,7 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
         }`}
       >
         {error ? (
-          <p className="text-xs text-rose-400">{error}</p>
+          <p className="text-xs text-rose-400 my-auto text-center">{error}</p>
         ) : output ? (
           <>
             <p className="text-sm leading-relaxed select-text" dir="auto">
@@ -1741,15 +1888,47 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
   onClose,
 }) => {
   const isLight = Boolean(theme.isLight);
+  const preferSelection = settings.aiTextSource === 'selected_or_all';
   const [activeMode, setActiveMode] = useState<(typeof AI_MODES)[number]['id']>('fix');
+  const [capturedText, setCapturedText] = useState<string>(() =>
+    readLiveEditorText(preferSelection, editorText)
+  );
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Sync live host text & pre-warm Vercel serverless endpoint as soon as panel opens
+  useEffect(() => {
+    const live = readLiveEditorText(preferSelection, editorText);
+    if (live.trim()) {
+      setCapturedText(live);
+    }
+    const resolved = resolveAiServer(settings.aiServerUrl);
+    if (resolved.source !== 'none') {
+      fetch(`${resolved.baseUrl}/api/health`).catch(() => {});
+    }
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, [editorText, preferSelection, settings.aiServerUrl]);
 
   const runRewrite = async (mode: (typeof AI_MODES)[number]['id']) => {
     setActiveMode(mode);
-    if (!editorText.trim()) {
+    const liveText = readLiveEditorText(preferSelection, capturedText || editorText).trim();
+    setCapturedText(liveText);
+
+    if (!liveText) {
+      setResult('');
       setError('سەرەتا دەقێک لە خانەی نووسیندا بنووسە.');
+      return;
+    }
+
+    const cacheKey = `${mode}|${liveText}`;
+    const cached = rewriteCache.get(cacheKey);
+    if (cached) {
+      setError(null);
+      setResult(cached);
       return;
     }
 
@@ -1757,24 +1936,41 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
 
     if (resolved.source === 'none') {
       setError(null);
-      setResult(runOfflineSmartRewrite(editorText, mode));
+      setResult(runOfflineSmartRewrite(liveText, mode));
       return;
     }
 
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
+    setResult('');
     try {
       const res = await fetch(`${resolved.baseUrl}/api/ai/rewrite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: editorText, mode }),
+        signal: controller.signal,
+        body: JSON.stringify({ text: liveText, mode, stream: true }),
       });
-      const data = (await res.json()) as { result?: string; error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || 'هەڵە لە داڕشتنەوەدا ڕوویدا.');
+
+      const finalResult = await consumeTextOrJsonStream(
+        res,
+        'result',
+        'هەڵە لە داڕشتنەوەدا ڕوویدا.',
+        (partial) => {
+          setLoading(false);
+          setResult(partial);
+        }
+      );
+
+      if (finalResult) {
+        setBoundedCache(rewriteCache, cacheKey, finalResult);
+        setResult(finalResult);
       }
-      setResult(data.result || '');
     } catch (err: unknown) {
+      if (controller.signal.aborted) return;
       if (resolved.source === 'settings' || resolved.source === 'env') {
         setError(
           err instanceof Error
@@ -1782,11 +1978,12 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
             : 'نەتوانرا پەیوەندی بە سێرڤەری AI ـەوە بکرێت. دڵنیابە لە بەستەری Vercel و ئینتەرنێت.'
         );
       } else {
-        // Seamless local Kurdish fallback on preview when no custom server is configured
-        setResult(runOfflineSmartRewrite(editorText, mode));
+        setResult(runOfflineSmartRewrite(liveText, mode));
       }
     } finally {
-      setLoading(false);
+      if (abortRef.current === controller) {
+        setLoading(false);
+      }
     }
   };
 
@@ -1800,16 +1997,16 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
       dir="rtl"
     >
       <div className="flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <KurdiIcon name="ic_smart" className="w-4 h-4 text-sky-400" />
-          <span className={`text-sm font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <KurdiIcon name="ic_smart" className="w-4 h-4 text-sky-400 shrink-0" />
+          <span className={`text-sm font-bold shrink-0 ${isLight ? 'text-slate-900' : 'text-white'}`}>
             وەڵامدەرەوەی زیرەک (AI)
           </span>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
             isLight ? 'bg-slate-200 text-slate-900' : 'bg-zinc-800 text-white'
           }`}
         >
@@ -1823,7 +2020,6 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
             key={m.id}
             type="button"
             onClick={() => runRewrite(m.id)}
-            disabled={loading}
             className={`h-8 px-3 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
               activeMode === m.id
                 ? 'bg-[#0B5FA8] text-white'
@@ -1844,7 +2040,7 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
             : 'bg-[#121418] border-white/5 text-white'
         }`}
       >
-        {loading ? (
+        {loading && !result ? (
           <div className="flex items-center justify-center gap-2 my-auto text-sky-400 text-xs">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>ژیری دەسکرد خەریکی داڕشتنەوەیە...</span>
@@ -1852,20 +2048,22 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
         ) : error ? (
           <div className="my-auto flex flex-col items-center gap-2 text-center px-2">
             <p className="text-xs text-rose-400 leading-relaxed">{error}</p>
-            <button
-              type="button"
-              onClick={() => {
-                setError(null);
-                setResult(runOfflineSmartRewrite(editorText, activeMode));
-              }}
-              className={`h-7 px-3 rounded-lg text-[11px] font-bold transition-colors ${
-                isLight
-                  ? 'bg-slate-200 text-slate-800 hover:bg-slate-300'
-                  : 'bg-white/10 text-zinc-200 hover:bg-white/15'
-              }`}
-            >
-              بەکارهێنانی دۆخی ئۆفڵاین
-            </button>
+            {capturedText.trim() && (
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setResult(runOfflineSmartRewrite(capturedText, activeMode));
+                }}
+                className={`h-7 px-3 rounded-lg text-[11px] font-bold transition-colors ${
+                  isLight
+                    ? 'bg-slate-200 text-slate-800 hover:bg-slate-300'
+                    : 'bg-white/10 text-zinc-200 hover:bg-white/15'
+                }`}
+              >
+                بەکارهێنانی دۆخی ئۆفڵاین
+              </button>
+            )}
           </div>
         ) : result ? (
           <>
@@ -1898,9 +2096,21 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
             </div>
           </>
         ) : (
-          <p className="text-xs text-zinc-500 my-auto text-center">
-            یەکێک لە شێوازەکانی سەرەوە هەڵبژێرە بۆ داڕشتنەوە و باشترکردنی دەقەکەت
-          </p>
+          <div className="my-auto text-center space-y-1.5 px-2">
+            {capturedText.trim() && (
+              <p
+                className={`text-[11px] truncate px-2.5 py-1 rounded-lg ${
+                  isLight ? 'bg-slate-100 text-slate-600' : 'bg-white/[0.04] text-zinc-400'
+                }`}
+                dir="auto"
+              >
+                «{capturedText.trim()}»
+              </p>
+            )}
+            <p className="text-xs text-zinc-500">
+              یەکێک لە شێوازەکانی سەرەوە هەڵبژێرە بۆ داڕشتنەوە و باشترکردنی دەقەکەت
+            </p>
+          </div>
         )}
       </div>
     </div>

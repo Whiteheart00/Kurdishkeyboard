@@ -55,6 +55,8 @@ interface AndroidImeBridge {
   hideKeyboard: () => void;
   openSettings: () => void;
   setKeyboardHeightDp: (dp: number) => void;
+  getEditorText?: (preferSelection: boolean) => string;
+  replaceAllText?: (text: string, preferSelection: boolean) => void;
 }
 
 interface AndroidAppSetupBridge {
@@ -69,7 +71,7 @@ declare global {
     AndroidIME?: AndroidImeBridge;
     AndroidAppSetup?: AndroidAppSetupBridge;
     __onAndroidClipboardSync?: (text: string) => void;
-    __onAndroidImeRefresh?: () => void;
+    __onAndroidImeRefresh?: (initialText?: string) => void;
     __onAndroidImeStatusChanged?: () => void;
   }
 }
@@ -350,6 +352,18 @@ export default function App() {
       });
     },
     [isNativeImeMode, pushUndo]
+  );
+
+  const handleReplaceAllText = useCallback(
+    (nextText: string) => {
+      if (isNativeImeMode && window.AndroidIME?.replaceAllText) {
+        window.AndroidIME.replaceAllText(nextText, settings.aiTextSource === 'selected_or_all');
+        setEditorText(nextText.slice(-1000));
+        return;
+      }
+      handleReplaceText(nextText);
+    },
+    [handleReplaceText, isNativeImeMode, settings.aiTextSource]
   );
 
   const handleBackspace = useCallback(() => {
@@ -771,10 +785,18 @@ export default function App() {
     window.__onAndroidClipboardSync = (text: string) => {
       if (text) saveToClipboard(text);
     };
-    window.__onAndroidImeRefresh = () => {
+    window.__onAndroidImeRefresh = (initialText?: string) => {
       setSettings(loadSettings());
       setClipboardItems(loadClipboard());
-      setEditorText('');
+      if (typeof initialText === 'string') {
+        setEditorText(initialText);
+      } else if (window.AndroidIME?.getEditorText) {
+        try {
+          setEditorText(window.AndroidIME.getEditorText(false) || '');
+        } catch {
+          setEditorText('');
+        }
+      }
     };
 
     const syncExactHeight = () => {
@@ -819,6 +841,7 @@ export default function App() {
             editorText={editorText}
             onInsertText={handleInsertText}
             onReplaceText={handleReplaceText}
+            onReplaceAllText={handleReplaceAllText}
             onBackspace={handleBackspace}
             onDeleteWord={handleDeleteWord}
             onMoveCursor={handleMoveCursor}
