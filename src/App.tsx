@@ -7,8 +7,14 @@ import {
   LanguageConfig,
   SettingsRoute,
 } from './types/keyboard';
-import { DEFAULT_SETTINGS, INITIAL_CLIPBOARD } from './data/defaultSettings';
+import {
+  DEFAULT_QUICK_SNIPPETS,
+  DEFAULT_SETTINGS,
+  DEFAULT_TOOLS_ORDER,
+  INITIAL_CLIPBOARD,
+} from './data/defaultSettings';
 import { findSubtypePreset } from './data/layouts';
+import { normalizeSwipeAction } from './data/gestures';
 import { preloadSoundPack } from './utils/sound';
 import { idbGet, idbSet, requestPersistentStorage } from './utils/persistentStorage';
 import { KurdiIcon, KurdiLogo } from './components/icons/KurdiIcons';
@@ -57,6 +63,8 @@ interface AndroidImeBridge {
   setKeyboardHeightDp: (dp: number) => void;
   getEditorText?: (preferSelection: boolean) => string;
   replaceAllText?: (text: string, preferSelection: boolean) => void;
+  moveCursorEx?: (dx: number, dy: number, select: boolean) => void;
+  moveLineEdge?: (toEnd: boolean, select: boolean) => void;
 }
 
 interface AndroidAppSetupBridge {
@@ -94,6 +102,17 @@ function hydrateSettings(partial: Partial<KeyboardSettings>): KeyboardSettings {
   if (typeof merged.aiServerUrl !== 'string') {
     merged.aiServerUrl = '';
   }
+  if (!Array.isArray(merged.quickSnippets)) {
+    merged.quickSnippets = DEFAULT_QUICK_SNIPPETS;
+  }
+  if (Array.isArray(merged.toolsOrder)) {
+    const missingTools = DEFAULT_TOOLS_ORDER.filter((t) => !merged.toolsOrder.includes(t));
+    if (missingTools.length > 0) {
+      merged.toolsOrder = [...missingTools, ...merged.toolsOrder];
+    }
+  } else {
+    merged.toolsOrder = DEFAULT_TOOLS_ORDER;
+  }
   if (Array.isArray(merged.enabledLanguages) && merged.enabledLanguages.length > 0) {
     merged.enabledLanguages = merged.enabledLanguages.map((lang: Partial<LanguageConfig>) => {
       const preset = findSubtypePreset(lang.code || 'ckb');
@@ -104,6 +123,58 @@ function hydrateSettings(partial: Partial<KeyboardSettings>): KeyboardSettings {
   }
   if (!merged.enabledLanguages.some((l) => l.code === merged.activeLanguage)) {
     merged.activeLanguage = merged.enabledLanguages[0].code;
+  }
+  // Normalize & migrate all 12 official KurdiKebord gesture preferences
+  merged.swipeUpAction = normalizeSwipeAction(partial.swipeUpAction, DEFAULT_SETTINGS.swipeUpAction);
+  merged.swipeDownAction = normalizeSwipeAction(partial.swipeDownAction, DEFAULT_SETTINGS.swipeDownAction);
+  merged.swipeLeftAction = normalizeSwipeAction(partial.swipeLeftAction, DEFAULT_SETTINGS.swipeLeftAction);
+  merged.swipeRightAction = normalizeSwipeAction(partial.swipeRightAction, DEFAULT_SETTINGS.swipeRightAction);
+  merged.spaceBarSwipeUpAction = normalizeSwipeAction(
+    partial.spaceBarSwipeUpAction,
+    DEFAULT_SETTINGS.spaceBarSwipeUpAction
+  );
+  const legacySpaceLeft =
+    partial.spaceBarSwipeLeftAction ??
+    (partial.spacebarSwipeAction === 'move_cursor'
+      ? 'move_cursor_left'
+      : partial.spacebarSwipeAction === 'none'
+      ? 'no_action'
+      : undefined);
+  const legacySpaceRight =
+    partial.spaceBarSwipeRightAction ??
+    (partial.spacebarSwipeAction === 'move_cursor'
+      ? 'move_cursor_right'
+      : partial.spacebarSwipeAction === 'none'
+      ? 'no_action'
+      : undefined);
+  merged.spaceBarSwipeLeftAction = normalizeSwipeAction(
+    legacySpaceLeft,
+    DEFAULT_SETTINGS.spaceBarSwipeLeftAction
+  );
+  merged.spaceBarSwipeRightAction = normalizeSwipeAction(
+    legacySpaceRight,
+    DEFAULT_SETTINGS.spaceBarSwipeRightAction
+  );
+  merged.spaceBarLongPressAction = normalizeSwipeAction(
+    partial.spaceBarLongPressAction,
+    DEFAULT_SETTINGS.spaceBarLongPressAction
+  );
+  const legacyDelSwipe =
+    partial.deleteKeySwipeLeftAction ??
+    (partial.backspaceSwipeDeleteWord === false ? 'no_action' : undefined);
+  merged.deleteKeySwipeLeftAction = normalizeSwipeAction(
+    legacyDelSwipe,
+    DEFAULT_SETTINGS.deleteKeySwipeLeftAction
+  );
+  merged.deleteKeyLongPressAction = normalizeSwipeAction(
+    partial.deleteKeyLongPressAction,
+    DEFAULT_SETTINGS.deleteKeyLongPressAction
+  );
+  if (typeof merged.swipeDistanceThreshold !== 'number' || merged.swipeDistanceThreshold < 16) {
+    merged.swipeDistanceThreshold = DEFAULT_SETTINGS.swipeDistanceThreshold;
+  }
+  if (typeof merged.swipeVelocityThreshold !== 'number' || merged.swipeVelocityThreshold < 50) {
+    merged.swipeVelocityThreshold = DEFAULT_SETTINGS.swipeVelocityThreshold;
   }
   return merged;
 }
@@ -485,6 +556,97 @@ export default function App() {
     el.setSelectionRange(pos, pos);
   }, [isNativeImeMode]);
 
+  const handleMoveCursorEx = useCallback(
+    (dx: number, dy: number, select: boolean) => {
+      if (isNativeImeMode && window.AndroidIME) {
+        if (window.AndroidIME.moveCursorEx) {
+          window.AndroidIME.moveCursorEx(dx, dy, select);
+        } else if (dx !== 0) {
+          window.AndroidIME.moveCursor(dx);
+        }
+        return;
+      }
+      const el = textareaRef.current;
+      if (!el) return;
+      el.focus();
+      const val = el.value;
+      const start = el.selectionStart ?? 0;
+      const end = el.selectionEnd ?? start;
+      const dir = el.selectionDirection || 'forward';
+      const anchor = dir === 'backward' ? end : start;
+      let focus = dir === 'backward' ? start : end;
+
+      const isRtl =
+        /[\u0600-\u06FF]/.test(val) || window.getComputedStyle(el).direction === 'rtl';
+
+      if (dx !== 0) {
+        const indexDelta = isRtl ? -dx : dx;
+        if (!select && start !== end) {
+          focus = indexDelta < 0 ? start : end;
+        } else {
+          focus = Math.max(0, Math.min(val.length, focus + indexDelta));
+        }
+      } else if (dy !== 0) {
+        const lines = val.split('\n');
+        let lineIdx = 0;
+        let col = focus;
+        for (let i = 0; i < lines.length; i++) {
+          if (col <= lines[i].length) {
+            lineIdx = i;
+            break;
+          }
+          col -= lines[i].length + 1;
+        }
+        const targetLine = Math.max(0, Math.min(lines.length - 1, lineIdx + dy));
+        let nextPos = 0;
+        for (let i = 0; i < targetLine; i++) nextPos += lines[i].length + 1;
+        nextPos += Math.min(col, lines[targetLine].length);
+        focus = nextPos;
+      }
+
+      if (select) {
+        const s = Math.min(anchor, focus);
+        const e = Math.max(anchor, focus);
+        el.setSelectionRange(s, e, focus < anchor ? 'backward' : 'forward');
+      } else {
+        el.setSelectionRange(focus, focus);
+      }
+    },
+    [isNativeImeMode]
+  );
+
+  const handleMoveLineEdge = useCallback(
+    (toEnd: boolean, select: boolean) => {
+      if (isNativeImeMode && window.AndroidIME?.moveLineEdge) {
+        window.AndroidIME.moveLineEdge(toEnd, select);
+        return;
+      }
+      const el = textareaRef.current;
+      if (!el) return;
+      el.focus();
+      const val = el.value;
+      const start = el.selectionStart ?? 0;
+      const end = el.selectionEnd ?? start;
+      const dir = el.selectionDirection || 'forward';
+      const anchor = dir === 'backward' ? end : start;
+      const focus = dir === 'backward' ? start : end;
+
+      const lineStart = val.lastIndexOf('\n', Math.max(0, focus - 1)) + 1;
+      const nextNl = val.indexOf('\n', focus);
+      const lineEnd = nextNl === -1 ? val.length : nextNl;
+      const target = toEnd ? lineEnd : lineStart;
+
+      if (select) {
+        const s = Math.min(anchor, target);
+        const e = Math.max(anchor, target);
+        el.setSelectionRange(s, e, target < anchor ? 'backward' : 'forward');
+      } else {
+        el.setSelectionRange(target, target);
+      }
+    },
+    [isNativeImeMode]
+  );
+
   const handleSelectAll = useCallback(() => {
     if (isNativeImeMode && window.AndroidIME) {
       window.AndroidIME.selectAll();
@@ -845,6 +1007,8 @@ export default function App() {
             onBackspace={handleBackspace}
             onDeleteWord={handleDeleteWord}
             onMoveCursor={handleMoveCursor}
+            onMoveCursorEx={handleMoveCursorEx}
+            onMoveLineEdge={handleMoveLineEdge}
             onSelectAll={handleSelectAll}
             onCopy={handleCopy}
             onCut={handleCut}
@@ -1104,9 +1268,12 @@ export default function App() {
                   editorText={editorText}
                   onInsertText={handleInsertText}
                   onReplaceText={handleReplaceText}
+                  onReplaceAllText={handleReplaceAllText}
                   onBackspace={handleBackspace}
                   onDeleteWord={handleDeleteWord}
                   onMoveCursor={handleMoveCursor}
+                  onMoveCursorEx={handleMoveCursorEx}
+                  onMoveLineEdge={handleMoveLineEdge}
                   onSelectAll={handleSelectAll}
                   onCopy={handleCopy}
                   onCut={handleCut}

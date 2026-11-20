@@ -33,6 +33,52 @@ async function readJsonBody(req: VercelRequest): Promise<Record<string, unknown>
   return JSON.parse(raw) as Record<string, unknown>;
 }
 
+function buildRewritePrompt(
+  mode: string,
+  customPrompt: string,
+  tone?: { style?: string; intent?: string; length?: string }
+): { model: string; systemInstruction: string } {
+  const modeInstructions: Record<string, string> = {
+    fix: 'Fix spelling, grammar, Kurdish/Arabic Unicode orthography (ی، ک، ە), and punctuation in the exact same language without changing meaning.',
+    formal: 'Rewrite in a polite, respectful, formal tone in the exact same language.',
+    friendly: 'Rewrite in a warm, natural, friendly conversational tone in the exact same language.',
+    shorten: 'Summarize and make the text much more concise and punchy while keeping core meaning, in the exact same language.',
+    reply: 'Write a brief, natural, polite reply to this message in the exact same language.',
+    badini: [
+      'You are an expert native speaker of Bahdini Kurdish (Duhok & Zakho Kurmanji written in Kurdish Arabic script).',
+      'Translate and convert the entire input cleanly into 100% authentic, natural Bahdini Kurdish in Kurdish Arabic script.',
+      'Use authentic Bahdini pronouns, vocabulary, and verb forms (e.g., ئەز، تو، ئەم، هوین، ئەڤە، ئەڤرۆ، نوکە، گەلەک، چەوانی، هەڤال، دگەل، ل، لێ، چونکی، هەمی، چو، ئاریشە، بەرسڤ، پسیار، دڤێت، دبێژم، دکەم، دچم، دشێم، نەشێم، نینە).',
+      'Do NOT leave Sorani vocabulary or Sorani verb prefixes (دە-) or Sorani clitics untouched. Ensure the output sounds completely natural to a native Duhok/Zakho speaker.',
+    ].join(' '),
+    sorani: [
+      'You are an expert native speaker of Central Kurdish (Sorani in standard Kurdish Arabic script).',
+      'Translate and convert the entire input cleanly into 100% authentic, natural Sorani Kurdish (e.g., سڵاو، چۆنیت، زۆر، ئێستا، ئەمڕۆ، هاوڕێ، لەگەڵ، لە، بەڵام، چونکە، هەموو، کێشە، وەڵام، دەمەوێت، دەڵێم، دەکەم، دەتوانم، ناتوانم، نییە).',
+      'Ensure clean standard Sorani orthography (ی، ک، ە، ڕ، ڵ، ۆ، ێ).',
+    ].join(' '),
+    poetic: [
+      'Transform the input into genuinely vivid, deeply poetic and lyrical writing in the exact same language.',
+      'If the input is Kurdish, write evocative Kurdish literary poetry or lyrical poetic prose (2 to 4 flowing lines with rich metaphor, emotion, rhythm, and musical Kurdish vocabulary — like classic/modern Kurdish poets).',
+      'Do NOT merely copy the input with a plain prefix; genuinely re-imagine the message poetically while keeping its heart and meaning.',
+    ].join(' '),
+    expand: [
+      'Genuinely expand and elaborate the input into a rich, well-structured, natural 2 to 4 sentence message in the exact same language.',
+      'Add helpful context, natural flow, and clear detail that deepens the original idea while staying faithful to the sender’s intent.',
+      'Do NOT just repeat the input with a single generic closing phrase; make the expanded text noticeably fuller, smoother, and genuinely useful.',
+    ].join(' '),
+    explain: 'Explain the meaning and usage of this text clearly and simply in 1–3 concise sentences in Kurdish Sorani (or the same language if English/Arabic).',
+    rephrase: 'Rephrase this text with fresh, smoother, more natural wording while preserving the exact same meaning and language.',
+    tone: `Rewrite the text in the exact same language with these parameters: Style=${tone?.style || 'casual'}, Intent=${tone?.intent || 'polite'}, Length=${tone?.length || 'medium'}. Preserve facts and meaning.`,
+    custom: customPrompt
+      ? `Follow this instruction carefully for the input text: ${customPrompt}`
+      : 'Improve clarity and natural flow in the exact same language.',
+  };
+
+  const model = 'gemini-3.1-flash-lite';
+  const instruction = modeInstructions[mode] || modeInstructions.fix;
+  const systemInstruction = `${instruction} Output ONLY the final text with no markdown fences, no quotation marks, and no commentary.`;
+  return { model, systemInstruction };
+}
+
 export default async function handler(req: VercelRequest, res: ServerResponse) {
   setCors(res);
 
@@ -51,6 +97,11 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
     const body = await readJsonBody(req);
     const text = typeof body.text === 'string' ? body.text : '';
     const mode = typeof body.mode === 'string' ? body.mode : 'fix';
+    const customPrompt = typeof body.customPrompt === 'string' ? body.customPrompt.trim() : '';
+    const tone =
+      body.tone && typeof body.tone === 'object'
+        ? (body.tone as { style?: string; intent?: string; length?: string })
+        : undefined;
     const wantStream = body.stream === true;
 
     if (!text.trim()) {
@@ -75,26 +126,18 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
       },
     });
 
-    const modeInstructions: Record<string, string> = {
-      fix: 'Fix spelling, grammar, and punctuation in the same language (Kurdish Sorani, English, or Arabic).',
-      formal: 'Rewrite in a polite, formal tone in the same language.',
-      friendly: 'Rewrite in a warm, friendly tone in the same language.',
-      shorten: 'Make concise and clear in the same language.',
-      reply: 'Write a brief, natural polite reply in the same language.',
-    };
-
-    const instruction = modeInstructions[mode] || modeInstructions.fix;
-    const systemInstruction = `${instruction} Output ONLY the final text with no quotes or notes.`;
+    const { model, systemInstruction } = buildRewritePrompt(mode, customPrompt, tone);
+    const thinkingLevel = ThinkingLevel.MINIMAL;
 
     if (wantStream) {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache');
       const stream = await ai.models.generateContentStream({
-        model: 'gemini-3.1-flash-lite',
+        model,
         contents: text.trim(),
         config: {
-          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+          thinkingConfig: { thinkingLevel },
           systemInstruction,
         },
       });
@@ -108,10 +151,10 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite',
+      model,
       contents: text.trim(),
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+        thinkingConfig: { thinkingLevel },
         systemInstruction,
       },
     });

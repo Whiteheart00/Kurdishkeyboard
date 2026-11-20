@@ -295,6 +295,37 @@ public class KurdiKeyboardImeService extends InputMethodService {
         }
 
         @JavascriptInterface
+        public void moveCursorEx(final int dx, final int dy, final boolean select) {
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic == null) return;
+                int keyCode;
+                if (dy < 0) keyCode = KeyEvent.KEYCODE_DPAD_UP;
+                else if (dy > 0) keyCode = KeyEvent.KEYCODE_DPAD_DOWN;
+                else if (dx < 0) keyCode = KeyEvent.KEYCODE_DPAD_LEFT;
+                else keyCode = KeyEvent.KEYCODE_DPAD_RIGHT;
+
+                long now = android.os.SystemClock.uptimeMillis();
+                int meta = select ? KeyEvent.META_SHIFT_ON : 0;
+                ic.sendKeyEvent(new KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta));
+                ic.sendKeyEvent(new KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta));
+            });
+        }
+
+        @JavascriptInterface
+        public void moveLineEdge(final boolean toEnd, final boolean select) {
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic == null) return;
+                int keyCode = toEnd ? KeyEvent.KEYCODE_MOVE_END : KeyEvent.KEYCODE_MOVE_HOME;
+                long now = android.os.SystemClock.uptimeMillis();
+                int meta = select ? KeyEvent.META_SHIFT_ON : 0;
+                ic.sendKeyEvent(new KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta));
+                ic.sendKeyEvent(new KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta));
+            });
+        }
+
+        @JavascriptInterface
         public void selectAll() {
             mainHandler.post(() -> {
                 InputConnection ic = getCurrentInputConnection();

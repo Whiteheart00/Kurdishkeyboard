@@ -1,0 +1,139 @@
+================================================================================
+KurdiKeBord - Gesture / Swipe Related Code (Extracted from classes.dex)
+Decompiled with JADX 1.5.0
+Note: The app is heavily obfuscated with R8. Most logic is in defpackage.* classes.
+Only the public enums and route class related to Gestures are clearly recoverable.
+================================================================================
+
+================================================================================
+1. SwipeAction.java
+Package: com.goran.kurdikeyboard.ime.text.gestures
+This enum defines ALL possible actions that can be assigned to a swipe gesture.
+================================================================================
+
+package com.goran.kurdikeyboard.ime.text.gestures;
+
+public final class SwipeAction {
+    public static final SwipeAction NO_ACTION = new SwipeAction("NO_ACTION", 0);
+    public static final SwipeAction CYCLE_TO_PREVIOUS_KEYBOARD_MODE = new SwipeAction("CYCLE_TO_PREVIOUS_KEYBOARD_MODE", 1);
+    public static final SwipeAction CYCLE_TO_NEXT_KEYBOARD_MODE = new SwipeAction("CYCLE_TO_NEXT_KEYBOARD_MODE", 2);
+    public static final SwipeAction DELETE_CHARACTER = new SwipeAction("DELETE_CHARACTER", 3);
+    public static final SwipeAction DELETE_CHARACTERS_PRECISELY = new SwipeAction("DELETE_CHARACTERS_PRECISELY", 4);
+    public static final SwipeAction DELETE_WORD = new SwipeAction("DELETE_WORD", 5);
+    public static final SwipeAction DELETE_WORDS_PRECISELY = new SwipeAction("DELETE_WORDS_PRECISELY", 6);
+    public static final SwipeAction HIDE_KEYBOARD = new SwipeAction("HIDE_KEYBOARD", 7);
+    public static final SwipeAction INSERT_SPACE = new SwipeAction("INSERT_SPACE", 8);
+    public static final SwipeAction MOVE_CURSOR_UP = new SwipeAction("MOVE_CURSOR_UP", 9);
+    public static final SwipeAction MOVE_CURSOR_DOWN = new SwipeAction("MOVE_CURSOR_DOWN", 10);
+    public static final SwipeAction MOVE_CURSOR_LEFT = new SwipeAction("MOVE_CURSOR_LEFT", 11);
+    public static final SwipeAction MOVE_CURSOR_RIGHT = new SwipeAction("MOVE_CURSOR_RIGHT", 12);
+    public static final SwipeAction MOVE_CURSOR_START_OF_LINE = new SwipeAction("MOVE_CURSOR_START_OF_LINE", 13);
+    public static final SwipeAction MOVE_CURSOR_END_OF_LINE = new SwipeAction("MOVE_CURSOR_END_OF_LINE", 14);
+    public static final SwipeAction MOVE_CURSOR_START_OF_PAGE = new SwipeAction("MOVE_CURSOR_START_OF_PAGE", 15);
+    public static final SwipeAction MOVE_CURSOR_END_OF_PAGE = new SwipeAction("MOVE_CURSOR_END_OF_PAGE", 16);
+    public static final SwipeAction REDO = new SwipeAction("REDO", 17);
+    public static final SwipeAction SELECT_CHARACTERS_PRECISELY = new SwipeAction("SELECT_CHARACTERS_PRECISELY", 18);
+    public static final SwipeAction SELECT_WORDS_PRECISELY = new SwipeAction("SELECT_WORDS_PRECISELY", 19);
+    public static final SwipeAction SHIFT = new SwipeAction("SHIFT", 20);
+    public static final SwipeAction SHOW_ARABIC_HARAKAT = new SwipeAction("SHOW_ARABIC_HARAKAT", 21);
+    public static final SwipeAction SHOW_INPUT_METHOD_PICKER = new SwipeAction("SHOW_INPUT_METHOD_PICKER", 22);
+    public static final SwipeAction SHOW_SUBTYPE_PICKER = new SwipeAction("SHOW_SUBTYPE_PICKER", 23);
+    public static final SwipeAction SPACE_BAR_CUSTOM_MENU = new SwipeAction("SPACE_BAR_CUSTOM_MENU", 24);
+    public static final SwipeAction SWITCH_TO_PREV_SUBTYPE = new SwipeAction("SWITCH_TO_PREV_SUBTYPE", 25);
+    public static final SwipeAction SWITCH_TO_NEXT_SUBTYPE = new SwipeAction("SWITCH_TO_NEXT_SUBTYPE", 26);
+    public static final SwipeAction SWITCH_TO_CLIPBOARD_CONTEXT = new SwipeAction("SWITCH_TO_CLIPBOARD_CONTEXT", 27);
+    public static final SwipeAction SWITCH_TO_MEDIA_CONTEXT = new SwipeAction("SWITCH_TO_MEDIA_CONTEXT", 28);
+    public static final SwipeAction SWITCH_TO_PREV_KEYBOARD = new SwipeAction("SWITCH_TO_PREV_KEYBOARD", 29);
+    public static final SwipeAction SWITCH_TO_SYMBOLS_KEYBOARD = new SwipeAction("SWITCH_TO_SYMBOLS_KEYBOARD", 30);
+    public static final SwipeAction TOGGLE_COMPACT_LAYOUT = new SwipeAction("TOGGLE_COMPACT_LAYOUT", 31);
+    public static final SwipeAction TOGGLE_SMARTBAR_VISIBILITY = new SwipeAction("TOGGLE_SMARTBAR_VISIBILITY", 32);
+    public static final SwipeAction UNDO = new SwipeAction("UNDO", 33);
+
+    // Standard enum methods (valueOf, values, getEntries) exist but are boilerplate.
+}
+
+
+================================================================================
+2. SwipeGesture$Direction.java
+Defines the 8 possible swipe directions.
+================================================================================
+
+package com.goran.kurdikeyboard.ime.text.gestures;
+
+public final class SwipeGesture$Direction {
+    public static final SwipeGesture$Direction UP_LEFT   = new SwipeGesture$Direction("UP_LEFT", 0);
+    public static final SwipeGesture$Direction UP        = new SwipeGesture$Direction("UP", 1);
+    public static final SwipeGesture$Direction UP_RIGHT  = new SwipeGesture$Direction("UP_RIGHT", 2);
+    public static final SwipeGesture$Direction RIGHT     = new SwipeGesture$Direction("RIGHT", 3);
+    public static final SwipeGesture$Direction DOWN_RIGHT= new SwipeGesture$Direction("DOWN_RIGHT", 4);
+    public static final SwipeGesture$Direction DOWN      = new SwipeGesture$Direction("DOWN", 5);
+    public static final SwipeGesture$Direction DOWN_LEFT = new SwipeGesture$Direction("DOWN_LEFT", 6);
+    public static final SwipeGesture$Direction LEFT      = new SwipeGesture$Direction("LEFT", 7);
+}
+
+
+================================================================================
+3. SwipeGesture$Type.java
+Defines the type of touch event for a gesture.
+================================================================================
+
+package com.goran.kurdikeyboard.ime.text.gestures;
+
+public final class SwipeGesture$Type {
+    public static final SwipeGesture$Type TOUCH_UP   = new SwipeGesture$Type("TOUCH_UP", 0);
+    public static final SwipeGesture$Type TOUCH_MOVE = new SwipeGesture$Type("TOUCH_MOVE", 1);
+}
+
+
+================================================================================
+4. Routes$Settings$Gestures.java
+Navigation route for the Gestures settings screen.
+================================================================================
+
+package com.goran.kurdikeyboard.app;
+
+public final class Routes$Settings$Gestures {
+    public static final Routes$Settings$Gestures INSTANCE = new Object();
+    // Contains serializer for navigation (Kotlin Serialization)
+}
+
+
+================================================================================
+5. Preference Keys used for Gestures (from strings and code)
+These are the keys stored in SharedPreferences / DataStore for gesture settings.
+================================================================================
+
+gestures__swipe_up
+gestures__swipe_down
+gestures__swipe_left
+gestures__swipe_right
+gestures__space_bar_swipe_up
+gestures__space_bar_swipe_left
+gestures__space_bar_swipe_right
+gestures__delete_key_swipe_left
+gestures__space_bar_long_press
+gestures__delete_key_long_press
+gestures__swipe_distance_threshold
+gestures__swipe_velocity_threshold
+
+
+================================================================================
+6. Important Notes for Google Studio AI / Developers
+================================================================================
+
+- The actual gesture detection and action execution logic is heavily obfuscated
+  (R8 full mode). Classes that perform the real work are in "defpackage" package
+  with short names (a, b, c, etc.).
+
+- SwipeAction is the central enum. When a swipe is detected in a certain Direction,
+  the corresponding SwipeAction (loaded from preferences) is executed.
+
+- Directions support 8-way detection (including diagonals: UP_LEFT, UP_RIGHT, etc.).
+
+- Space bar and Delete key have dedicated swipe actions (premium features in some cases).
+
+- Thresholds (distance + velocity) control how sensitive the swipe detection is.
+
+- This is based on FlorisBoard architecture, customized for Kurdish keyboard
+  (package: com.goran.kurdikeyboard).
+

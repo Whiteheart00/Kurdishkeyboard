@@ -1,8 +1,24 @@
 import React, { useRef, useState } from 'react';
 import { Check, ChevronDown, Pencil, Plus, X } from 'lucide-react';
-import { AppLanguageCode, AppThemeMode, KeyboardSettings, TextShortcut } from '../../types/keyboard';
+import {
+  AppLanguageCode,
+  AppThemeMode,
+  KeyboardSettings,
+  SwipeAction,
+  TextShortcut,
+} from '../../types/keyboard';
 import { playKeyFeedback, preloadSoundPack, SOUND_PACKS } from '../../utils/sound';
 import { getAppDirection, getFaqItems, tOfficial } from '../../data/officialData';
+import {
+  DELETE_LONG_PRESS_ACTIONS,
+  DELETE_SWIPE_LEFT_ACTIONS,
+  GENERAL_SWIPE_ACTIONS,
+  getSwipeActionLabel,
+  SPACEBAR_LONG_PRESS_ACTIONS,
+  SPACEBAR_SWIPE_ACTIONS,
+  SWIPE_DISTANCE_THRESHOLDS,
+  SWIPE_VELOCITY_THRESHOLDS,
+} from '../../data/gestures';
 import { KurdiIcon, KurdiIconName, KurdiLogo, PremiumBadgeIcon } from '../icons/KurdiIcons';
 import { AppToggle, NotificationBanner, ProBadge, SubPageHeader } from './SettingsUI';
 
@@ -284,115 +300,348 @@ export const SoundVibrationScreen: React.FC<BaseSubProps> = ({
   );
 };
 
-// 3. Gestures Screen matching Screenshots 21 & 25
+// 3. Official Full 12-Preference Gestures Screen (from KurdiKebord SwipeAction & strings.xml)
+interface GesturePickerState {
+  title: string;
+  current: SwipeAction;
+  options: SwipeAction[];
+  onSelect: (action: SwipeAction) => void;
+}
+
 export const GesturesScreen: React.FC<BaseSubProps> = ({
   settings,
   onUpdate,
   onBack,
   isLightApp,
 }) => {
-  const cycleSpaceSwipe = () => {
-    const order: KeyboardSettings['spacebarSwipeAction'][] = [
-      'switch_lang',
-      'move_cursor',
-      'none',
-    ];
-    const next = order[(order.indexOf(settings.spacebarSwipeAction) + 1) % order.length];
-    onUpdate({ spacebarSwipeAction: next });
+  const lang = settings.appLanguage || 'ckb';
+  const dir = getAppDirection(lang);
+  const [picker, setPicker] = useState<GesturePickerState | null>(null);
+
+  const isSpaceCursorMode =
+    settings.spaceBarSwipeLeftAction === 'move_cursor_left' &&
+    settings.spaceBarSwipeRightAction === 'move_cursor_right';
+
+  const applySpacebarPreset = (mode: 'lang' | 'cursor') => {
+    if (mode === 'cursor') {
+      onUpdate({
+        spaceBarSwipeLeftAction: 'move_cursor_left',
+        spaceBarSwipeRightAction: 'move_cursor_right',
+        spacebarSwipeAction: 'move_cursor',
+      });
+    } else {
+      onUpdate({
+        spaceBarSwipeLeftAction: 'switch_to_next_subtype',
+        spaceBarSwipeRightAction: 'switch_to_prev_subtype',
+        spacebarSwipeAction: 'switch_lang',
+      });
+    }
   };
 
+  const renderGestureRow = (
+    keyId: string,
+    title: string,
+    currentAction: SwipeAction,
+    options: SwipeAction[],
+    onSelect: (action: SwipeAction) => void,
+    isPro?: boolean
+  ) => (
+    <button
+      key={keyId}
+      type="button"
+      onClick={() => setPicker({ title, current: currentAction, options, onSelect })}
+      className={`w-full py-2.5 text-start border-b border-white/5 rounded-xl px-2 -mx-2 flex items-center justify-between gap-2 transition-colors ${
+        isLightApp ? 'hover:bg-slate-100 border-slate-200/80' : 'hover:bg-white/[0.04]'
+      }`}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-bold flex items-center gap-2">
+          <span className="truncate">{title}</span>
+          {isPro && <ProBadge unlocked={settings.proUnlocked} />}
+        </div>
+        <div className="text-xs text-[#9AC5FF] mt-0.5 truncate">
+          {getSwipeActionLabel(currentAction, lang)}
+        </div>
+      </div>
+      <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0" />
+    </button>
+  );
+
   return (
-    <div className="min-h-full flex flex-col pb-24" dir="rtl">
-      <SubPageHeader title="ئاماژەکان" onBack={onBack} isLightApp={isLightApp} />
+    <div className="min-h-full flex flex-col pb-24" dir={dir}>
+      <SubPageHeader
+        title={tOfficial(lang, 'settings__gestures__title', 'ئاماژەکان')}
+        onBack={onBack}
+        isLightApp={isLightApp}
+      />
       <div className="px-4 pt-3 space-y-5">
         <NotificationBanner
           enabled={settings.notificationsEnabled}
           onEnable={() => onUpdate({ notificationsEnabled: true })}
         />
 
-        <div className="space-y-3">
-          <div className="text-xs font-bold text-[#9AC5FF]">ئاماژە گشتییەکان</div>
-          {[
-            {
-              title: 'ڕاکێشان بۆ سەرەوە',
-              value: settings.swipeUpAction === 'shift' ? 'گەورەکردن (Shift)' : 'هیچ فەرمانێک',
-              onClick: () =>
-                onUpdate({
-                  swipeUpAction: settings.swipeUpAction === 'shift' ? 'none' : 'shift',
-                }),
-            },
-            {
-              title: 'ڕاکێشان بۆ خوارەوە',
-              value: settings.swipeDownAction === 'hide' ? 'لابردنی تەختەکلیل' : 'هیچ فەرمانێک',
-              onClick: () =>
-                onUpdate({
-                  swipeDownAction: settings.swipeDownAction === 'hide' ? 'none' : 'hide',
-                }),
-            },
-            {
-              title: 'ڕاکێشان بۆ لای چەپ',
-              value: 'گۆڕین بۆ زمانی دواتر',
-              onClick: () => onUpdate({ swipeLeftAction: 'next_lang' }),
-            },
-            {
-              title: 'ڕاکێشان بۆ لای ڕاست',
-              value: 'گۆڕین بۆ زمانی پێشوو',
-              onClick: () => onUpdate({ swipeRightAction: 'prev_lang' }),
-            },
-          ].map((item) => (
-            <button
-              key={item.title}
-              type="button"
-              onClick={item.onClick}
-              className="w-full py-2.5 text-right border-b border-white/5 hover:bg-white/[0.03] rounded-xl px-2 -mx-2"
-            >
-              <div className="text-sm font-bold">{item.title}</div>
-              <div className="text-xs text-zinc-400 mt-0.5">{item.value}</div>
-            </button>
-          ))}
-        </div>
-
-        <div className="space-y-3">
-          <div className="text-xs font-bold text-[#9AC5FF]">ئاماژەی دوگمەی بۆشایی</div>
+        {/* Quick 1-Tap Spacebar Mode Presets */}
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={cycleSpaceSwipe}
-            className="w-full py-2.5 text-right border-b border-white/5 hover:bg-white/[0.03] rounded-xl px-2 -mx-2 flex items-center justify-between"
+            onClick={() => applySpacebarPreset('lang')}
+            className={`h-10 px-3 rounded-2xl text-xs font-bold border transition-all ${
+              !isSpaceCursorMode
+                ? 'bg-[#A4C9FF] text-[#051B3A] border-[#A4C9FF]'
+                : isLightApp
+                ? 'bg-white border-slate-200 text-slate-700'
+                : 'bg-[#14171D] border-white/10 text-zinc-300'
+            }`}
           >
-            <div>
-              <div className="text-sm font-bold">ڕاکێشانی دوگمەی بۆشایی (چەپ / ڕاست)</div>
-              <div className="text-xs text-zinc-400 mt-0.5">
-                {settings.spacebarSwipeAction === 'switch_lang'
-                  ? 'گۆڕینی زمان'
-                  : settings.spacebarSwipeAction === 'move_cursor'
-                  ? 'جوڵاندنی نیشاندەری نووسین'
-                  : 'هیچ فەرمانێک'}
-              </div>
-            </div>
-            <ProBadge unlocked={settings.proUnlocked} />
+            بۆشایی ← گۆڕینی زمان
+          </button>
+          <button
+            type="button"
+            onClick={() => applySpacebarPreset('cursor')}
+            className={`h-10 px-3 rounded-2xl text-xs font-bold border transition-all ${
+              isSpaceCursorMode
+                ? 'bg-[#A4C9FF] text-[#051B3A] border-[#A4C9FF]'
+                : isLightApp
+                ? 'bg-white border-slate-200 text-slate-700'
+                : 'bg-[#14171D] border-white/10 text-zinc-300'
+            }`}
+          >
+            بۆشایی ← جووڵاندنی کێرسەر
           </button>
         </div>
 
-        <div className="space-y-3">
-          <div className="text-xs font-bold text-[#9AC5FF]">فەرمانەکانی تر</div>
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <div className="text-sm font-bold flex items-center gap-2">
-                <span>دوگمەی سڕینەوە بۆ لای چەپ</span>
-                <ProBadge unlocked={settings.proUnlocked} />
-              </div>
-              <div className="text-xs text-zinc-400 mt-0.5">
-                سڕینەوەی ووشەیەکی تەواو بە ڕاکێشانی دوگمەی سڕینەوە
-              </div>
+        {/* Section 1: General Gestures (4-way) */}
+        <div className="space-y-1.5">
+          <div className="text-xs font-bold text-[#9AC5FF]">
+            {tOfficial(lang, 'pref__gestures__general_title', 'ئاماژە گشتییەکان')}
+          </div>
+          {renderGestureRow(
+            'swipe_up',
+            tOfficial(lang, 'pref__gestures__swipe_up__label', 'ڕاکێشان بۆ سەرەوە'),
+            settings.swipeUpAction,
+            GENERAL_SWIPE_ACTIONS,
+            (a) => onUpdate({ swipeUpAction: a })
+          )}
+          {renderGestureRow(
+            'swipe_down',
+            tOfficial(lang, 'pref__gestures__swipe_down__label', 'ڕاکێشان بۆ خوارەوە'),
+            settings.swipeDownAction,
+            GENERAL_SWIPE_ACTIONS,
+            (a) => onUpdate({ swipeDownAction: a })
+          )}
+          {renderGestureRow(
+            'swipe_left',
+            tOfficial(lang, 'pref__gestures__swipe_left__label', 'ڕاکێشان بۆ لای چەپ'),
+            settings.swipeLeftAction,
+            GENERAL_SWIPE_ACTIONS,
+            (a) => onUpdate({ swipeLeftAction: a })
+          )}
+          {renderGestureRow(
+            'swipe_right',
+            tOfficial(lang, 'pref__gestures__swipe_right__label', 'ڕاکێشان بۆ لای ڕاست'),
+            settings.swipeRightAction,
+            GENERAL_SWIPE_ACTIONS,
+            (a) => onUpdate({ swipeRightAction: a })
+          )}
+        </div>
+
+        {/* Section 2: Space Bar Gestures (Up, Left, Right, Long Press) */}
+        <div className="space-y-1.5">
+          <div className="text-xs font-bold text-[#9AC5FF]">
+            {tOfficial(lang, 'pref__gestures__space_bar_title', 'ئاماژەی دوگمەی بۆشایی')}
+          </div>
+          {renderGestureRow(
+            'space_up',
+            tOfficial(lang, 'pref__gestures__space_bar_swipe_up__label', 'دوگمەی بۆشایی بۆ سەرەوە'),
+            settings.spaceBarSwipeUpAction,
+            SPACEBAR_SWIPE_ACTIONS,
+            (a) => onUpdate({ spaceBarSwipeUpAction: a })
+          )}
+          {renderGestureRow(
+            'space_left',
+            tOfficial(lang, 'pref__gestures__space_bar_swipe_left__label', 'دوگمەی بۆشایی بۆ لای چەپ'),
+            settings.spaceBarSwipeLeftAction,
+            SPACEBAR_SWIPE_ACTIONS,
+            (a) =>
+              onUpdate({
+                spaceBarSwipeLeftAction: a,
+                spacebarSwipeAction:
+                  a === 'move_cursor_left'
+                    ? 'move_cursor'
+                    : a === 'no_action'
+                    ? 'none'
+                    : 'switch_lang',
+              }),
+            true
+          )}
+          {renderGestureRow(
+            'space_right',
+            tOfficial(lang, 'pref__gestures__space_bar_swipe_right__label', 'دوگمەی بۆشایی بۆ لای ڕاست'),
+            settings.spaceBarSwipeRightAction,
+            SPACEBAR_SWIPE_ACTIONS,
+            (a) =>
+              onUpdate({
+                spaceBarSwipeRightAction: a,
+                spacebarSwipeAction:
+                  a === 'move_cursor_right'
+                    ? 'move_cursor'
+                    : a === 'no_action'
+                    ? 'none'
+                    : 'switch_lang',
+              }),
+            true
+          )}
+          {renderGestureRow(
+            'space_long_press',
+            tOfficial(lang, 'pref__gestures__space_bar_long_press__label', 'دوگمەی بۆشایی لەکاتی دەستڕاگرتن'),
+            settings.spaceBarLongPressAction,
+            SPACEBAR_LONG_PRESS_ACTIONS,
+            (a) => onUpdate({ spaceBarLongPressAction: a })
+          )}
+        </div>
+
+        {/* Section 3: Other Gestures & Thresholds */}
+        <div className="space-y-2.5">
+          <div className="text-xs font-bold text-[#9AC5FF]">
+            {tOfficial(lang, 'pref__gestures__other_title', 'فرمانەکانی تر')}
+          </div>
+          {renderGestureRow(
+            'delete_swipe_left',
+            tOfficial(lang, 'pref__gestures__delete_key_swipe_left__label', 'دوگمەی سڕینەوە بۆ لای چەپ'),
+            settings.deleteKeySwipeLeftAction,
+            DELETE_SWIPE_LEFT_ACTIONS,
+            (a) =>
+              onUpdate({
+                deleteKeySwipeLeftAction: a,
+                backspaceSwipeDeleteWord: a !== 'no_action',
+              }),
+            true
+          )}
+          {renderGestureRow(
+            'delete_long_press',
+            tOfficial(lang, 'pref__gestures__delete_key_long_press__label', 'دوگمەی سڕینەوە لەکاتی دەست ڕاگرتن'),
+            settings.deleteKeyLongPressAction,
+            DELETE_LONG_PRESS_ACTIONS,
+            (a) => onUpdate({ deleteKeyLongPressAction: a })
+          )}
+
+          {/* Swipe Distance Threshold */}
+          <div
+            className={`rounded-2xl p-3.5 border space-y-2.5 ${
+              isLightApp ? 'bg-white border-slate-200' : 'bg-[#12151C] border-white/[0.08]'
+            }`}
+          >
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span>{tOfficial(lang, 'pref__gestures__swipe_distance_threshold__label', 'ماوەی ڕاکێشان')}</span>
+              <span className="text-[#9AC5FF] tabular-nums">{settings.swipeDistanceThreshold} dp</span>
             </div>
-            <AppToggle
-              checked={settings.backspaceSwipeDeleteWord}
-              onChange={(v) => onUpdate({ backspaceSwipeDeleteWord: v })}
-              label="دوگمەی سڕینەوە بۆ لای چەپ"
-            />
+            <div className="grid grid-cols-5 gap-1.5">
+              {SWIPE_DISTANCE_THRESHOLDS.map((val) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => onUpdate({ swipeDistanceThreshold: val })}
+                  className={`h-8 rounded-xl text-xs font-bold tabular-nums transition-colors ${
+                    settings.swipeDistanceThreshold === val
+                      ? 'bg-[#A4C9FF] text-[#051B3A]'
+                      : isLightApp
+                      ? 'bg-slate-100 text-slate-700'
+                      : 'bg-white/[0.06] text-zinc-300'
+                  }`}
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Swipe Velocity Threshold */}
+          <div
+            className={`rounded-2xl p-3.5 border space-y-2.5 ${
+              isLightApp ? 'bg-white border-slate-200' : 'bg-[#12151C] border-white/[0.08]'
+            }`}
+          >
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span>{tOfficial(lang, 'pref__gestures__swipe_velocity_threshold__label', 'ئاستی خێرایی ڕاکێشان')}</span>
+              <span className="text-[#9AC5FF] tabular-nums">{settings.swipeVelocityThreshold} dp/s</span>
+            </div>
+            <div className="grid grid-cols-5 gap-1.5">
+              {SWIPE_VELOCITY_THRESHOLDS.map((val) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => onUpdate({ swipeVelocityThreshold: val })}
+                  className={`h-8 rounded-xl text-xs font-bold tabular-nums transition-colors ${
+                    settings.swipeVelocityThreshold === val
+                      ? 'bg-[#A4C9FF] text-[#051B3A]'
+                      : isLightApp
+                      ? 'bg-slate-100 text-slate-700'
+                      : 'bg-white/[0.06] text-zinc-300'
+                  }`}
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Action Picker Modal */}
+      {picker && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-3"
+          onClick={() => setPicker(null)}
+        >
+          <div
+            className={`w-full max-w-md max-h-[75vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden ${
+              isLightApp
+                ? 'bg-white border-slate-200 text-slate-900'
+                : 'bg-[#12151D] border-white/10 text-white'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            dir={dir}
+          >
+            <div className="px-4 py-3.5 border-b border-white/10 flex items-center justify-between gap-2 shrink-0">
+              <span className="text-sm font-extrabold truncate">{picker.title}</span>
+              <button
+                type="button"
+                onClick={() => setPicker(null)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                  isLightApp ? 'bg-slate-100 text-slate-800' : 'bg-white/10 text-white'
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="overflow-y-auto custom-scroll p-2 space-y-1">
+              {picker.options.map((act) => {
+                const active = picker.current === act;
+                return (
+                  <button
+                    key={act}
+                    type="button"
+                    onClick={() => {
+                      picker.onSelect(act);
+                      setPicker(null);
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-between gap-2 text-start transition-colors ${
+                      active
+                        ? 'bg-[#0B5FA8] text-white'
+                        : isLightApp
+                        ? 'hover:bg-slate-100 text-slate-800'
+                        : 'hover:bg-white/[0.06] text-zinc-200'
+                    }`}
+                  >
+                    <span className="truncate">{getSwipeActionLabel(act, lang)}</span>
+                    {active && <Check className="w-4 h-4 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

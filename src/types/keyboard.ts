@@ -1,6 +1,42 @@
 export type LanguageCode = string;
 export type AppLanguageCode = 'ckb' | 'kmr' | 'en' | 'ar' | 'fa';
 
+export type SwipeAction =
+  | 'no_action'
+  | 'cycle_to_previous_keyboard_mode'
+  | 'cycle_to_next_keyboard_mode'
+  | 'delete_character'
+  | 'delete_characters_precisely'
+  | 'delete_word'
+  | 'delete_words_precisely'
+  | 'hide_keyboard'
+  | 'insert_space'
+  | 'move_cursor_up'
+  | 'move_cursor_down'
+  | 'move_cursor_left'
+  | 'move_cursor_right'
+  | 'move_cursor_start_of_line'
+  | 'move_cursor_end_of_line'
+  | 'move_cursor_start_of_page'
+  | 'move_cursor_end_of_page'
+  | 'redo'
+  | 'select_characters_precisely'
+  | 'select_words_precisely'
+  | 'shift'
+  | 'show_arabic_harakat'
+  | 'show_input_method_picker'
+  | 'show_subtype_picker'
+  | 'space_bar_custom_menu'
+  | 'switch_to_prev_subtype'
+  | 'switch_to_next_subtype'
+  | 'switch_to_clipboard_context'
+  | 'switch_to_media_context'
+  | 'switch_to_prev_keyboard'
+  | 'switch_to_symbols_keyboard'
+  | 'toggle_compact_layout'
+  | 'toggle_smartbar_visibility'
+  | 'undo';
+
 export type KeyShapeStyle =
   | 'default'
   | 'flat'
@@ -161,6 +197,12 @@ export interface TextShortcut {
   expansion: string;
 }
 
+export interface QuickSnippet {
+  id: string;
+  label: string;
+  text: string;
+}
+
 export interface ClipboardItem {
   id: string;
   text: string;
@@ -259,11 +301,20 @@ export interface KeyboardSettings {
   soundVolume: number; // 0.1 - 1.0
   vibrationEnabled: boolean;
 
-  // Gestures
-  swipeUpAction: 'shift' | 'none' | 'numbers';
-  swipeDownAction: 'hide' | 'none';
-  swipeLeftAction: 'next_lang' | 'prev_lang' | 'none';
-  swipeRightAction: 'prev_lang' | 'next_lang' | 'none';
+  // Gestures (All 12 official KurdiKebord gesture preferences)
+  swipeUpAction: SwipeAction;
+  swipeDownAction: SwipeAction;
+  swipeLeftAction: SwipeAction;
+  swipeRightAction: SwipeAction;
+  spaceBarSwipeUpAction: SwipeAction;
+  spaceBarSwipeLeftAction: SwipeAction;
+  spaceBarSwipeRightAction: SwipeAction;
+  spaceBarLongPressAction: SwipeAction;
+  deleteKeySwipeLeftAction: SwipeAction;
+  deleteKeyLongPressAction: SwipeAction;
+  swipeDistanceThreshold: number; // dp (24 - 80)
+  swipeVelocityThreshold: number; // dp/s (100 - 700)
+  // Legacy compatibility mirrors
   spacebarSwipeAction: 'switch_lang' | 'move_cursor' | 'none';
   backspaceSwipeDeleteWord: boolean;
 
@@ -279,6 +330,7 @@ export interface KeyboardSettings {
   // External Keyboard & Tools Order
   physicalKeyboardSync: boolean;
   toolsOrder: string[];
+  quickSnippets: QuickSnippet[];
 
   // Custom Layouts (per layout id, rows of primary strings)
   customLayouts: Record<string, string[][]>;

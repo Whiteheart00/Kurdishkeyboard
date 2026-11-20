@@ -9,7 +9,9 @@ import {
   Pencil,
   Pin,
   Plus,
+  RefreshCw,
   Search,
+  SlidersHorizontal,
   X,
 } from 'lucide-react';
 import {
@@ -29,7 +31,7 @@ import {
 } from '../../data/richContent';
 import { ALL_THEMES } from '../../data/themes';
 import { KurdiIcon, KurdiIconName } from '../icons/KurdiIcons';
-import { runOfflineSmartRewrite } from '../../utils/kurdishSmartHelper';
+import { runOfflineSmartRewrite, ToneOptions } from '../../utils/kurdishSmartHelper';
 import { resolveAiServer } from '../../utils/aiServer';
 
 export type ActiveKeyboardPanel =
@@ -41,7 +43,9 @@ export type ActiveKeyboardPanel =
   | 'themes'
   | 'resize'
   | 'translate'
-  | 'ai_smart';
+  | 'ai_smart'
+  | 'cursor_control'
+  | 'snippets_calc';
 
 export type RichTab = 'emoji' | 'zikr' | 'kaomoji';
 
@@ -505,6 +509,9 @@ interface ToolsGridPanelProps {
 }
 
 const TOOL_META: Record<string, { label: string; icon: KurdiIconName }> = {
+  live_translate: { label: 'وەرگێڕانی ڕاستەوخۆ', icon: 'ic_translate' },
+  text_edit: { label: 'کۆنترۆڵی دەق و کێرسەر', icon: 'ic_select_all' },
+  snippets_calc: { label: 'کلێشە و بژمێری خێرا', icon: 'ic_note' },
   translate: { label: 'وەرگێڕان', icon: 'ic_translate' },
   resize: { label: 'گۆڕینی قەبارە', icon: 'ic_resize' },
   decorate: { label: 'جوانکاری نووسین', icon: 'ic_text' },
@@ -1523,6 +1530,7 @@ interface TranslatePanelProps {
   editorText: string;
   initialText?: string | null;
   onUpdateSettings?: (patch: Partial<KeyboardSettings>) => void;
+  onStartLiveTranslate?: () => void;
   onInsertTranslated: (text: string, replaceAll: boolean) => void;
   onClose: () => void;
 }
@@ -1541,6 +1549,7 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
   editorText,
   initialText,
   onUpdateSettings,
+  onStartLiveTranslate,
   onInsertTranslated,
   onClose,
 }) => {
@@ -1732,6 +1741,16 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
               · {settings.translationEngine === 'ai_fluent' ? 'Gemini زیرەک' : 'گوگڵ خێرا'}
             </span>
           )}
+          {onStartLiveTranslate && (
+            <button
+              type="button"
+              onClick={onStartLiveTranslate}
+              className="h-6 px-2.5 rounded-full text-[10.5px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 whitespace-nowrap shrink-0"
+              title="وەرگێڕانی ڕاستەوخۆ لەسەرووی پیتەکان"
+            >
+              ڕاستەوخۆ
+            </button>
+          )}
         </div>
         <button
           type="button"
@@ -1874,10 +1893,40 @@ interface SmartAIPanelProps {
 
 const AI_MODES = [
   { id: 'fix', label: 'ڕاستکردنەوە' },
+  { id: 'badini', label: 'سۆرانی ← بادینی' },
+  { id: 'sorani', label: 'بادینی ← سۆرانی' },
+  { id: 'expand', label: 'درێژکردنەوە' },
+  { id: 'poetic', label: 'شاعیرانە' },
+  { id: 'shorten', label: 'کورتکردنەوە' },
+  { id: 'rephrase', label: 'داڕشتنەوە' },
+  { id: 'explain', label: 'مانا' },
   { id: 'formal', label: 'فەرمی' },
   { id: 'friendly', label: 'دۆستانە' },
-  { id: 'shorten', label: 'کورتکردنەوە' },
-  { id: 'reply', label: 'وەڵامی زیرەک' },
+  { id: 'reply', label: 'وەڵامی نامە' },
+] as const;
+
+type PanelAIMode = (typeof AI_MODES)[number]['id'] | 'tone' | 'custom';
+
+const TONE_STYLES = [
+  { id: 'casual', label: 'ئاسایی' },
+  { id: 'professional', label: 'فەرمی' },
+  { id: 'academic', label: 'ئەکادیمی' },
+] as const;
+
+const TONE_INTENTS = [
+  { id: 'polite', label: 'بەڕێزانە' },
+  { id: 'work', label: 'کار' },
+  { id: 'email', label: 'ئیمەیڵ' },
+  { id: 'humor', label: 'گاڵتەوگەپ' },
+  { id: 'academic', label: 'لێکۆڵینەوە' },
+] as const;
+
+const TONE_LENGTHS = [
+  { id: 'very_short', label: 'زۆر کورت' },
+  { id: 'short', label: 'کورت' },
+  { id: 'medium', label: 'مامناوەند' },
+  { id: 'long', label: 'درێژ' },
+  { id: 'detailed', label: 'بەوردی' },
 ] as const;
 
 export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
@@ -1889,11 +1938,19 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
 }) => {
   const isLight = Boolean(theme.isLight);
   const preferSelection = settings.aiTextSource === 'selected_or_all';
-  const [activeMode, setActiveMode] = useState<(typeof AI_MODES)[number]['id']>('fix');
+  const [activeMode, setActiveMode] = useState<PanelAIMode>('fix');
   const [capturedText, setCapturedText] = useState<string>(() =>
     readLiveEditorText(preferSelection, editorText)
   );
+  const [editingInput, setEditingInput] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [toneOpen, setToneOpen] = useState(false);
+  const [toneStyle, setToneStyle] = useState<NonNullable<ToneOptions['style']>>('professional');
+  const [toneIntent, setToneIntent] = useState<NonNullable<ToneOptions['intent']>>('polite');
+  const [toneLength, setToneLength] = useState<NonNullable<ToneOptions['length']>>('medium');
+  const [customPrompt, setCustomPrompt] = useState('');
   const [result, setResult] = useState('');
+  const [usedOffline, setUsedOffline] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -1913,30 +1970,54 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
     };
   }, [editorText, preferSelection, settings.aiServerUrl]);
 
-  const runRewrite = async (mode: (typeof AI_MODES)[number]['id']) => {
+  const runRewrite = async (
+    mode: PanelAIMode,
+    options?: { instructionOverride?: string; bypassCache?: boolean }
+  ) => {
     setActiveMode(mode);
-    const liveText = readLiveEditorText(preferSelection, capturedText || editorText).trim();
-    setCapturedText(liveText);
+    const liveHost = editingInput
+      ? capturedText
+      : readLiveEditorText(preferSelection, capturedText || editorText);
+    const liveText = (liveHost || capturedText || editorText).trim();
+    if (liveText && liveText !== capturedText) {
+      setCapturedText(liveText);
+    }
 
     if (!liveText) {
       setResult('');
-      setError('سەرەتا دەقێک لە خانەی نووسیندا بنووسە.');
+      setEditingInput(true);
+      setError('سەرەتا دەقێک بنووسە یان لێرە بیلکێنە.');
       return;
     }
 
-    const cacheKey = `${mode}|${liveText}`;
-    const cached = rewriteCache.get(cacheKey);
-    if (cached) {
-      setError(null);
-      setResult(cached);
+    const cleanCustom = (options?.instructionOverride ?? customPrompt).trim();
+    if (mode === 'custom' && !cleanCustom) {
+      setError('تکایە فەرمانێک بنووسە (وەک: بیکە بە ئیمەیڵی فەرمی).');
       return;
+    }
+
+    const tonePayload: ToneOptions | undefined =
+      mode === 'tone'
+        ? { style: toneStyle, intent: toneIntent, length: toneLength }
+        : undefined;
+
+    const cacheKey = `${mode}|${cleanCustom}|${tonePayload ? JSON.stringify(tonePayload) : ''}|${liveText}`;
+    if (!options?.bypassCache) {
+      const cached = rewriteCache.get(cacheKey);
+      if (cached) {
+        setError(null);
+        setUsedOffline(false);
+        setResult(cached);
+        return;
+      }
     }
 
     const resolved = resolveAiServer(settings.aiServerUrl);
 
     if (resolved.source === 'none') {
       setError(null);
-      setResult(runOfflineSmartRewrite(liveText, mode));
+      setUsedOffline(true);
+      setResult(runOfflineSmartRewrite(liveText, mode, tonePayload));
       return;
     }
 
@@ -1946,13 +2027,20 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
 
     setLoading(true);
     setError(null);
+    setUsedOffline(false);
     setResult('');
     try {
       const res = await fetch(`${resolved.baseUrl}/api/ai/rewrite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({ text: liveText, mode, stream: true }),
+        body: JSON.stringify({
+          text: liveText,
+          mode,
+          customPrompt: mode === 'custom' ? cleanCustom : undefined,
+          tone: tonePayload,
+          stream: true,
+        }),
       });
 
       const finalResult = await consumeTextOrJsonStream(
@@ -1971,14 +2059,22 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
       }
     } catch (err: unknown) {
       if (controller.signal.aborted) return;
+      // Seamless high-quality offline fallback if server is temporarily unreachable, while offering error info
+      const offlineOut = runOfflineSmartRewrite(liveText, mode, tonePayload);
       if (resolved.source === 'settings' || resolved.source === 'env') {
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'نەتوانرا پەیوەندی بە سێرڤەری AI ـەوە بکرێت. دڵنیابە لە بەستەری Vercel و ئینتەرنێت.'
-        );
+        if (offlineOut && offlineOut !== liveText) {
+          setUsedOffline(true);
+          setResult(offlineOut);
+        } else {
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'نەتوانرا پەیوەندی بە سێرڤەری AI ـەوە بکرێت. دڵنیابە لە بەستەری Vercel و ئینتەرنێت.'
+          );
+        }
       } else {
-        setResult(runOfflineSmartRewrite(liveText, mode));
+        setUsedOffline(true);
+        setResult(offlineOut);
       }
     } finally {
       if (abortRef.current === controller) {
@@ -1992,21 +2088,56 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
       className="flex flex-col w-full px-3 py-2.5 gap-2"
       style={{
         backgroundColor: theme.bg,
-        height: `${Math.max(settings.keyboardHeightPx + 36, 315)}px`,
+        height: `${Math.max(settings.keyboardHeightPx + 54, 336)}px`,
       }}
       dir="rtl"
     >
-      <div className="flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
+      {/* Header */}
+      <div className="flex items-center justify-between shrink-0 gap-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
           <KurdiIcon name="ic_smart" className="w-4 h-4 text-sky-400 shrink-0" />
-          <span className={`text-sm font-bold shrink-0 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+          <span className={`text-xs sm:text-sm font-bold shrink-0 ${isLight ? 'text-slate-900' : 'text-white'}`}>
             وەڵامدەرەوەی زیرەک (AI)
           </span>
+          <button
+            type="button"
+            onClick={() => {
+              setToneOpen((v) => !v);
+              setCustomOpen(false);
+            }}
+            className={`h-6 px-2 rounded-full text-[10.5px] font-bold transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 ${
+              toneOpen || activeMode === 'tone'
+                ? 'bg-sky-500/20 text-sky-400 border border-sky-400/35'
+                : isLight
+                ? 'bg-slate-200 text-slate-700'
+                : 'bg-white/10 text-zinc-300'
+            }`}
+            title="شێوازی دەربڕین"
+          >
+            <SlidersHorizontal className="w-3 h-3" />
+            <span>شێواز</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCustomOpen((v) => !v);
+              setToneOpen(false);
+            }}
+            className={`h-6 px-2 rounded-full text-[10.5px] font-bold transition-colors whitespace-nowrap shrink-0 ${
+              customOpen || activeMode === 'custom'
+                ? 'bg-sky-500/20 text-sky-400 border border-sky-400/35'
+                : isLight
+                ? 'bg-slate-200 text-slate-700'
+                : 'bg-white/10 text-zinc-300'
+            }`}
+          >
+            فەرمان
+          </button>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+          className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
             isLight ? 'bg-slate-200 text-slate-900' : 'bg-zinc-800 text-white'
           }`}
         >
@@ -2014,6 +2145,141 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
         </button>
       </div>
 
+      {/* Inline editable text box when host search bar restricts reading or user wants to edit text directly */}
+      {(editingInput || !capturedText.trim()) && (
+        <div className="flex items-center gap-1.5 shrink-0">
+          <input
+            type="text"
+            value={capturedText}
+            onChange={(e) => {
+              setCapturedText(e.target.value);
+              if (error) setError(null);
+            }}
+            placeholder="دەقەکەت لێرە بنووسە یان بیلکێنە..."
+            className={`flex-1 h-8 rounded-xl px-2.5 text-xs outline-none border ${
+              isLight
+                ? 'bg-white border-slate-300 text-slate-900'
+                : 'bg-[#16181D] border-white/15 text-white placeholder:text-zinc-500'
+            }`}
+            dir="auto"
+          />
+          {capturedText.trim() && (
+            <button
+              type="button"
+              onClick={() => setEditingInput(false)}
+              className="h-8 px-2.5 rounded-xl bg-sky-600 text-white text-[11px] font-bold shrink-0"
+            >
+              باشە
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Official AI Tone Studio Drawer (Style / Intent / Length from strings.xml) */}
+      {toneOpen && (
+        <div
+          className={`rounded-xl p-2 border space-y-1.5 shrink-0 ${
+            isLight ? 'bg-slate-50 border-slate-200' : 'bg-[#14171F] border-white/10'
+          }`}
+        >
+          <div className="flex items-center gap-1 overflow-x-auto custom-scroll">
+            <span className="text-[10px] font-bold text-zinc-400 shrink-0 pl-1">شێواز:</span>
+            {TONE_STYLES.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setToneStyle(s.id)}
+                className={`h-6 px-2 rounded-lg text-[10.5px] font-bold shrink-0 ${
+                  toneStyle === s.id
+                    ? 'bg-[#0B5FA8] text-white'
+                    : isLight
+                    ? 'bg-white text-slate-700 border border-slate-200'
+                    : 'bg-white/[0.06] text-zinc-300'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+            <span className="text-[10px] font-bold text-zinc-400 shrink-0 pr-1.5 pl-1">مەبەست:</span>
+            {TONE_INTENTS.map((i) => (
+              <button
+                key={i.id}
+                type="button"
+                onClick={() => setToneIntent(i.id)}
+                className={`h-6 px-2 rounded-lg text-[10.5px] font-bold shrink-0 ${
+                  toneIntent === i.id
+                    ? 'bg-[#0B5FA8] text-white'
+                    : isLight
+                    ? 'bg-white text-slate-700 border border-slate-200'
+                    : 'bg-white/[0.06] text-zinc-300'
+                }`}
+              >
+                {i.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-1 overflow-x-auto custom-scroll">
+              <span className="text-[10px] font-bold text-zinc-400 shrink-0 pl-1">درێژی:</span>
+              {TONE_LENGTHS.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => setToneLength(l.id)}
+                  className={`h-6 px-2 rounded-lg text-[10.5px] font-bold shrink-0 ${
+                    toneLength === l.id
+                      ? 'bg-[#0B5FA8] text-white'
+                      : isLight
+                      ? 'bg-white text-slate-700 border border-slate-200'
+                      : 'bg-white/[0.06] text-zinc-300'
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setToneOpen(false);
+                runRewrite('tone');
+              }}
+              className="h-6 px-2.5 rounded-lg bg-sky-600 text-white text-[10.5px] font-bold shrink-0"
+            >
+              ئەنجامدان
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Prompt Drawer */}
+      {customOpen && (
+        <div className="flex items-center gap-1.5 shrink-0">
+          <input
+            type="text"
+            value={customPrompt}
+            onChange={(e) => setCustomPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') runRewrite('custom');
+            }}
+            placeholder="فەرمانەکەت بنووسە (وەک: بیکە بە ئیمەیڵی فەرمی)..."
+            className={`flex-1 h-8 rounded-xl px-2.5 text-xs outline-none border ${
+              isLight
+                ? 'bg-white border-slate-200 text-slate-900'
+                : 'bg-[#16181D] border-white/10 text-white placeholder:text-zinc-500'
+            }`}
+          />
+          <button
+            type="button"
+            onClick={() => runRewrite('custom')}
+            className="h-8 px-3 rounded-xl bg-[#0B5FA8] hover:bg-[#0D70C7] text-white text-xs font-bold shrink-0"
+          >
+            جێبەجێکردن
+          </button>
+        </div>
+      )}
+
+      {/* Horizontal Mode Strip */}
       <div className="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-0.5 shrink-0">
         {AI_MODES.map((m) => (
           <button
@@ -2033,6 +2299,7 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
         ))}
       </div>
 
+      {/* Result Area */}
       <div
         className={`flex-1 rounded-xl p-3 border overflow-y-auto custom-scroll flex flex-col justify-between gap-2 ${
           isLight
@@ -2053,6 +2320,7 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
                 type="button"
                 onClick={() => {
                   setError(null);
+                  setUsedOffline(true);
                   setResult(runOfflineSmartRewrite(capturedText, activeMode));
                 }}
                 className={`h-7 px-3 rounded-lg text-[11px] font-bold transition-colors ${
@@ -2067,10 +2335,17 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
           </div>
         ) : result ? (
           <>
-            <p className="text-sm leading-relaxed select-text" dir="auto">
-              {result}
-            </p>
-            <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+            <div className="space-y-1.5">
+              {usedOffline && (
+                <div className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 text-[10px] font-bold">
+                  دۆخی ئۆفڵاین
+                </div>
+              )}
+              <p className="text-sm leading-relaxed select-text whitespace-pre-wrap" dir="auto">
+                {result}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 pt-2 border-t border-white/5">
               <button
                 type="button"
                 onClick={() => {
@@ -2093,22 +2368,36 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
               >
                 زیادکردن
               </button>
+              <button
+                type="button"
+                onClick={() => runRewrite(activeMode, { bypassCache: true })}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  isLight ? 'bg-slate-200 text-slate-800' : 'bg-zinc-800 text-zinc-300 hover:text-white'
+                }`}
+                title="دووبارە دروستکردنەوە"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
             </div>
           </>
         ) : (
           <div className="my-auto text-center space-y-1.5 px-2">
             {capturedText.trim() && (
-              <p
-                className={`text-[11px] truncate px-2.5 py-1 rounded-lg ${
+              <button
+                type="button"
+                onClick={() => setEditingInput(true)}
+                className={`text-[11px] max-w-full truncate px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5 ${
                   isLight ? 'bg-slate-100 text-slate-600' : 'bg-white/[0.04] text-zinc-400'
                 }`}
                 dir="auto"
+                title="دەستکاریکردنی دەقی سەرچاوە"
               >
-                «{capturedText.trim()}»
-              </p>
+                <Pencil className="w-3 h-3 shrink-0 opacity-70" />
+                <span className="truncate">«{capturedText.trim()}»</span>
+              </button>
             )}
             <p className="text-xs text-zinc-500">
-              یەکێک لە شێوازەکانی سەرەوە هەڵبژێرە بۆ داڕشتنەوە و باشترکردنی دەقەکەت
+              یەکێک لە شێوازەکانی سەرەوە هەڵبژێرە بۆ داڕشتنەوە و گۆڕینی دەقەکەت
             </p>
           </div>
         )}

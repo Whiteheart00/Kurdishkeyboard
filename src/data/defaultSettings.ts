@@ -1,20 +1,32 @@
-import { ClipboardItem, KeyboardSettings } from '../types/keyboard';
+import { ClipboardItem, KeyboardSettings, QuickSnippet } from '../types/keyboard';
 import { DEFAULT_CUSTOM_THEME } from './themes';
 import { findSubtypePreset } from './layouts';
 
 export const DEFAULT_TOOLS_ORDER = [
+  'live_translate',
+  'text_edit',
+  'snippets_calc',
+  'ai_smart',
   'translate',
-  'resize',
+  'clipboard',
   'decorate',
   'themes',
+  'resize',
   'voice',
-  'settings',
-  'redo',
-  'undo',
   'one_handed',
   'switch_lang',
-  'ai_smart',
-  'clipboard',
+  'undo',
+  'redo',
+  'settings',
+];
+
+export const DEFAULT_QUICK_SNIPPETS: QuickSnippet[] = [
+  { id: 'snp_1', label: 'سڵاو و ڕێز', text: 'سڵاو و ڕێز، هیوادارم باش و سەلامەت بیت!' },
+  { id: 'snp_2', label: 'لە خزمەتدام', text: 'سەرچاو، هەرکاتێک پێویستت بوو لە خزمەتدام.' },
+  { id: 'snp_3', label: 'دەستخۆشی', text: 'زۆر سوپاس و دەستخۆشیت لێ دەکەم، ماندوو نەبیت.' },
+  { id: 'snp_4', label: 'ئێستا سەرقاڵم', text: 'ببوورە ئێستا کەمێک سەرقاڵم، کەمێکی تر پەیوەندیت پێوە دەکەمەوە.' },
+  { id: 'snp_5', label: 'لە ڕێگام', text: 'لە ڕێگام، چەند خولەکێکی تر دەگەمە لات.' },
+  { id: 'snp_6', label: 'گەیشت و باشە', text: 'زۆر باشە، نامەکەت گەیشت و سوپاس بۆ ئاگادارکردنەوەکەت.' },
 ];
 
 export const DEFAULT_SETTINGS: KeyboardSettings = {
@@ -92,9 +104,17 @@ export const DEFAULT_SETTINGS: KeyboardSettings = {
   vibrationEnabled: true,
 
   swipeUpAction: 'shift',
-  swipeDownAction: 'hide',
-  swipeLeftAction: 'next_lang',
-  swipeRightAction: 'prev_lang',
+  swipeDownAction: 'hide_keyboard',
+  swipeLeftAction: 'switch_to_next_subtype',
+  swipeRightAction: 'switch_to_prev_subtype',
+  spaceBarSwipeUpAction: 'show_arabic_harakat',
+  spaceBarSwipeLeftAction: 'switch_to_next_subtype',
+  spaceBarSwipeRightAction: 'switch_to_prev_subtype',
+  spaceBarLongPressAction: 'space_bar_custom_menu',
+  deleteKeySwipeLeftAction: 'delete_word',
+  deleteKeyLongPressAction: 'delete_character',
+  swipeDistanceThreshold: 48,
+  swipeVelocityThreshold: 200,
   spacebarSwipeAction: 'switch_lang',
   backspaceSwipeDeleteWord: true,
 
@@ -112,6 +132,7 @@ export const DEFAULT_SETTINGS: KeyboardSettings = {
 
   physicalKeyboardSync: true,
   toolsOrder: DEFAULT_TOOLS_ORDER,
+  quickSnippets: DEFAULT_QUICK_SNIPPETS,
   customLayouts: {},
 };
 

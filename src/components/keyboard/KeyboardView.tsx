@@ -1,5 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Check, ChevronLeft, ChevronRight, Maximize2, MicOff, Search, X } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  ArrowRight,
+  Calculator,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Maximize2,
+  MicOff,
+  Move,
+  Search,
+  Send,
+  X,
+} from 'lucide-react';
 import {
   ClipboardItem,
   KeyboardSettings,
@@ -8,7 +22,9 @@ import {
   LanguageCode,
   PopupOption,
   SettingsRoute,
+  SwipeAction,
 } from '../../types/keyboard';
+import { ARABIC_HARAKAT_OPTIONS, SPACEBAR_CUSTOM_MENU_OPTIONS } from '../../data/gestures';
 import { findThemeById } from '../../data/themes';
 import { composeHangul, resolveLayoutRows } from '../../data/layouts';
 import {
@@ -20,6 +36,7 @@ import {
   TEXT_DECORATORS,
 } from '../../data/richContent';
 import { getKeyShapeStyleProps } from '../../data/officialData';
+import { detectInlineMath } from '../../utils/mathAndTime';
 import { playKeyFeedback, preloadSoundPack } from '../../utils/sound';
 import { KurdiIcon } from '../icons/KurdiIcons';
 import {
@@ -34,6 +51,17 @@ import {
   ToolsGridPanel,
   TranslatePanel,
 } from './KeyboardPanels';
+import { CursorControlPanel, SnippetsCalcPanel } from './PowerPanels';
+
+const LIVE_TRANSLATE_LANGS = [
+  { code: 'ckb', label: 'کوردی' },
+  { code: 'en', label: 'EN' },
+  { code: 'ar', label: 'عربي' },
+  { code: 'fa', label: 'فارسی' },
+  { code: 'tr', label: 'TR' },
+  { code: 'de', label: 'DE' },
+  { code: 'fr', label: 'FR' },
+];
 
 interface KeyboardViewProps {
   settings: KeyboardSettings;
@@ -45,6 +73,8 @@ interface KeyboardViewProps {
   onBackspace: () => void;
   onDeleteWord: () => void;
   onMoveCursor: (delta: number) => void;
+  onMoveCursorEx?: (dx: number, dy: number, select: boolean) => void;
+  onMoveLineEdge?: (toEnd: boolean, select: boolean) => void;
   onSelectAll: () => void;
   onCopy: () => void;
   onCut: () => void;
@@ -73,6 +103,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   onBackspace,
   onDeleteWord,
   onMoveCursor,
+  onMoveCursorEx,
+  onMoveLineEdge,
   onSelectAll,
   onCopy,
   onCut,
@@ -92,8 +124,15 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 }) => {
   const [activePanel, setActivePanel] = useState<ActiveKeyboardPanel>('keys');
   const [richInitialTab, setRichInitialTab] = useState<RichTab>('emoji');
+  const [snippetsCalcTab, setSnippetsCalcTab] = useState<'snippets' | 'calc'>('snippets');
   const [emojiSearchMode, setEmojiSearchMode] = useState<boolean>(false);
   const [emojiSearchQuery, setEmojiSearchQuery] = useState<string>('');
+  const [liveTranslateMode, setLiveTranslateMode] = useState<boolean>(false);
+  const [liveTranslateQuery, setLiveTranslateQuery] = useState<string>('');
+  const [liveTranslateOutput, setLiveTranslateOutput] = useState<string>('');
+  const [liveTranslateLoading, setLiveTranslateLoading] = useState<boolean>(false);
+  const [liveTranslateSrc, setLiveTranslateSrc] = useState<string>('ckb');
+  const [liveTranslateTgt, setLiveTranslateTgt] = useState<string>('en');
   const [translateInitialText, setTranslateInitialText] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<KeyboardViewMode>('characters');
   const [kanaMode, setKanaMode] = useState<'hira' | 'kata'>('hira');
@@ -101,12 +140,78 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const [activeDecoratorId, setActiveDecoratorId] = useState<string>('none');
   const emojiSearchModeRef = useRef(false);
   emojiSearchModeRef.current = emojiSearchMode;
+  const liveTranslateModeRef = useRef(false);
+  liveTranslateModeRef.current = liveTranslateMode;
+  const liveTranslateCacheRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     if (activePanel !== 'keys' && emojiSearchMode) {
       setEmojiSearchMode(false);
     }
-  }, [activePanel, emojiSearchMode]);
+    if (activePanel !== 'keys' && liveTranslateMode) {
+      setLiveTranslateMode(false);
+    }
+  }, [activePanel, emojiSearchMode, liveTranslateMode]);
+
+  // Debounced Direct Google Translate for Live Inline Translate Bar (~250ms debounce)
+  useEffect(() => {
+    if (!liveTranslateMode) return;
+    const clean = liveTranslateQuery.trim();
+    if (!clean) {
+      setLiveTranslateOutput('');
+      setLiveTranslateLoading(false);
+      return;
+    }
+
+    const cacheKey = `${liveTranslateSrc}::${liveTranslateTgt}::${clean}`;
+    const cached = liveTranslateCacheRef.current.get(cacheKey);
+    if (cached) {
+      setLiveTranslateOutput(cached);
+      setLiveTranslateLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setLiveTranslateLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(
+          liveTranslateSrc
+        )}&tl=${encodeURIComponent(liveTranslateTgt)}&dt=t&q=${encodeURIComponent(clean)}`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error('HTTP error');
+        const data = await res.json();
+        const translated =
+          Array.isArray(data?.[0])
+            ? data[0]
+                .map((seg: unknown) => (Array.isArray(seg) && typeof seg[0] === 'string' ? seg[0] : ''))
+                .join('')
+                .trim()
+            : '';
+        if (translated) {
+          if (liveTranslateCacheRef.current.size > 60) {
+            const firstKey = liveTranslateCacheRef.current.keys().next().value;
+            if (firstKey) liveTranslateCacheRef.current.delete(firstKey);
+          }
+          liveTranslateCacheRef.current.set(cacheKey, translated);
+          setLiveTranslateOutput(translated);
+        }
+      } catch (err) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
+          setLiveTranslateOutput('');
+        }
+      } finally {
+        setLiveTranslateLoading(false);
+      }
+    }, 240);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [liveTranslateMode, liveTranslateQuery, liveTranslateSrc, liveTranslateTgt]);
+
+  const inlineMath = useMemo(() => detectInlineMath(editorText), [editorText]);
 
   const emojiSearchResults = useMemo(() => {
     if (!emojiSearchMode) return [];
@@ -126,6 +231,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     keyId: string;
     options: PopupOption[];
   } | null>(null);
+  const [gesturePopup, setGesturePopup] = useState<{
+    title: string;
+    options: PopupOption[];
+  } | null>(null);
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [isListeningVoice, setIsListeningVoice] = useState(false);
   const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
@@ -134,10 +243,12 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const lastShiftTapRef = useRef<number>(0);
   const longPressTimerRef = useRef<number | null>(null);
   const backspaceRepeatRef = useRef<number | null>(null);
-  const spaceDragStartXRef = useRef<number | null>(null);
+  const spaceDragStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const spaceDraggedRef = useRef<boolean>(false);
+  const spaceLongPressedRef = useRef<boolean>(false);
   const bkspDragStartXRef = useRef<number | null>(null);
-  const deckTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const bkspDraggedRef = useRef<boolean>(false);
+  const deckTouchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const speechRecRef = useRef<{ stop: () => void } | null>(null);
 
   const theme = useMemo(
@@ -304,6 +415,138 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     triggerSound('special');
   };
 
+  const executeSwipeAction = (action: SwipeAction): boolean => {
+    if (!action || action === 'no_action') return false;
+    switch (action) {
+      case 'shift':
+        triggerSound('special');
+        setShiftState((prev) => (prev === 'off' ? 'once' : prev === 'once' ? 'caps' : 'off'));
+        return true;
+      case 'hide_keyboard':
+        triggerSound('special');
+        onHideKeyboard?.();
+        return true;
+      case 'insert_space':
+        triggerSound('space');
+        onInsertText(' ');
+        return true;
+      case 'delete_character':
+      case 'delete_characters_precisely':
+        triggerSound('backspace');
+        onBackspace();
+        return true;
+      case 'delete_word':
+      case 'delete_words_precisely':
+        triggerSound('backspace');
+        onDeleteWord();
+        return true;
+      case 'move_cursor_left':
+        triggerSound('special');
+        if (onMoveCursorEx) onMoveCursorEx(-1, 0, false);
+        else onMoveCursor(-1);
+        return true;
+      case 'move_cursor_right':
+        triggerSound('special');
+        if (onMoveCursorEx) onMoveCursorEx(1, 0, false);
+        else onMoveCursor(1);
+        return true;
+      case 'move_cursor_up':
+        triggerSound('special');
+        if (onMoveCursorEx) onMoveCursorEx(0, -1, false);
+        return true;
+      case 'move_cursor_down':
+        triggerSound('special');
+        if (onMoveCursorEx) onMoveCursorEx(0, 1, false);
+        return true;
+      case 'move_cursor_start_of_line':
+      case 'move_cursor_start_of_page':
+        triggerSound('special');
+        if (onMoveLineEdge) onMoveLineEdge(false, false);
+        else onMoveCursor(-100);
+        return true;
+      case 'move_cursor_end_of_line':
+      case 'move_cursor_end_of_page':
+        triggerSound('special');
+        if (onMoveLineEdge) onMoveLineEdge(true, false);
+        else onMoveCursor(100);
+        return true;
+      case 'select_characters_precisely':
+        triggerSound('special');
+        if (onMoveCursorEx) onMoveCursorEx(-1, 0, true);
+        return true;
+      case 'select_words_precisely':
+        triggerSound('special');
+        if (onMoveLineEdge) onMoveLineEdge(false, true);
+        else onSelectAll();
+        return true;
+      case 'undo':
+        triggerSound('special');
+        onUndo();
+        return true;
+      case 'redo':
+        triggerSound('special');
+        onRedo();
+        return true;
+      case 'show_arabic_harakat':
+        triggerSound('special');
+        setGesturePopup({ title: 'حەرەکاتی عەرەبی', options: ARABIC_HARAKAT_OPTIONS });
+        return true;
+      case 'space_bar_custom_menu':
+        triggerSound('special');
+        setGesturePopup({ title: 'درێژکردنەوە و نیوبزوێن', options: SPACEBAR_CUSTOM_MENU_OPTIONS });
+        return true;
+      case 'show_subtype_picker':
+      case 'show_input_method_picker':
+        triggerSound('special');
+        setShowLangPicker(true);
+        return true;
+      case 'switch_to_next_subtype':
+        cycleLanguage(1);
+        return true;
+      case 'switch_to_prev_subtype':
+      case 'switch_to_prev_keyboard':
+        cycleLanguage(-1);
+        return true;
+      case 'switch_to_clipboard_context':
+        triggerSound('special');
+        setActivePanel('clipboard');
+        return true;
+      case 'switch_to_media_context':
+        triggerSound('special');
+        setRichInitialTab('emoji');
+        setActivePanel('emoji');
+        return true;
+      case 'switch_to_symbols_keyboard':
+        triggerSound('special');
+        setViewMode((prev) => (prev === 'symbols' ? 'characters' : 'symbols'));
+        return true;
+      case 'cycle_to_next_keyboard_mode': {
+        triggerSound('special');
+        const modes: KeyboardViewMode[] = ['characters', 'symbols', 'symbols2', 'numeric_advanced'];
+        setViewMode((prev) => modes[(modes.indexOf(prev) + 1) % modes.length]);
+        return true;
+      }
+      case 'cycle_to_previous_keyboard_mode': {
+        triggerSound('special');
+        const modes: KeyboardViewMode[] = ['characters', 'symbols', 'symbols2', 'numeric_advanced'];
+        setViewMode((prev) => modes[(modes.indexOf(prev) - 1 + modes.length) % modes.length]);
+        return true;
+      }
+      case 'toggle_compact_layout':
+        triggerSound('special');
+        onUpdateSettings({
+          oneHandedMode: settings.oneHandedMode === 'off' ? 'right' : 'off',
+        });
+        return true;
+      case 'toggle_smartbar_visibility':
+        triggerSound('special');
+        onUpdateSettings({ showTopToolbar: !settings.showTopToolbar });
+        return true;
+      default:
+        return false;
+    }
+  };
+
   const applyActiveDecorator = (text: string): string => {
     if (activeDecoratorId === 'none') return text;
     if (
@@ -315,9 +558,35 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     return dec ? dec.transform(text) : text;
   };
 
+  const commitLiveTranslation = () => {
+    const out = (liveTranslateOutput || liveTranslateQuery).trim();
+    if (!out) return;
+    onInsertText(`${out} `);
+    setLiveTranslateQuery('');
+    setLiveTranslateOutput('');
+  };
+
+  const handleInlineMathTap = () => {
+    if (!inlineMath) return;
+    triggerSound('char');
+    if (inlineMath.hasTrailingEquals) {
+      onInsertText(` ${inlineMath.formatted} `);
+      return;
+    }
+    const replaced =
+      editorText.slice(0, editorText.length - inlineMath.rawMatch.length) +
+      `${inlineMath.formatted} `;
+    onReplaceText(replaced);
+  };
+
   const commitCharacter = (raw: string) => {
     if (emojiSearchMode) {
       setEmojiSearchQuery((prev) => prev + raw);
+      if (shiftState === 'once') setShiftState('off');
+      return;
+    }
+    if (liveTranslateMode) {
+      setLiveTranslateQuery((prev) => prev + raw);
       if (shiftState === 'once') setShiftState('off');
       return;
     }
@@ -363,6 +632,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       setEmojiSearchQuery((prev) => prev + ' ');
       return;
     }
+    if (liveTranslateMode) {
+      setLiveTranslateQuery((prev) => prev + ' ');
+      return;
+    }
     const now = Date.now();
     if (
       settings.doubleSpacePeriod &&
@@ -401,6 +674,14 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           });
           return;
         }
+        if (liveTranslateMode) {
+          setLiveTranslateQuery((prev) => {
+            const chars = [...prev];
+            chars.pop();
+            return chars.join('');
+          });
+          return;
+        }
         onBackspace();
         return;
       case 'space':
@@ -413,6 +694,14 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             handleRichInsert(emojiSearchResults[0], 'emoji');
           } else {
             setEmojiSearchMode(false);
+          }
+          return;
+        }
+        if (liveTranslateMode) {
+          if (liveTranslateQuery.trim()) {
+            commitLiveTranslation();
+          } else {
+            setLiveTranslateMode(false);
           }
           return;
         }
@@ -508,8 +797,12 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     }
 
     if (key.type === 'backspace') {
+      const longAction = settings.deleteKeyLongPressAction || 'delete_character';
+      if (longAction === 'no_action') return;
       if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = window.setTimeout(() => {
+        const deleteByWord =
+          longAction === 'delete_word' || longAction === 'delete_words_precisely';
         backspaceRepeatRef.current = window.setInterval(() => {
           if (emojiSearchModeRef.current) {
             setEmojiSearchQuery((prev) => {
@@ -517,11 +810,33 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
               chars.pop();
               return chars.join('');
             });
+          } else if (liveTranslateModeRef.current) {
+            setLiveTranslateQuery((prev) => {
+              const chars = [...prev];
+              chars.pop();
+              return chars.join('');
+            });
+          } else if (deleteByWord) {
+            onDeleteWord();
           } else {
             onBackspace();
           }
-        }, 75);
+        }, deleteByWord ? 180 : 75);
       }, 360);
+      return;
+    }
+
+    if (key.type === 'space') {
+      const spaceLong = settings.spaceBarLongPressAction;
+      if (spaceLong && spaceLong !== 'no_action') {
+        if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = window.setTimeout(() => {
+          if (!spaceDraggedRef.current) {
+            spaceLongPressedRef.current = true;
+            executeSwipeAction(spaceLong);
+          }
+        }, 430);
+      }
       return;
     }
 
@@ -652,6 +967,19 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const handleSelectTool = (toolId: string) => {
     triggerSound('special');
     switch (toolId) {
+      case 'live_translate':
+        setEmojiSearchMode(false);
+        setLiveTranslateMode(true);
+        setViewMode('characters');
+        setActivePanel('keys');
+        break;
+      case 'text_edit':
+        setActivePanel('cursor_control');
+        break;
+      case 'snippets_calc':
+        setSnippetsCalcTab('snippets');
+        setActivePanel('snippets_calc');
+        break;
       case 'translate':
         setTranslateInitialText(null);
         setActivePanel('translate');
@@ -947,6 +1275,13 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             if (replaceAll) (onReplaceAllText || onReplaceText)(text);
             else onInsertText(text);
           }}
+          onStartLiveTranslate={() => {
+            setTranslateInitialText(null);
+            setEmojiSearchMode(false);
+            setLiveTranslateMode(true);
+            setViewMode('characters');
+            setActivePanel('keys');
+          }}
           onClose={() => {
             setTranslateInitialText(null);
             setActivePanel('keys');
@@ -963,10 +1298,177 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           }}
           onClose={() => setActivePanel('keys')}
         />
+      ) : activePanel === 'cursor_control' ? (
+        <CursorControlPanel
+          theme={theme}
+          settings={settings}
+          onMoveCursorEx={(dx, dy, select) => {
+            if (onMoveCursorEx) {
+              onMoveCursorEx(dx, dy, select);
+            } else if (dx !== 0) {
+              onMoveCursor(dx);
+            }
+          }}
+          onMoveLineEdge={(toEnd, select) => {
+            if (onMoveLineEdge) {
+              onMoveLineEdge(toEnd, select);
+            }
+          }}
+          onSelectAll={onSelectAll}
+          onCopy={onCopy}
+          onCut={onCut}
+          onPaste={onPaste}
+          onBackspace={onBackspace}
+          onDeleteWord={onDeleteWord}
+          onClose={() => setActivePanel('keys')}
+        />
+      ) : activePanel === 'snippets_calc' ? (
+        <SnippetsCalcPanel
+          theme={theme}
+          settings={settings}
+          initialTab={snippetsCalcTab}
+          onInsertText={onInsertText}
+          onUpdateSnippets={(quickSnippets) => onUpdateSettings({ quickSnippets })}
+          onClose={() => setActivePanel('keys')}
+        />
       ) : (
         <div className="flex flex-col w-full kb-noselect">
-          {/* Inline Gboard-style Emoji Search Bar + Instant Results Strip (types directly with the keyboard below!) */}
-          {emojiSearchMode ? (
+          {/* Inline Gboard-style Live Translate Bar OR Emoji Search Bar (types directly with the keyboard below!) */}
+          {liveTranslateMode ? (
+            <div className="flex flex-col border-b border-white/10 px-2 pt-1.5 pb-1.5 gap-1.5" dir="rtl">
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerSound('special');
+                      setLiveTranslateMode(false);
+                    }}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                      isLight ? 'bg-slate-200 text-slate-800' : 'bg-white/10 text-white'
+                    }`}
+                    title="داخستنی وەرگێڕانی ڕاستەوخۆ"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  <select
+                    value={liveTranslateSrc}
+                    onChange={(e) => setLiveTranslateSrc(e.target.value)}
+                    className={`h-7 px-1.5 rounded-lg text-[11px] font-bold outline-none border ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900'
+                        : 'bg-[#171920] border-white/10 text-white'
+                    }`}
+                  >
+                    <option value="auto">خۆکار</option>
+                    {LIVE_TRANSLATE_LANGS.map((l) => (
+                      <option key={`src_${l.code}`} value={l.code}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (liveTranslateSrc === 'auto') return;
+                      const prevSrc = liveTranslateSrc;
+                      setLiveTranslateSrc(liveTranslateTgt);
+                      setLiveTranslateTgt(prevSrc);
+                    }}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                      isLight ? 'bg-slate-200 text-slate-700' : 'bg-white/10 text-sky-400'
+                    }`}
+                    title="ئاڵوگۆڕی زمان"
+                  >
+                    <ArrowLeftRight className="w-3.5 h-3.5" />
+                  </button>
+                  <select
+                    value={liveTranslateTgt}
+                    onChange={(e) => setLiveTranslateTgt(e.target.value)}
+                    className={`h-7 px-1.5 rounded-lg text-[11px] font-bold outline-none border ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900'
+                        : 'bg-[#171920] border-white/10 text-white'
+                    }`}
+                  >
+                    {LIVE_TRANSLATE_LANGS.map((l) => (
+                      <option key={`tgt_${l.code}`} value={l.code}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!liveTranslateQuery.trim()}
+                  onClick={commitLiveTranslation}
+                  className="h-7 px-2.5 rounded-lg bg-[#0B5FA8] hover:bg-[#0D70C7] disabled:opacity-40 text-white text-[11px] font-bold flex items-center gap-1 shrink-0 transition-colors"
+                  title="ناردنی دەقە وەرگێڕدراوەکە"
+                >
+                  <Send className="w-3 h-3" />
+                  <span>ناردن</span>
+                </button>
+              </div>
+
+              {/* Live Input + Translated Output Preview */}
+              <div className="grid grid-cols-1 gap-1">
+                <div
+                  className={`h-8 px-2.5 rounded-xl flex items-center justify-between gap-1.5 border overflow-hidden ${
+                    isLight
+                      ? 'bg-white border-sky-400 text-slate-900'
+                      : 'bg-white/[0.08] border-sky-400/50 text-white'
+                  }`}
+                >
+                  <div className="flex-1 text-xs font-medium truncate flex items-center" dir="auto">
+                    {liveTranslateQuery ? (
+                      <>
+                        <span className="truncate">{liveTranslateQuery}</span>
+                        <span className="inline-block w-[2px] h-3.5 bg-sky-400 mr-0.5 shrink-0" />
+                      </>
+                    ) : (
+                      <span className="text-zinc-400 truncate">
+                        بە کیبۆرد بنووسە بۆ وەرگێڕانی ڕاستەوخۆ (Enter بۆ ناردن)...
+                      </span>
+                    )}
+                  </div>
+                  {liveTranslateQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLiveTranslateQuery('');
+                        setLiveTranslateOutput('');
+                      }}
+                      className="text-zinc-400 hover:text-white shrink-0 p-0.5"
+                      title="پاککردنەوە"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {(liveTranslateOutput || liveTranslateLoading) && (
+                  <button
+                    type="button"
+                    onClick={commitLiveTranslation}
+                    className={`min-h-[30px] px-2.5 py-1 rounded-xl flex items-center justify-between gap-2 text-right transition-colors ${
+                      isLight
+                        ? 'bg-sky-50 border border-sky-200 text-sky-900'
+                        : 'bg-sky-500/15 border border-sky-400/30 text-sky-100'
+                    }`}
+                    dir="auto"
+                  >
+                    <span className="text-xs font-semibold truncate flex-1">
+                      {liveTranslateOutput || 'وەرگێڕان...'}
+                    </span>
+                    {liveTranslateLoading && (
+                      <Loader2 className="w-3.5 h-3.5 text-sky-400 animate-spin shrink-0" />
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : emojiSearchMode ? (
             <div className="flex flex-col border-b border-white/10 px-2 pt-1.5 pb-1 gap-1.5" dir="rtl">
               <div className="flex items-center gap-1.5">
                 <button
@@ -996,7 +1498,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                     {emojiSearchQuery ? (
                       <>
                         <span className="truncate">{emojiSearchQuery}</span>
-                        <span className="inline-block w-[2px] h-3.5 bg-sky-400 mr-0.5 animate-pulse shrink-0" />
+                        <span className="inline-block w-[2px] h-3.5 bg-sky-400 mr-0.5 shrink-0" />
                       </>
                     ) : (
                       <span className="text-zinc-400 truncate">
@@ -1038,9 +1540,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
               </div>
             </div>
           ) : (
-          /* Second Utility Strip matching authentic KurdiKeyboard layout: Left AI & Translate, Center Predictions/Clipboard, Right Zikr & Tools */
-          <div className="flex items-center justify-between px-2 py-1.5 gap-1.5">
-            <div className="flex items-center gap-1 shrink-0">
+          /* Second Utility Strip: Left AI, Translate, Snippets/Calc | Center Inline Math & Predictions | Right Cursor Control, Zikr, Tools */
+          <div className="flex items-center justify-between px-1.5 py-1.5 gap-1">
+            <div className="flex items-center gap-0.5 shrink-0">
               {settings.smartReplyEnabled && (
                 <button
                   type="button"
@@ -1048,10 +1550,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                     triggerSound('special');
                     setActivePanel('ai_smart');
                   }}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${toolbarIconColor}`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${toolbarIconColor}`}
                   title="وەڵامدەرەوەی زیرەک (AI)"
                 >
-                  <KurdiIcon name="ic_smart" className="w-[20px] h-[20px]" />
+                  <KurdiIcon name="ic_smart" className="w-[19px] h-[19px]" />
                 </button>
               )}
               <button
@@ -1061,14 +1563,42 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                   setTranslateInitialText(null);
                   setActivePanel('translate');
                 }}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${toolbarIconColor}`}
-                title="وەرگێڕان"
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${toolbarIconColor}`}
+                title="وەرگێڕان و وەرگێڕانی ڕاستەوخۆ"
               >
-                <KurdiIcon name="ic_translate" className="w-[20px] h-[20px]" />
+                <KurdiIcon name="ic_translate" className="w-[19px] h-[19px]" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerSound('special');
+                  setSnippetsCalcTab('snippets');
+                  setActivePanel('snippets_calc');
+                }}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${toolbarIconColor}`}
+                title="کلێشە و بژمێری خێرا"
+              >
+                <Calculator className="w-[17px] h-[17px]" />
               </button>
             </div>
 
             <div className="flex-1 flex items-center justify-center gap-1.5 overflow-x-auto custom-scroll px-1">
+              {inlineMath && (
+                <button
+                  type="button"
+                  onClick={handleInlineMathTap}
+                  className={`h-7 px-2.5 rounded-lg text-xs font-extrabold font-mono tabular-nums whitespace-nowrap shrink-0 flex items-center gap-1 border transition-transform active:scale-95 ${
+                    isLight
+                      ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                  }`}
+                  title={`ئەنجامی ${inlineMath.rawMatch} — داگرتن بۆ دانان`}
+                  dir="ltr"
+                >
+                  <span>= {inlineMath.formatted}</span>
+                </button>
+              )}
+
               {activeDecoratorId !== 'none' && (
                 <button
                   type="button"
@@ -1079,11 +1609,11 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 </button>
               )}
 
-              {latestClipboardSuggestion && !currentWord && (
+              {latestClipboardSuggestion && !currentWord && !inlineMath && (
                 <button
                   type="button"
                   onClick={() => onInsertText(latestClipboardSuggestion.text)}
-                  className={`h-7 px-2.5 rounded-full text-[11px] font-medium max-w-[130px] truncate shrink-0 flex items-center gap-1 ${
+                  className={`h-7 px-2.5 rounded-full text-[11px] font-medium max-w-[125px] truncate shrink-0 flex items-center gap-1 ${
                     isLight
                       ? 'bg-slate-200 text-slate-800'
                       : 'bg-[#191B20] text-zinc-200 border border-white/5'
@@ -1121,7 +1651,18 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
               ))}
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-0.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerSound('special');
+                  setActivePanel('cursor_control');
+                }}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${toolbarIconColor}`}
+                title="کۆنترۆڵی دەق و کێرسەر"
+              >
+                <Move className="w-[17px] h-[17px]" />
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -1129,10 +1670,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                   setRichInitialTab('zikr');
                   setActivePanel('emoji');
                 }}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${toolbarIconColor}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${toolbarIconColor}`}
                 title="زیکر، خەندە و کاومۆجی"
               >
-                <KurdiIcon name="ic_tasbih1" className="w-[20px] h-[20px]" />
+                <KurdiIcon name="ic_tasbih1" className="w-[19px] h-[19px]" />
               </button>
               <button
                 type="button"
@@ -1140,14 +1681,14 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                   triggerSound('special');
                   setActivePanel('tools');
                 }}
-                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
                   isLight
                     ? 'bg-slate-200/90 text-slate-900 hover:bg-slate-300'
                     : 'bg-[#1A1B20] text-white hover:bg-[#262830]'
                 }`}
                 title="ئامرازەکان"
               >
-                <KurdiIcon name="ic_moree" className="w-[19px] h-[19px]" />
+                <KurdiIcon name="ic_moree" className="w-[18px] h-[18px]" />
               </button>
             </div>
           </div>
@@ -1188,6 +1729,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                   deckTouchStartRef.current = {
                     x: e.touches[0].clientX,
                     y: e.touches[0].clientY,
+                    time: Date.now(),
                   };
                 }
               }}
@@ -1195,20 +1737,74 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 if (!deckTouchStartRef.current || e.changedTouches.length !== 1) return;
                 const dx = e.changedTouches[0].clientX - deckTouchStartRef.current.x;
                 const dy = e.changedTouches[0].clientY - deckTouchStartRef.current.y;
+                const elapsedSec = Math.max(0.05, (Date.now() - deckTouchStartRef.current.time) / 1000);
                 deckTouchStartRef.current = null;
-                if (Math.abs(dy) > 95 && Math.abs(dy) > Math.abs(dx) * 1.8) {
-                  if (dy > 0 && settings.swipeDownAction === 'hide') {
-                    onHideKeyboard?.();
-                  } else if (dy < 0 && settings.swipeUpAction === 'shift') {
-                    setShiftState((prev) => (prev === 'off' ? 'once' : 'off'));
+                if (spaceDraggedRef.current || bkspDraggedRef.current) return;
+
+                const distThreshold = Math.max(44, (settings.swipeDistanceThreshold || 48) * 1.45);
+                const velThreshold = Math.max(80, (settings.swipeVelocityThreshold || 200) * 0.45);
+                const absX = Math.abs(dx);
+                const absY = Math.abs(dy);
+                const dist = Math.hypot(dx, dy);
+                const velocity = dist / elapsedSec;
+
+                if (dist >= distThreshold && velocity >= velThreshold) {
+                  if (absY > absX * 1.5) {
+                    if (dy > 0) executeSwipeAction(settings.swipeDownAction);
+                    else executeSwipeAction(settings.swipeUpAction);
+                  } else if (absX > absY * 1.5 && absX >= distThreshold * 1.1) {
+                    if (dx < 0) executeSwipeAction(settings.swipeLeftAction);
+                    else executeSwipeAction(settings.swipeRightAction);
                   }
                 }
               }}
               onClick={() => {
                 if (longPressMenu) setLongPressMenu(null);
                 if (showLangPicker) setShowLangPicker(false);
+                if (gesturePopup) setGesturePopup(null);
               }}
             >
+              {/* Floating Gesture Popup Strip (Arabic Harakat / Spacebar Custom Menu) */}
+              {gesturePopup && (
+                <div
+                  className="absolute -top-12 left-2 right-2 z-50 flex items-center gap-1.5 px-2 py-1.5 rounded-2xl shadow-2xl overflow-x-auto custom-scroll"
+                  style={{
+                    backgroundColor: theme.popupBg || (isLight ? '#FFFFFF' : '#181C24'),
+                    border: `1px solid ${theme.popupBorder || 'rgba(255,255,255,0.16)'}`,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  dir="rtl"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setGesturePopup(null)}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                      isLight ? 'bg-slate-200 text-slate-800' : 'bg-white/10 text-white'
+                    }`}
+                    title="داخستن"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-[10.5px] font-bold text-sky-400 whitespace-nowrap shrink-0 px-1">
+                    {gesturePopup.title}
+                  </span>
+                  {gesturePopup.options.map((opt, idx) => (
+                    <button
+                      key={`${opt.label}_${idx}`}
+                      type="button"
+                      onClick={() => {
+                        triggerSound('char');
+                        commitCharacter(opt.value);
+                        setGesturePopup(null);
+                      }}
+                      className="h-8 px-2.5 rounded-xl text-xs font-bold whitespace-nowrap hover:bg-sky-500 hover:text-white transition-colors shrink-0 border border-white/10"
+                      style={{ color: isLight ? '#0F172A' : '#FFFFFF' }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               {resolvedLayout.rows.map((row, rIdx) => {
                 const isLastRow = rIdx === resolvedLayout.rows.length - 1;
                 const isCompactMidRow =
@@ -1399,58 +1995,112 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                             onPointerDown={(e) => {
                               if (key.type === 'backspace') {
                                 bkspDragStartXRef.current = e.clientX;
+                                bkspDraggedRef.current = false;
                               } else if (key.type === 'space') {
-                                spaceDragStartXRef.current = e.clientX;
+                                spaceDragStartRef.current = {
+                                  x: e.clientX,
+                                  y: e.clientY,
+                                  time: Date.now(),
+                                };
                                 spaceDraggedRef.current = false;
+                                spaceLongPressedRef.current = false;
                               }
                               handleKeyPointerDown(key);
                             }}
                             onPointerMove={(e) => {
-                              if (
-                                key.type === 'space' &&
-                                spaceDragStartXRef.current !== null &&
-                                settings.spacebarSwipeAction === 'move_cursor'
-                              ) {
-                                const dx = e.clientX - spaceDragStartXRef.current;
-                                if (Math.abs(dx) > 18) {
-                                  onMoveCursor(dx > 0 ? 1 : -1);
-                                  spaceDragStartXRef.current = e.clientX;
+                              // Continuous cursor glide on spacebar when assigned to move_cursor_left/right
+                              if (key.type === 'space' && spaceDragStartRef.current !== null) {
+                                const dx = e.clientX - spaceDragStartRef.current.x;
+                                const dy = e.clientY - spaceDragStartRef.current.y;
+                                const isCursorGlide =
+                                  settings.spaceBarSwipeLeftAction === 'move_cursor_left' ||
+                                  settings.spaceBarSwipeRightAction === 'move_cursor_right';
+                                if (isCursorGlide && Math.abs(dx) > 16 && Math.abs(dx) > Math.abs(dy)) {
+                                  if (longPressTimerRef.current) {
+                                    window.clearTimeout(longPressTimerRef.current);
+                                    longPressTimerRef.current = null;
+                                  }
+                                  if (onMoveCursorEx) onMoveCursorEx(dx > 0 ? 1 : -1, 0, false);
+                                  else onMoveCursor(dx > 0 ? 1 : -1);
+                                  spaceDragStartRef.current = {
+                                    ...spaceDragStartRef.current,
+                                    x: e.clientX,
+                                  };
                                   spaceDraggedRef.current = true;
+                                }
+                              }
+                              // Continuous precise delete while dragging backspace left
+                              if (key.type === 'backspace' && bkspDragStartXRef.current !== null) {
+                                const delAction = settings.deleteKeySwipeLeftAction;
+                                const dx = bkspDragStartXRef.current - e.clientX;
+                                if (
+                                  (delAction === 'delete_characters_precisely' ||
+                                    delAction === 'delete_words_precisely') &&
+                                  dx > 22
+                                ) {
+                                  if (longPressTimerRef.current) {
+                                    window.clearTimeout(longPressTimerRef.current);
+                                    longPressTimerRef.current = null;
+                                  }
+                                  bkspDraggedRef.current = true;
+                                  bkspDragStartXRef.current = e.clientX;
+                                  triggerSound('backspace');
+                                  if (delAction === 'delete_words_precisely') onDeleteWord();
+                                  else onBackspace();
                                 }
                               }
                             }}
                             onPointerUp={(e) => {
-                              // Backspace swipe-left deletes whole word
-                              if (
-                                key.type === 'backspace' &&
-                                settings.backspaceSwipeDeleteWord &&
-                                bkspDragStartXRef.current !== null &&
-                                bkspDragStartXRef.current - e.clientX > 36
-                              ) {
+                              // Backspace swipe-left gesture
+                              if (key.type === 'backspace' && bkspDragStartXRef.current !== null) {
+                                const dx = bkspDragStartXRef.current - e.clientX;
                                 bkspDragStartXRef.current = null;
-                                clearPointerState();
-                                triggerSound('backspace');
-                                onDeleteWord();
-                                return;
+                                if (bkspDraggedRef.current) {
+                                  bkspDraggedRef.current = false;
+                                  clearPointerState();
+                                  return;
+                                }
+                                const delAction = settings.deleteKeySwipeLeftAction;
+                                const threshold = Math.max(28, (settings.swipeDistanceThreshold || 48) * 0.72);
+                                if (delAction && delAction !== 'no_action' && dx > threshold) {
+                                  clearPointerState();
+                                  executeSwipeAction(delAction);
+                                  return;
+                                }
                               }
                               bkspDragStartXRef.current = null;
+                              bkspDraggedRef.current = false;
 
-                              // Spacebar swipe switches language
-                              if (key.type === 'space' && spaceDragStartXRef.current !== null) {
-                                const dx = e.clientX - spaceDragStartXRef.current;
-                                spaceDragStartXRef.current = null;
-                                if (
-                                  settings.spacebarSwipeAction === 'switch_lang' &&
-                                  Math.abs(dx) > 34
-                                ) {
+                              // Spacebar 4-way gestures (Up, Left, Right, Long Press)
+                              if (key.type === 'space' && spaceDragStartRef.current !== null) {
+                                const dx = e.clientX - spaceDragStartRef.current.x;
+                                const dy = e.clientY - spaceDragStartRef.current.y;
+                                spaceDragStartRef.current = null;
+                                if (spaceLongPressedRef.current) {
+                                  spaceLongPressedRef.current = false;
                                   clearPointerState();
-                                  cycleLanguage(dx > 0 ? 1 : -1);
                                   return;
                                 }
                                 if (spaceDraggedRef.current) {
                                   spaceDraggedRef.current = false;
                                   clearPointerState();
                                   return;
+                                }
+                                const threshold = Math.max(28, (settings.swipeDistanceThreshold || 48) * 0.7);
+                                if (-dy > threshold && Math.abs(dy) > Math.abs(dx) * 1.2) {
+                                  if (executeSwipeAction(settings.spaceBarSwipeUpAction)) {
+                                    clearPointerState();
+                                    return;
+                                  }
+                                } else if (Math.abs(dx) > threshold && Math.abs(dx) > Math.abs(dy)) {
+                                  const action =
+                                    dx < 0
+                                      ? settings.spaceBarSwipeLeftAction
+                                      : settings.spaceBarSwipeRightAction;
+                                  if (executeSwipeAction(action)) {
+                                    clearPointerState();
+                                    return;
+                                  }
                                 }
                               }
 
@@ -1463,12 +2113,12 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                               }
                             }}
                             onPointerLeave={() => {
-                              spaceDragStartXRef.current = null;
+                              spaceDragStartRef.current = null;
                               bkspDragStartXRef.current = null;
                               clearPointerState();
                             }}
                             onPointerCancel={() => {
-                              spaceDragStartXRef.current = null;
+                              spaceDragStartRef.current = null;
                               bkspDragStartXRef.current = null;
                               clearPointerState();
                             }}
