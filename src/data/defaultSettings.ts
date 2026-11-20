@@ -63,6 +63,7 @@ export const DEFAULT_SETTINGS: KeyboardSettings = {
   smartReplyEnabled: true,
   aiTextSource: 'selected_or_all',
   translationEngine: 'google_fast',
+  aiServerUrl: '',
 
   emojiStyle: 'system',
   emojiSkinTone: '',

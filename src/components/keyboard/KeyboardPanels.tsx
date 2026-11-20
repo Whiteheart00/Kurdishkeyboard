@@ -29,6 +29,8 @@ import {
 } from '../../data/richContent';
 import { ALL_THEMES } from '../../data/themes';
 import { KurdiIcon, KurdiIconName } from '../icons/KurdiIcons';
+import { runOfflineSmartRewrite } from '../../utils/kurdishSmartHelper';
+import { resolveAiServer } from '../../utils/aiServer';
 
 export type ActiveKeyboardPanel =
   | 'keys'
@@ -51,6 +53,7 @@ interface EmojiZikrKaomojiPanelProps {
   onBackspace: () => void;
   onClose: () => void;
   onOpenSettings: (route: SettingsRoute) => void;
+  onStartEmojiSearch?: () => void;
 }
 
 export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
@@ -61,6 +64,7 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
   onBackspace,
   onClose,
   onOpenSettings,
+  onStartEmojiSearch,
 }) => {
   const [activeTab, setActiveTab] = useState<RichTab>(initialTab);
   const [emojiCat, setEmojiCat] = useState<string>(EMOJI_CATEGORIES[0]?.id || 'smileys');
@@ -231,31 +235,48 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
       {/* Live Kurdish & English Emoji Search Bar */}
       {activeTab === 'emoji' && (
         <div className="px-2.5 pt-2 pb-1 shrink-0" dir="rtl">
-          <div
-            className={`h-9 px-3 rounded-xl flex items-center gap-2 border ${
-              isLight
-                ? 'bg-white border-slate-200 text-slate-900'
-                : 'bg-white/[0.06] border-white/10 text-white'
-            }`}
-          >
-            <Search className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-            <input
-              type="text"
-              value={emojiSearch}
-              onChange={(e) => setEmojiSearch(e.target.value)}
-              placeholder="گەڕان لە ١٦١٧ خەندە بە کوردی یان ئینگلیزی (وەک: دڵ، پێکەنین، heart)..."
-              className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-500"
-            />
-            {emojiSearch && (
-              <button
-                type="button"
-                onClick={() => setEmojiSearch('')}
-                className="text-zinc-400 hover:text-white"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          {onStartEmojiSearch ? (
+            <button
+              type="button"
+              onClick={onStartEmojiSearch}
+              className={`w-full h-9 px-3 rounded-xl flex items-center gap-2 border text-right transition-colors active:scale-[0.99] ${
+                isLight
+                  ? 'bg-white border-slate-200 text-slate-500 hover:border-sky-400'
+                  : 'bg-white/[0.06] border-white/10 text-zinc-400 hover:border-sky-400/50'
+              }`}
+            >
+              <Search className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span className="flex-1 text-xs truncate">
+                گەڕان لە ١٦١٧ خەندە بە کوردی یان ئینگلیزی (دڵ، پێکەنین، heart)...
+              </span>
+            </button>
+          ) : (
+            <div
+              className={`h-9 px-3 rounded-xl flex items-center gap-2 border ${
+                isLight
+                  ? 'bg-white border-slate-200 text-slate-900'
+                  : 'bg-white/[0.06] border-white/10 text-white'
+              }`}
+            >
+              <Search className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              <input
+                type="text"
+                value={emojiSearch}
+                onChange={(e) => setEmojiSearch(e.target.value)}
+                placeholder="گەڕان لە ١٦١٧ خەندە بە کوردی یان ئینگلیزی (وەک: دڵ، پێکەنین، heart)..."
+                className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-500"
+              />
+              {emojiSearch && (
+                <button
+                  type="button"
+                  onClick={() => setEmojiSearch('')}
+                  className="text-zinc-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1478,13 +1499,7 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
     setLoading(true);
     setError(null);
 
-    const apiBase = (
-      (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-        ?.VITE_API_BASE_URL || ''
-    ).replace(/\/$/, '');
-    const isOfflineApk =
-      typeof window !== 'undefined' &&
-      (Boolean(window.AndroidIME) || Boolean(window.AndroidAppSetup));
+    const resolved = resolveAiServer(settings.aiServerUrl);
 
     const translateKeylessOnline = async (): Promise<string> => {
       const sl = sourceLang || 'auto';
@@ -1505,9 +1520,9 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
     };
 
     try {
-      if (!isOfflineApk || apiBase) {
+      if (resolved.source !== 'none') {
         try {
-          const res = await fetch(`${apiBase}/api/ai/translate`, {
+          const res = await fetch(`${resolved.baseUrl}/api/ai/translate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1517,13 +1532,25 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
               engine: settings.translationEngine,
             }),
           });
-          const data = await res.json();
+          const data = (await res.json()) as { translated?: string; error?: string };
           if (res.ok && data.translated) {
             setOutput(data.translated);
             return;
           }
-        } catch {
-          // Fall through to keyless public translation
+          if (
+            (resolved.source === 'settings' || resolved.source === 'env') &&
+            settings.translationEngine === 'ai_fluent'
+          ) {
+            throw new Error(data.error || 'هەڵە لە سێرڤەری AI ـدا ڕوویدا.');
+          }
+        } catch (serverErr: unknown) {
+          if (
+            (resolved.source === 'settings' || resolved.source === 'env') &&
+            settings.translationEngine === 'ai_fluent'
+          ) {
+            throw serverErr;
+          }
+          // Fall through to keyless public translation for fast mode
         }
       }
 
@@ -1726,36 +1753,38 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
       return;
     }
 
-    const apiBase = (
-      (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-        ?.VITE_API_BASE_URL || ''
-    ).replace(/\/$/, '');
-    const isOfflineApk =
-      typeof window !== 'undefined' &&
-      (Boolean(window.AndroidIME) || Boolean(window.AndroidAppSetup));
+    const resolved = resolveAiServer(settings.aiServerUrl);
 
-    if (isOfflineApk && !apiBase) {
-      setError(
-        'بۆ پاراستنی کلیلەکان لە گیتهەبی پەبڵیک، ژیری دەسکرد پێویستی بە بەستنەوەی سێرڤەرە لە ڕێگەی GitHub Secrets (VITE_API_BASE_URL).'
-      );
+    if (resolved.source === 'none') {
+      setError(null);
+      setResult(runOfflineSmartRewrite(editorText, mode));
       return;
     }
 
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${apiBase}/api/ai/rewrite`, {
+      const res = await fetch(`${resolved.baseUrl}/api/ai/rewrite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: editorText, mode }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { result?: string; error?: string };
       if (!res.ok) {
         throw new Error(data.error || 'هەڵە لە داڕشتنەوەدا ڕوویدا.');
       }
       setResult(data.result || '');
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'هەڵەی پەیوەندی ڕوویدا.');
+    } catch (err: unknown) {
+      if (resolved.source === 'settings' || resolved.source === 'env') {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'نەتوانرا پەیوەندی بە سێرڤەری AI ـەوە بکرێت. دڵنیابە لە بەستەری Vercel و ئینتەرنێت.'
+        );
+      } else {
+        // Seamless local Kurdish fallback on preview when no custom server is configured
+        setResult(runOfflineSmartRewrite(editorText, mode));
+      }
     } finally {
       setLoading(false);
     }
@@ -1821,7 +1850,23 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
             <span>ژیری دەسکرد خەریکی داڕشتنەوەیە...</span>
           </div>
         ) : error ? (
-          <p className="text-xs text-rose-400 my-auto text-center">{error}</p>
+          <div className="my-auto flex flex-col items-center gap-2 text-center px-2">
+            <p className="text-xs text-rose-400 leading-relaxed">{error}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setError(null);
+                setResult(runOfflineSmartRewrite(editorText, activeMode));
+              }}
+              className={`h-7 px-3 rounded-lg text-[11px] font-bold transition-colors ${
+                isLight
+                  ? 'bg-slate-200 text-slate-800 hover:bg-slate-300'
+                  : 'bg-white/10 text-zinc-200 hover:bg-white/15'
+              }`}
+            >
+              بەکارهێنانی دۆخی ئۆفڵاین
+            </button>
+          </div>
         ) : result ? (
           <>
             <p className="text-sm leading-relaxed select-text" dir="auto">

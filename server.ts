@@ -10,7 +10,7 @@ import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
 function getGeminiClient(): GoogleGenAI | null {
@@ -31,6 +31,18 @@ function getGeminiClient(): GoogleGenAI | null {
 async function startServer() {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
+
+  // Allow cross-origin requests from the standalone Android APK WebView (https://localhost)
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+    next();
+  });
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, aiConfigured: Boolean(getGeminiClient()) });
@@ -77,12 +89,14 @@ async function startServer() {
         '.env.example',
         'metadata.json',
         'server.ts',
+        'vercel.json',
       ]) {
         addFileIfExists(f);
       }
 
-      // GitHub Actions workflow, Android IME Java overlay, build script & source code
+      // GitHub Actions workflow, Vercel serverless API, Android IME Java overlay, build script & source code
       addDirRecursive('.github');
+      addDirRecursive('api');
       addDirRecursive('android-ime');
       addDirRecursive('scripts');
       addDirRecursive('src');

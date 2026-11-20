@@ -233,6 +233,7 @@ export interface KeyboardSettings {
   smartReplyEnabled: boolean;
   aiTextSource: 'selected_or_all' | 'all';
   translationEngine: TranslationEngine;
+  aiServerUrl: string;
 
   // Emoji & Zikr
   emojiStyle: EmojiStyleMode;

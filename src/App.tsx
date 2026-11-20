@@ -89,6 +89,9 @@ function hydrateSettings(partial: Partial<KeyboardSettings>): KeyboardSettings {
   if (!Array.isArray(merged.textShortcuts)) {
     merged.textShortcuts = DEFAULT_SETTINGS.textShortcuts;
   }
+  if (typeof merged.aiServerUrl !== 'string') {
+    merged.aiServerUrl = '';
+  }
   if (Array.isArray(merged.enabledLanguages) && merged.enabledLanguages.length > 0) {
     merged.enabledLanguages = merged.enabledLanguages.map((lang: Partial<LanguageConfig>) => {
       const preset = findSubtypePreset(lang.code || 'ckb');

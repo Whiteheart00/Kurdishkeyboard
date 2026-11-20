@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import {
+  AlertCircle,
   Check,
+  CheckCircle2,
   ChevronLeft,
   Globe,
   Keyboard as KeyboardIcon,
   Languages,
+  Link2,
+  Loader2,
   Play,
   Plus,
+  Server,
+  ShieldCheck,
   Sparkles,
   Trash2,
   Type,
@@ -24,6 +30,13 @@ import {
   CHARACTER_LAYOUT_OPTIONS,
   getCharacterLayoutLabel,
 } from '../../data/layouts';
+import {
+  AiHealthTestResult,
+  getBuildTimeApiBaseUrl,
+  normalizeAiServerUrl,
+  resolveAiServer,
+  testAiServerConnection,
+} from '../../utils/aiServer';
 import { AppToggle, NotificationBanner, SubPageHeader } from './SettingsUI';
 
 interface FontMetaItem {
@@ -515,6 +528,77 @@ export const AISettingsScreen: React.FC<AISettingsScreenProps> = ({
   isLightApp,
 }) => {
   const [showGuide, setShowGuide] = useState(false);
+  const [showVercelGuide, setShowVercelGuide] = useState(false);
+  const [urlModalOpen, setUrlModalOpen] = useState(false);
+  const [urlDraft, setUrlDraft] = useState(settings.aiServerUrl || '');
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<AiHealthTestResult | null>(null);
+
+  const envServerUrl = getBuildTimeApiBaseUrl();
+  const resolved = resolveAiServer(settings.aiServerUrl);
+
+  const openUrlModal = () => {
+    setUrlDraft(settings.aiServerUrl || envServerUrl || '');
+    setUrlError(null);
+    setUrlModalOpen(true);
+  };
+
+  const handleSaveServerUrl = () => {
+    try {
+      const normalized = normalizeAiServerUrl(urlDraft);
+      onUpdate({ aiServerUrl: normalized });
+      setUrlModalOpen(false);
+      setUrlError(null);
+      setTestResult(null);
+    } catch (err: unknown) {
+      setUrlError(err instanceof Error ? err.message : 'بەستەرەکە دروست نییە.');
+    }
+  };
+
+  const handleClearServerUrl = () => {
+    onUpdate({ aiServerUrl: '' });
+    setUrlDraft('');
+    setUrlError(null);
+    setTestResult(null);
+    setUrlModalOpen(false);
+  };
+
+  const handleTestConnection = async () => {
+    if (resolved.source === 'none') {
+      setTestResult({
+        status: 'error',
+        message: 'تکایە سەرەتا بەستەری سێرڤەری Vercel دابنێ (نموونە: https://your-app.vercel.app).',
+      });
+      return;
+    }
+    setTesting(true);
+    setTestResult(null);
+    const res = await testAiServerConnection(resolved.baseUrl);
+    setTestResult(res);
+    setTesting(false);
+  };
+
+  const borderMuted = isLightApp ? 'border-slate-200' : 'border-white/5';
+  const subText = isLightApp ? 'text-slate-500' : 'text-zinc-400';
+  const sectionAccent = isLightApp ? 'text-[#0B5FA8]' : 'text-[#9AC5FF]';
+  const cardSurface = isLightApp
+    ? 'bg-slate-50 border-slate-200 text-slate-700'
+    : 'bg-[#14171E] border-white/10 text-zinc-300';
+
+  const serverSubtitle = (() => {
+    if (resolved.source === 'settings') {
+      return `${resolved.baseUrl} · دانراوە لە ئەپ`;
+    }
+    if (resolved.source === 'env') {
+      return `${resolved.baseUrl} · دانراوە لە GitHub Secrets`;
+    }
+    if (resolved.source === 'same_origin') {
+      return 'سێرڤەری بنەڕەتی وێب · کرتە بکە بۆ دانانی لینکی Vercel';
+    }
+    return 'دانەنراوە — کرتە بکە بۆ دانانی لینکی خۆڕایی Vercel';
+  })();
+
   return (
     <div className="min-h-full flex flex-col pb-24" dir="rtl">
       <SubPageHeader title="ژیری دەسکرد (AI)" onBack={onBack} isLightApp={isLightApp} />
@@ -527,7 +611,7 @@ export const AISettingsScreen: React.FC<AISettingsScreenProps> = ({
         <div className="flex items-center justify-between gap-4 py-2">
           <div>
             <div className="text-base font-bold">وەڵامدەرەوەی زیرەک</div>
-            <div className="text-xs text-zinc-400 mt-1">
+            <div className={`text-xs mt-1 ${subText}`}>
               بەکارهێنانی ژیری دەسکرد بۆ ڕاستکردنەوە و داڕشتنەوەی دەقەکان
             </div>
           </div>
@@ -538,14 +622,12 @@ export const AISettingsScreen: React.FC<AISettingsScreenProps> = ({
           />
         </div>
 
-        <div className="space-y-4 pt-2">
-          <div className="text-xs font-bold text-[#9AC5FF]">ڕێکخستنی ژیری دەسکرد</div>
+        <div className="space-y-3 pt-1">
+          <div className={`text-xs font-bold ${sectionAccent}`}>ڕێکخستنی ژیری دەسکرد</div>
 
-          <div className="py-2 border-b border-white/5">
-            <div className="text-sm font-bold">دابینکەری ژیری دەسکرد</div>
-            <div className="text-xs text-zinc-400 mt-0.5">
-              ژیری دەسکردی Gemini (پەیوەندیکراوە بە سێرڤەرەوە)
-            </div>
+          <div className={`py-2 border-b ${borderMuted}`}>
+            <div className="text-sm font-bold">مۆدێلی ژیری دەسکرد</div>
+            <div className={`text-xs mt-0.5 ${subText}`}>ژیری دەسکردی Gemini (پڕۆکسی سێرڤەری پارێزراو)</div>
           </div>
 
           <button
@@ -556,10 +638,12 @@ export const AISettingsScreen: React.FC<AISettingsScreenProps> = ({
                   settings.aiTextSource === 'selected_or_all' ? 'all' : 'selected_or_all',
               })
             }
-            className="w-full py-2.5 text-right border-b border-white/5 hover:bg-white/[0.03] rounded-xl px-2 -mx-2 transition-colors"
+            className={`w-full py-2.5 text-right border-b ${borderMuted} ${
+              isLightApp ? 'hover:bg-slate-100' : 'hover:bg-white/[0.03]'
+            } rounded-xl px-2 -mx-2 transition-colors`}
           >
             <div className="text-sm font-bold">سەرچاوەی دەق</div>
-            <div className="text-xs text-zinc-400 mt-0.5">
+            <div className={`text-xs mt-0.5 ${subText}`}>
               {settings.aiTextSource === 'selected_or_all'
                 ? 'دەقی دیاریکراو یان هەمووی'
                 : 'تەنها هەموو دەقەکە'}
@@ -567,10 +651,147 @@ export const AISettingsScreen: React.FC<AISettingsScreenProps> = ({
           </button>
         </div>
 
+        {/* Vercel AI Server Proxy Section */}
+        <div className="space-y-3 pt-1">
+          <div className={`text-xs font-bold ${sectionAccent}`}>پەیوەندی سێرڤەر (Vercel AI)</div>
+
+          <button
+            type="button"
+            onClick={openUrlModal}
+            className={`w-full py-2.5 text-right border-b ${borderMuted} ${
+              isLightApp ? 'hover:bg-slate-100' : 'hover:bg-white/[0.03]'
+            } rounded-xl px-2 -mx-2 transition-colors flex items-center justify-between gap-3`}
+          >
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold flex items-center gap-2">
+                <span>بەستەری سێرڤەری AI (Vercel)</span>
+                {(resolved.source === 'settings' || resolved.source === 'env') && (
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                )}
+              </div>
+              <div className={`text-xs mt-0.5 truncate ${subText}`} dir="auto">
+                {serverSubtitle}
+              </div>
+            </div>
+            <Link2 className={`w-4 h-4 shrink-0 ${sectionAccent}`} />
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleTestConnection}
+              disabled={testing}
+              className={`flex-1 h-11 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-60 ${
+                isLightApp
+                  ? 'border-sky-300 bg-sky-50 text-sky-800 hover:bg-sky-100'
+                  : 'border-sky-400/35 bg-sky-500/10 text-[#9AC5FF] hover:bg-sky-500/15'
+              }`}
+            >
+              {testing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>خەریکی پشکنینە...</span>
+                </>
+              ) : (
+                <>
+                  <Server className="w-4 h-4" />
+                  <span>پشکنینی پەیوەندی سێرڤەر</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={openUrlModal}
+              className={`h-11 px-4 rounded-2xl border text-xs font-bold transition-colors ${
+                isLightApp
+                  ? 'border-slate-300 text-slate-700 hover:bg-slate-100'
+                  : 'border-white/15 text-zinc-200 hover:bg-white/5'
+              }`}
+            >
+              دەستکاری
+            </button>
+          </div>
+
+          {testResult && (
+            <div
+              className={`rounded-2xl p-3 border text-xs leading-relaxed flex items-start gap-2.5 ${
+                testResult.status === 'ready'
+                  ? isLightApp
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  : testResult.status === 'missing_key'
+                  ? isLightApp
+                    ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                  : isLightApp
+                  ? 'bg-rose-50 border-rose-200 text-rose-800'
+                  : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+              }`}
+            >
+              {testResult.status === 'ready' ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              )}
+              <span>{testResult.message}</span>
+            </div>
+          )}
+
+          {/* Free Vercel 1-Click Setup Guide */}
+          <button
+            type="button"
+            onClick={() => setShowVercelGuide((v) => !v)}
+            className={`w-full h-11 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-colors ${
+              isLightApp
+                ? 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+                : 'border-white/15 bg-white/[0.03] text-zinc-100 hover:bg-white/[0.06]'
+            }`}
+          >
+            <ShieldCheck className={`w-4 h-4 ${sectionAccent}`} />
+            <span>چۆنیەتی دروستکردنی لینکی خۆڕایی Vercel (بێ کارتی بانک)</span>
+          </button>
+
+          {showVercelGuide && (
+            <div className={`rounded-2xl border p-4 space-y-2.5 text-xs leading-relaxed ${cardSurface}`}>
+              <p className="font-bold text-sm">
+                دروستکردنی سێرڤەری AI بە خۆڕایی لە Vercel (لە ١ خولەکدا):
+              </p>
+              <p>١. پڕۆژەکەت لەسەر هەژماری GitHub ـەکەت دابنێ.</p>
+              <p>
+                ٢. بچۆ سەر <span className="font-mono font-bold" dir="ltr">vercel.com</span> و بە
+                هەژماری GitHub بچۆ ژوورەوە (هیچ کارتی بانکێک ناوێت).
+              </p>
+              <p>
+                ٣. لەسەر <span className="font-bold">Add New Project</span> دابگرە و ڕیپۆزیتۆری
+                تەختەکلیلی کوردی هەڵبژێرە.
+              </p>
+              <p>
+                ٤. پێش Deploy، لە بەشی <span className="font-bold">Environment Variables</span>{' '}
+                ناوی <span className="font-mono font-bold" dir="ltr">GEMINI_API_KEY</span> بنووسە و
+                کلیلەکەت لە خانەی Value دابنێ، پاشان <span className="font-bold">Deploy</span>{' '}
+                دابگرە.
+              </p>
+              <p>
+                ٥. ئەو لینکەی Vercel پێت دەدات (وەک{' '}
+                <span className="font-mono" dir="ltr">https://kurdi-keyboard.vercel.app</span>)
+                کۆپی بکە و لێرە لە «بەستەری سێرڤەری AI» دایبنێ — یان لە{' '}
+                <span className="font-bold">GitHub Secrets</span> بە ناوی{' '}
+                <span className="font-mono font-bold" dir="ltr">VITE_API_BASE_URL</span> دایبنێ تا
+                بۆ APK ـەکەش خۆکار بێت.
+              </p>
+            </div>
+          )}
+        </div>
+
         <button
           type="button"
           onClick={() => setShowGuide((v) => !v)}
-          className="w-full h-12 rounded-2xl border border-sky-400/35 text-sm font-bold flex items-center justify-center gap-2 hover:bg-sky-500/10 transition-colors"
+          className={`w-full h-12 rounded-2xl border text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+            isLightApp
+              ? 'border-sky-300 text-sky-800 hover:bg-sky-50'
+              : 'border-sky-400/35 hover:bg-sky-500/10'
+          }`}
         >
           <span>چۆنیەتی بەکارهێنانی ژیری دەسکرد</span>
           <span className="w-6 h-6 rounded-full bg-[#9AC5FF] text-[#051B3A] flex items-center justify-center">
@@ -579,7 +800,7 @@ export const AISettingsScreen: React.FC<AISettingsScreenProps> = ({
         </button>
 
         {showGuide && (
-          <div className="rounded-2xl bg-[#14171E] border border-white/10 p-4 space-y-2.5 text-xs text-zinc-300 leading-relaxed">
+          <div className={`rounded-2xl border p-4 space-y-2.5 text-xs leading-relaxed ${cardSurface}`}>
             <p>١. لەسەر تەختەکلیلەکە دەقێک بە کوردی یان ئینگلیزی بنووسە.</p>
             <p>
               ٢. لەسەر ئایکۆنی ئەستێرەی زیرەک (✨) لە سەرەوەی تەختەکلیلەکە یان «وەڵامدەرەوەی زیرەک»
@@ -599,6 +820,98 @@ export const AISettingsScreen: React.FC<AISettingsScreenProps> = ({
           </div>
         )}
       </div>
+
+      {/* Material You Centered Dialog for Vercel AI Server URL */}
+      {urlModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-5"
+          onClick={() => setUrlModalOpen(false)}
+          dir="rtl"
+        >
+          <div
+            className={`w-full max-w-sm rounded-[28px] p-6 space-y-5 shadow-2xl border ${
+              isLightApp
+                ? 'bg-white border-slate-200 text-slate-900'
+                : 'bg-[#25272C] border-white/10 text-white'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-extrabold">بەستەری سێرڤەری AI (Vercel)</h3>
+              <p className={`text-xs leading-relaxed ${subText}`}>
+                لینکی پڕۆژەکەت لە Vercel لێرە دابنێ. کلیلی Gemini بە پارێزراوی لەناو سێرڤەری Vercel
+                دەمێنێتەوە.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <div
+                className={`rounded-t-xl px-3.5 pt-2.5 pb-2 border-b-2 transition-colors ${
+                  urlError
+                    ? 'border-rose-400 bg-rose-500/10'
+                    : isLightApp
+                    ? 'border-sky-600 bg-slate-100'
+                    : 'border-[#9AC5FF] bg-[#30333A]'
+                }`}
+              >
+                <label className={`block text-[11px] font-bold mb-1 ${sectionAccent}`}>
+                  Vercel Server URL
+                </label>
+                <input
+                  type="url"
+                  dir="ltr"
+                  value={urlDraft}
+                  onChange={(e) => {
+                    setUrlDraft(e.target.value);
+                    if (urlError) setUrlError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveServerUrl();
+                  }}
+                  placeholder="https://your-app.vercel.app"
+                  autoFocus
+                  className="w-full bg-transparent text-sm outline-none font-mono placeholder:text-zinc-500"
+                />
+              </div>
+              {urlError && <p className="text-[11px] text-rose-400 font-semibold">{urlError}</p>}
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <div>
+                {settings.aiServerUrl && (
+                  <button
+                    type="button"
+                    onClick={handleClearServerUrl}
+                    className="text-xs font-bold text-rose-400 hover:text-rose-300 px-2 py-1.5"
+                  >
+                    پاککردنەوە
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setUrlModalOpen(false)}
+                  className={`text-sm font-bold px-2 py-1.5 transition-colors ${
+                    isLightApp ? 'text-slate-600 hover:text-slate-900' : 'text-[#9AC5FF]/85 hover:text-[#9AC5FF]'
+                  }`}
+                >
+                  پاشگەزبوونەوە
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveServerUrl}
+                  className={`text-sm font-extrabold px-2 py-1.5 transition-colors ${
+                    isLightApp ? 'text-[#0B5FA8] hover:text-sky-700' : 'text-[#9AC5FF] hover:text-white'
+                  }`}
+                >
+                  جێبەجێکردن
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

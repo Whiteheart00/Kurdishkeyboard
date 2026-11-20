@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Maximize2, MicOff } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Maximize2, MicOff, Search, X } from 'lucide-react';
 import {
   ClipboardItem,
   KeyboardSettings,
@@ -12,9 +12,11 @@ import {
 import { findThemeById } from '../../data/themes';
 import { composeHangul, resolveLayoutRows } from '../../data/layouts';
 import {
+  EMOJI_CATEGORIES,
   EMOJI_KEYWORD_MAP,
   ENGLISH_DICTIONARY,
   KURDISH_DICTIONARY,
+  searchEmojis,
   TEXT_DECORATORS,
 } from '../../data/richContent';
 import { getKeyShapeStyleProps } from '../../data/officialData';
@@ -88,11 +90,34 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 }) => {
   const [activePanel, setActivePanel] = useState<ActiveKeyboardPanel>('keys');
   const [richInitialTab, setRichInitialTab] = useState<RichTab>('emoji');
+  const [emojiSearchMode, setEmojiSearchMode] = useState<boolean>(false);
+  const [emojiSearchQuery, setEmojiSearchQuery] = useState<string>('');
   const [translateInitialText, setTranslateInitialText] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<KeyboardViewMode>('characters');
   const [kanaMode, setKanaMode] = useState<'hira' | 'kata'>('hira');
   const [shiftState, setShiftState] = useState<'off' | 'once' | 'caps'>('off');
   const [activeDecoratorId, setActiveDecoratorId] = useState<string>('none');
+  const emojiSearchModeRef = useRef(false);
+  emojiSearchModeRef.current = emojiSearchMode;
+
+  useEffect(() => {
+    if (activePanel !== 'keys' && emojiSearchMode) {
+      setEmojiSearchMode(false);
+    }
+  }, [activePanel, emojiSearchMode]);
+
+  const emojiSearchResults = useMemo(() => {
+    if (!emojiSearchMode) return [];
+    const q = emojiSearchQuery.trim();
+    if (q) {
+      return searchEmojis(q, 48).map((e) => e.c);
+    }
+    const base = [
+      ...settings.recentEmojis,
+      ...(EMOJI_CATEGORIES[0]?.items.slice(0, 28).map((e) => e.c) || []),
+    ];
+    return Array.from(new Set(base)).slice(0, 36);
+  }, [emojiSearchMode, emojiSearchQuery, settings.recentEmojis]);
   const [pressedKeyId, setPressedKeyId] = useState<string | null>(null);
   const [popupKey, setPopupKey] = useState<{ id: string; label: string } | null>(null);
   const [longPressMenu, setLongPressMenu] = useState<{
@@ -289,6 +314,12 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   };
 
   const commitCharacter = (raw: string) => {
+    if (emojiSearchMode) {
+      setEmojiSearchQuery((prev) => prev + raw);
+      if (shiftState === 'once') setShiftState('off');
+      return;
+    }
+
     // Support authentic Korean Hangul Unicode Jamo syllable composition
     if (
       activeLangConfig?.composerId?.includes('hangul-unicode') &&
@@ -326,6 +357,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 
   const handleSpaceClick = () => {
     triggerSound('space');
+    if (emojiSearchMode) {
+      setEmojiSearchQuery((prev) => prev + ' ');
+      return;
+    }
     const now = Date.now();
     if (
       settings.doubleSpacePeriod &&
@@ -356,6 +391,14 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       }
       case 'backspace':
         triggerSound('backspace');
+        if (emojiSearchMode) {
+          setEmojiSearchQuery((prev) => {
+            const chars = [...prev];
+            chars.pop();
+            return chars.join('');
+          });
+          return;
+        }
         onBackspace();
         return;
       case 'space':
@@ -363,6 +406,14 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
         return;
       case 'enter':
         triggerSound('enter');
+        if (emojiSearchMode) {
+          if (emojiSearchQuery.trim() && emojiSearchResults[0]) {
+            handleRichInsert(emojiSearchResults[0], 'emoji');
+          } else {
+            setEmojiSearchMode(false);
+          }
+          return;
+        }
         onEnter();
         return;
       case 'characters':
@@ -392,6 +443,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
         return;
       case 'emoji':
         triggerSound('special');
+        setEmojiSearchMode(false);
         setRichInitialTab('emoji');
         setActivePanel('emoji');
         return;
@@ -457,7 +509,15 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = window.setTimeout(() => {
         backspaceRepeatRef.current = window.setInterval(() => {
-          onBackspace();
+          if (emojiSearchModeRef.current) {
+            setEmojiSearchQuery((prev) => {
+              const chars = [...prev];
+              chars.pop();
+              return chars.join('');
+            });
+          } else {
+            onBackspace();
+          }
         }, 75);
       }, 360);
       return;
@@ -806,6 +866,12 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           onBackspace={onBackspace}
           onClose={() => setActivePanel('keys')}
           onOpenSettings={onOpenSettingsRoute}
+          onStartEmojiSearch={() => {
+            setEmojiSearchQuery('');
+            setEmojiSearchMode(true);
+            setViewMode('characters');
+            setActivePanel('keys');
+          }}
         />
       ) : activePanel === 'tools' ? (
         <ToolsGridPanel
@@ -896,7 +962,80 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
         />
       ) : (
         <div className="flex flex-col w-full kb-noselect">
-          {/* Second Utility Strip matching authentic KurdiKeyboard layout: Left AI & Translate, Center Predictions/Clipboard, Right Zikr & Tools */}
+          {/* Inline Gboard-style Emoji Search Bar + Instant Results Strip (types directly with the keyboard below!) */}
+          {emojiSearchMode ? (
+            <div className="flex flex-col border-b border-white/10 px-2 pt-1.5 pb-1 gap-1.5" dir="rtl">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerSound('special');
+                    setEmojiSearchMode(false);
+                    setRichInitialTab('emoji');
+                    setActivePanel('emoji');
+                  }}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                    isLight ? 'bg-slate-200 text-slate-800' : 'bg-white/10 text-white'
+                  }`}
+                  title="گەڕانەوە بۆ خەندەکان"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <div
+                  className={`flex-1 h-8 px-2.5 rounded-xl flex items-center gap-1.5 border overflow-hidden ${
+                    isLight
+                      ? 'bg-white border-sky-400 text-slate-900'
+                      : 'bg-white/[0.08] border-sky-400/50 text-white'
+                  }`}
+                >
+                  <Search className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <div className="flex-1 text-xs font-medium truncate flex items-center">
+                    {emojiSearchQuery ? (
+                      <>
+                        <span className="truncate">{emojiSearchQuery}</span>
+                        <span className="inline-block w-[2px] h-3.5 bg-sky-400 mr-0.5 animate-pulse shrink-0" />
+                      </>
+                    ) : (
+                      <span className="text-zinc-400 truncate">
+                        بە کوردی یان ئینگلیزی بنووسە (دڵ، پێکەنین، heart)...
+                      </span>
+                    )}
+                  </div>
+                  {emojiSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setEmojiSearchQuery('')}
+                      className="text-zinc-400 hover:text-white shrink-0 p-0.5"
+                      title="پاککردنەوە"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Horizontal Matching Emoji Strip */}
+              <div className="flex items-center gap-1 overflow-x-auto custom-scroll h-10 px-0.5" dir="ltr">
+                {emojiSearchResults.length > 0 ? (
+                  emojiSearchResults.map((em, i) => (
+                    <button
+                      key={`${em}_${i}`}
+                      type="button"
+                      onClick={() => handleRichInsert(em, 'emoji')}
+                      className="w-10 h-9 rounded-xl flex items-center justify-center text-2xl shrink-0 hover:bg-white/10 active:scale-90 transition-transform"
+                    >
+                      {em}
+                    </button>
+                  ))
+                ) : (
+                  <div className="w-full text-center text-xs text-zinc-400" dir="rtl">
+                    هیچ خەندەیەک نەدۆزرایەوە
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+          /* Second Utility Strip matching authentic KurdiKeyboard layout: Left AI & Translate, Center Predictions/Clipboard, Right Zikr & Tools */
           <div className="flex items-center justify-between px-2 py-1.5 gap-1.5">
             <div className="flex items-center gap-1 shrink-0">
               {settings.smartReplyEnabled && (
@@ -1009,6 +1148,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
               </button>
             </div>
           </div>
+          )}
 
           {/* One-handed wrapper */}
           <div className="flex w-full items-stretch">
