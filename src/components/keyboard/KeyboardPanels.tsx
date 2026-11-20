@@ -1477,24 +1477,64 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
     }
     setLoading(true);
     setError(null);
+
+    const apiBase = (
+      (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+        ?.VITE_API_BASE_URL || ''
+    ).replace(/\/$/, '');
+    const isOfflineApk =
+      typeof window !== 'undefined' &&
+      (Boolean(window.AndroidIME) || Boolean(window.AndroidAppSetup));
+
+    const translateKeylessOnline = async (): Promise<string> => {
+      const sl = sourceLang || 'auto';
+      const tl = targetLang || 'en';
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(
+        sl
+      )}&tl=${encodeURIComponent(tl)}&dt=t&q=${encodeURIComponent(textToTranslate)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('هەڵە لە پەیوەندی بە وەرگێڕەوە ڕوویدا.');
+      const json = (await res.json()) as unknown[];
+      const segments = Array.isArray(json?.[0]) ? (json[0] as unknown[][]) : [];
+      const joined = segments
+        .map((seg) => (Array.isArray(seg) && typeof seg[0] === 'string' ? seg[0] : ''))
+        .join('')
+        .trim();
+      if (!joined) throw new Error('وەڵامێک لە وەرگێڕەوە نەگەڕایەوە.');
+      return joined;
+    };
+
     try {
-      const res = await fetch('/api/ai/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: textToTranslate,
-          sourceLang,
-          targetLang,
-          engine: settings.translationEngine,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'هەڵە لە وەرگێڕاندا ڕوویدا.');
+      if (!isOfflineApk || apiBase) {
+        try {
+          const res = await fetch(`${apiBase}/api/ai/translate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: textToTranslate,
+              sourceLang,
+              targetLang,
+              engine: settings.translationEngine,
+            }),
+          });
+          const data = await res.json();
+          if (res.ok && data.translated) {
+            setOutput(data.translated);
+            return;
+          }
+        } catch {
+          // Fall through to keyless public translation
+        }
       }
-      setOutput(data.translated || '');
+
+      const fallbackTranslated = await translateKeylessOnline();
+      setOutput(fallbackTranslated);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'هەڵەی پەیوەندی ڕوویدا.');
+      setError(
+        e instanceof Error
+          ? e.message
+          : 'هەڵەی پەیوەندی ڕوویدا. دڵنیابە لە بوونی ئینتەرنێت.'
+      );
     } finally {
       setLoading(false);
     }
@@ -1685,10 +1725,26 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
       setError('سەرەتا دەقێک لە خانەی نووسیندا بنووسە.');
       return;
     }
+
+    const apiBase = (
+      (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+        ?.VITE_API_BASE_URL || ''
+    ).replace(/\/$/, '');
+    const isOfflineApk =
+      typeof window !== 'undefined' &&
+      (Boolean(window.AndroidIME) || Boolean(window.AndroidAppSetup));
+
+    if (isOfflineApk && !apiBase) {
+      setError(
+        'بۆ پاراستنی کلیلەکان لە گیتهەبی پەبڵیک، ژیری دەسکرد پێویستی بە بەستنەوەی سێرڤەرە لە ڕێگەی GitHub Secrets (VITE_API_BASE_URL).'
+      );
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/ai/rewrite', {
+      const res = await fetch(`${apiBase}/api/ai/rewrite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: editorText, mode }),
