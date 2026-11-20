@@ -1,0 +1,253 @@
+{
+  "$": "ime.extension.theme",
+  "meta": {
+    "id": "com.kurdikeyboard.theme",
+    "version": "1.0.0",
+    "title": "Rukar",
+    "description": "Default Themes",
+    "keywords": [
+      "default",
+      "rukar"
+    ],
+    "homepage": "https://kurdikebord.github.io",
+    "maintainers": [
+      "GoRaN <kurdikebord@gmail.com>"
+    ],
+    "license": "GPL-3.0-or-later"
+  },
+  "themes": [
+
+    {
+      "id": "vibrant_dream",
+      "label": "ڕووکاری ١",
+      "authors": [ "GoRaN" ],
+      "isNight": true,
+      "materialYouFlags": {
+        "paletteStyle": "Vibrant",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+
+    {
+      "id": "default",
+      "label": "ڕووکاری ٢",
+      "authors": [ "GoRaN" ],
+      "isNight": false,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+
+    {
+      "id": "crystal_blue",
+      "label": "ڕووکاری ٣",
+      "authors": [ "GoRaN" ],
+      "isNight": true,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+    {
+      "id": "crystal_gold",
+      "label": "ڕووکاری ٤",
+      "authors": [ "GoRaN" ],
+      "isNight": true,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+
+    {
+      "id": "swiftkey_light",
+      "label": "ڕووکاری ٥",
+      "authors": [ "GoRaN" ],
+      "isNight": false,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+
+    {
+      "id": "swiftkey_dark",
+      "label": "ڕووکاری ٦",
+      "authors": [ "GoRaN" ],
+      "isNight": true,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+
+    {
+      "id": "samsung_high_contrast",
+      "label": "ڕووکاری ٧",
+      "authors": [ "GoRaN" ],
+      "isNight": true,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+    {
+      "id": "samsung_high_contrast_light",
+      "label": "ڕووکاری ٨",
+      "authors": [ "GoRaN" ],
+      "isNight": false,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+    {
+      "id": "futolight",
+      "label": "ڕووکاری ٩",
+      "authors": [ "GoRaN" ],
+      "isNight": false,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+    {
+      "id": "futodark",
+      "label": "ڕووکاری ١٠",
+      "authors": [ "GoRaN" ],
+      "isNight": true,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+
+    {
+      "id": "lavender_light",
+      "label": "ڕووکاری ١١",
+      "authors": [ "GoRaN" ],
+      "isNight": false,
+      "materialYouFlags": {
+        "paletteStyle": "Content",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+    {
+      "id": "nord",
+      "label": "ڕووکاری ١٢",
+      "authors": [
+        "GoRaN"
+      ],
+      "materialYouFlags": {
+        "paletteStyle": "Neutral",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+
+    {
+      "id": "midnight",
+      "label": "ڕووکاری ١٣",
+      "authors": [ "GoRaN" ],
+      "isNight": true,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+
+    {
+      "id": "sand",
+      "label": "ڕووکاری ١٤",
+      "authors": [ "GoRaN" ],
+      "isNight": false,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+    {
+      "id": "gboardish_red",
+      "label": "ڕووکاری ١٥",
+      "authors": [ "GoRaN" ],
+      "isNight": true,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+
+    {
+      "id": "gboardish_blue",
+      "label": "رووکاری ١٦",
+      "authors": [ "GoRaN" ],
+      "isNight": false,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+
+    {
+      "id": "gboardish_green",
+      "label": "ڕووکاری ١٧",
+      "authors": [ "GoRaN" ],
+      "isNight": false,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+
+    {
+      "id": "gboardish_navy",
+      "label": "ڕووکاری ١٨",
+      "authors": [ "GoRaN" ],
+      "isNight": true,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+    {
+      "id": "gboardish_navy_borderless",
+      "label": "ڕووکاری ١٩",
+      "authors": [ "GoRaN" ],
+      "isNight": true,
+      "materialYouFlags": {
+        "paletteStyle": "TonalSpot",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    },
+    {
+      "id": "amber_dark",
+      "label": "ڕووکاری ٢٠",
+      "authors": [ "GoRaN" ],
+      "isNight": true,
+      "materialYouFlags": {
+        "paletteStyle": "Vibrant",
+        "contrastLevel": "Default",
+        "specVersion": "SPEC_2025"
+      }
+    }
+  ]
+}

@@ -1,0 +1,322 @@
+{
+  "$": "ime.extension.keyboard",
+  "meta": {
+    "id": "com.kurdikeyboard.localization",
+    "version": "1.0.0",
+    "title": "Default subtype presets / popup mappings",
+    "description": "Default subtype presets and popup mappings which are always available.",
+    "maintainers": [ "GoRaN" ],
+    "license": "apache-2.0"
+  },
+  "dependencies": [
+    "com.kurdikeyboard.composers",
+    "com.kurdikeyboard.currencysets",
+    "com.kurdikeyboard.layouts"
+  ],
+  "punctuationRules": [
+    {
+      "id": "default",
+      "label": "Default",
+      "symbolsPrecedingAutoSpace": ".,?‽!\"&%)]}»",
+      "symbolsFollowingAutoSpace": "",
+      "symbolsPrecedingPhantomSpace": ".,;:?‽!&%)]}»©®™",
+      "symbolsFollowingPhantomSpace": "¿⸘¡([{",
+      "symbolsTerminatingSentence": ".?‽!"
+    }
+  ],
+  "popupMappings": [
+    { "id": "default", "authors": [ "GoRaN" ] },
+    { "id": "ar", "authors": [ "HeiWiper" ] },
+    { "id": "ckb", "authors": [ "GoRaN" ] },
+    { "id": "da", "authors": [ "GoRaN" ] },
+    { "id": "de", "authors": [ "GoRaN" ] },
+    { "id": "el", "authors": [ "tsiflimagas" ] },
+    { "id": "en", "authors": [ "GoRaN" ] },
+    { "id": "es", "authors": [ "GoRaN" ] },
+    { "id": "fa1", "authors": [ "PHELAT" ] },
+    { "id": "fa2", "authors": [ "M-Koushan" ] },
+    { "id": "fi", "authors": [ "GoRaN" ] },
+    { "id": "fr", "authors": [ "GoRaN" ] },
+    { "id": "hi", "authors": [ "npnpatidar" ] },
+    { "id": "it", "authors": [ "GoRaN" ] },
+    { "id": "ja", "authors": [ "waelwindows" ] },
+    { "id": "ko", "authors": [ "GoRaN" ] },
+    { "id": "ku", "authors": [ "GoRaN" ] },
+    { "id": "no", "authors": [ "GoRaN" ] },
+    { "id": "pt", "authors": [ "GoRaN" ] },
+    { "id": "ru", "authors": [ "33kk" ] },
+    { "id": "sv", "authors": [ "GoRaN" ] },
+    { "id": "zgh", "authors": [ "GoRaN" ] }
+  ],
+
+  "subtypePresets": [
+    {
+      "languageTag": "ckb",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:dollar",
+      "popupMapping": "com.kurdikeyboard.localization:ckb",
+      "showNumberRow": false,
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:kurdi_qvfgh",
+        "symbols": "com.kurdikeyboard.layouts:kurdi_arabi_farsi",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:arabi_kurdi",
+        "numericAdvanced": "com.kurdikeyboard.layouts:kurdi_arabi"
+      }
+    },
+
+    {
+      "languageTag": "hac",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:dollar",
+      "popupMapping": "com.kurdikeyboard.localization:ckb",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:horami",
+        "symbols": "com.kurdikeyboard.layouts:kurdi_arabi_farsi",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:arabi_kurdi",
+        "numericAdvanced": "com.kurdikeyboard.layouts:kurdi_arabi"
+
+      }
+    },
+
+    {
+      "languageTag": "sdh",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:dollar",
+      "popupMapping": "com.kurdikeyboard.localization:ckb",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:xwarg",
+        "symbols": "com.kurdikeyboard.layouts:kurdi_arabi_farsi",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:arabi_kurdi",
+        "numericAdvanced": "com.kurdikeyboard.layouts:kurdi_arabi"
+
+      }
+    },
+
+    {
+      "languageTag": "ku",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:dollar",
+      "popupMapping": "com.kurdikeyboard.localization:ku",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:kurmanci"
+      }
+    },
+
+    {
+      "languageTag": "en",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:dollar",
+      "popupMapping": "com.kurdikeyboard.localization:en",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:qwerty",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+    {
+      "languageTag": "de",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:euro",
+      "popupMapping": "com.kurdikeyboard.localization:de",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:qwertz",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+    {
+      "languageTag": "fr",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:euro",
+      "popupMapping": "com.kurdikeyboard.localization:fr",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:azerty",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+    {
+      "languageTag": "it",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:euro",
+      "popupMapping": "com.kurdikeyboard.localization:it",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:qwerty",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+    {
+      "languageTag": "es",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:euro",
+      "popupMapping": "com.kurdikeyboard.localization:es",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:spanish",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+    {
+      "languageTag": "pt",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:euro",
+      "popupMapping": "com.kurdikeyboard.localization:pt",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:qwerty",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+    {
+      "languageTag": "no",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:dollar",
+      "popupMapping": "com.kurdikeyboard.localization:no",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:norwegian",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+    {
+      "languageTag": "sv",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:dollar",
+      "popupMapping": "com.kurdikeyboard.localization:sv",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:swedish_finnish",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+    {
+      "languageTag": "fi",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:euro",
+      "popupMapping": "com.kurdikeyboard.localization:fi",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:swedish_finnish",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+    {
+      "languageTag": "da",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:dollar",
+      "popupMapping": "com.kurdikeyboard.localization:da",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:danish",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+    {
+      "languageTag": "fa",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:rial",
+      "popupMapping": "com.kurdikeyboard.localization:fa1",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:persian1",
+        "symbols": "com.kurdikeyboard.layouts:kurdi_arabi_farsi",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:urdu_farsi",
+        "numericAdvanced": "com.kurdikeyboard.layouts:urdu_farsi"
+      }
+    },
+
+    {
+      "languageTag": "ar",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:rial",
+      "popupMapping": "com.kurdikeyboard.localization:ar",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:arabic1",
+        "symbols": "com.kurdikeyboard.layouts:kurdi_arabi_farsi",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:arabi_kurdi",
+        "numericAdvanced": "com.kurdikeyboard.layouts:kurdi_arabi"
+      }
+    },
+
+    {
+      "languageTag": "ru",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:ruble",
+      "popupMapping": "com.kurdikeyboard.localization:ru",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:russian",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+
+    {
+      "languageTag": "el",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:euro",
+      "popupMapping": "com.kurdikeyboard.localization:el",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:greek",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+
+    {
+      "languageTag": "ko",
+      "composer": "com.kurdikeyboard.composers:hangul-unicode",
+      "currencySet": "com.kurdikeyboard.currencysets:won",
+      "popupMapping": "com.kurdikeyboard.localization:ko",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:korean",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    },
+
+    {
+      "languageTag": "zgh",
+      "composer": "com.kurdikeyboard.composers:appender",
+      "currencySet": "com.kurdikeyboard.currencysets:euro",
+      "popupMapping": "com.kurdikeyboard.localization:zgh",
+      "preferred": {
+        "characters": "com.kurdikeyboard.layouts:amazigh",
+        "symbols": "com.kurdikeyboard.layouts:sym_alt",
+        "symbols2": "com.kurdikeyboard.layouts:sym_alt",
+        "numericRow": "com.kurdikeyboard.layouts:latin",
+        "numericAdvanced": "com.kurdikeyboard.layouts:latin"
+      }
+    }
+  ]
+}

@@ -1,0 +1,3176 @@
+[smileys_emotion]
+😀;grinning face;پێکەنین
+😁;beaming face with smiling eyes;پێکەنینی گەشاوە
+😆;grinning squinting face;پێکەنینی چاو نووقان
+🤣;rolling on the floor laughing;پێکەنینی زۆر
+😂;face with tears of joy;گریان لە خۆشیا
+😅;grinning face with sweat;پێکەنینی شەرمەزاری
+😄;grinning face with smiling eyes;پێکەنینی دڵخۆشانە
+😃;grinning face with big eyes;پێکەنینی گەورە
+😌;relieved face;ئاسودە
+😊;smiling face with smiling eyes;دڵخۆشی
+☺️;smiling face;پێکەنین
+🥺;pleading face;پاڕانەوە
+🥲;smiling face with tear;پێکەنینی بە گریانەوە
+🥹;face holding back tears;گریان گرتنەوە
+🫠;melting face;توانەوە
+🫡;saluting face;سڵاوی سەربازی
+🤗;hugging face;باوەش
+🤫;shushing face;بێدەنگی
+🤭;face with hand over mouth;دەست بە دەمەوە
+🫣;face with peeking eye;چاو لێبڕین
+🫢;face with open eyes and hand over mouth;سەرسام بوون
+😇;smiling face with halo;فریشتە
+🙂;slightly smiling face;کەمێک پێکەنین
+🙃;upside-down face;دەموچاوی سەرەوخوار
+😍;smiling face with heart-eyes;ئاشق
+🥰;smiling face with hearts;خۆشەویستی
+🤩;star-struck;سەرسام
+😘;face blowing a kiss;ماچ
+😉;winking face;چاو داگرتن
+😗;kissing face;ماچ کردن
+😙;kissing face with smiling eyes;ماچی دڵخۆشی
+😚;kissing face with closed eyes;ماچی چاو داخراو
+🫤;face with diagonal mouth;گومان
+😕;confused face;سەرسوڕمان
+🤨;face with raised eyebrow;برۆ بەرزکردنەوە
+🤔;thinking face;بیرکردنەوە
+😒;unamused face;بێزار
+😏;smirking face;فیزکردن
+🫩;face with bags under eyes;دەموچاو بە تورەکەی ژێر چاو
+🫪;distorted face;دەموچاوی شێواو
+🙄;face with rolling eyes;چاو سووڕاندن
+🥴;woozy face;سەرسووڕان
+🫨;shaking face;دەموچاوی لەرزۆک
+🙂‍↔️;head shaking horizontally;سەروەشاندن بە نەخێر
+🙂‍↕️;head shaking vertically;سەروەشاندن بە بەڵێ
+😬;grimacing face;ڕوگرژی
+😐;neutral face;بێلایەن
+😑;expressionless face;بێ دەربڕین
+😶;face without mouth;بێ دەم
+🫥;dotted line face;ناڕوون
+🤐;zipper-mouth face;دەمی داخراو
+😮;face with open mouth;سەرسام
+😳;flushed face;شەرمەزاری
+😯;hushed face;سەرسام
+😲;astonished face;زۆر سەرسام
+😮‍💨;face exhaling;ئاخ هەڵکێشان
+😶‍🌫️;face in clouds;ناڕوون
+😵;dizzy face;سەرگێژخواردن
+😵‍💫;face with spiral eyes;سەرگێژخواردن
+🤯;exploding head;سەر تەقین
+😠;angry face;تووڕە
+🤬;face with symbols on mouth;جوێن
+😤;face with steam from nose;تووڕە
+😡;pouting face;زۆر تووڕە
+😱;face screaming in fear;هاوارکردن
+😔;pensive face;خەمبار
+☹️;frowning face;خەمبار
+😟;worried face;نیگەران
+🙁;slightly frowning face;کەمێک خەمبار
+😧;anguished face;دڵتەنگ
+😨;fearful face;ترساو
+😦;frowning face with open mouth;ترس
+😞;disappointed face;نائومێد
+😰;anxious face with sweat;دڵەڕاوکێ
+😥;sad but relieved face;خەمبار و ئاسودە
+😢;crying face;گریان
+😓;downcast face with sweat;ماندوو
+😖;confounded face;تێکچوو
+😣;persevering face;خۆڕاگری
+😫;tired face;ماندوو
+😩;weary face;بێتاقەت
+😭;loudly crying face;گریانی زۆر
+🤢;nauseated face;دڵ تێکهەڵاتن
+🤒;face with thermometer;نەخۆش|تا
+🤕;face with head-bandage;سەر بەستراو
+😷;face with medical mask;دەمامک
+🤮;face vomiting;ڕشانەوە
+🤧;sneezing face;پژمین
+🥵;hot face;گەرما
+🥶;cold face;سەرما
+🥱;yawning face;باوێشک
+😪;sleepy face;خەواڵوو
+🤤;drooling face;لیکی دەم
+😴;sleeping face;خەوتوو
+😛;face with tongue;زمان دەرێنان
+😜;winking face with tongue;چاو داگرتن و زمان دەرێنان
+😋;face savoring food;بەتام
+🤪;zany face;شێتانە
+😝;squinting face with tongue;زمان دەرێنان بە چاو نووقانەوە
+🤑;money-mouth face;پارە
+🤠;cowboy hat face;کاوبۆی
+🥳;partying face;ئاهەنگ
+🤥;lying face;درۆ
+😎;smiling face with sunglasses;چاویلکە|قەشەنگ
+🤓;nerd face;عەینەکی|زیرەک
+🧐;face with monocle;وردبوونەوە
+🥸;disguised face;کەسی دەمامکدار
+🤡;clown face;گاڵتەجاڕ
+🌚;new moon face;مانگی تاریك
+☻;black smiling face;پێکەنینی ڕەش
+🌝;full moon face;مانگی گەشاوە
+👻;ghost;خێو
+💩;pile of poo;پیسایی
+🙊;speak-no-evil monkey;دەم بەستراو
+🙈;see-no-evil monkey;چاو بەستراو
+🙉;hear-no-evil monkey;گوێ بەستراو
+😹;cat with tears of joy;پشیلەی گریان لە خۆشیا
+😻;smiling cat with heart-eyes;پشیلەی ئاشق
+😺;grinning cat;پشیلەی پێکەنین
+😸;grinning cat with smiling eyes;پشیلەی دڵخۆش
+😼;cat with wry smile;پشیلەی فیز
+😽;kissing cat;پشیلەی ماچ
+🙀;weary cat;پشیلەی سەرسام
+😿;crying cat;پشیلەی گریان
+😾;pouting cat;پشیلەی تووڕە
+😈;smiling face with horns;شەیتان
+👿;angry face with horns;شەیتانی تووڕە
+🤖;robot;ڕۆبۆت
+👺;goblin;دێو
+👽;alien;بێگانە
+💀;skull;کەلەسەر
+☠️;skull and crossbones;نیشانەی مردن
+💔;broken heart;دڵی شکاو
+🤍;white heart;دڵی سپی
+❤️;red heart;دڵی سوور
+💙;blue heart;دڵی شین
+❤️‍🔥;heart on fire;دڵی سووتاو
+🖤;black heart;دڵی ڕەش
+🧡;orange heart;دڵی پرتەقاڵی
+💜;purple heart;دڵی مۆر
+🤎;brown heart;دڵی قاوەیی
+💛;yellow heart;دڵی زەرد
+💚;green heart;دڵی سەوز
+🩷;pink heart;دڵی پەمەیی
+🩵;light blue heart;دڵی شینی کاڵ
+🩶;grey heart;دڵی خۆڵەمێشی
+❤️‍🩹;mending heart;دڵی چاکبووەوە
+💝;heart with ribbon;دیاری
+💘;heart with arrow;تیری دڵ
+💗;growing heart;دڵی گەورەبوو
+💓;beating heart;دڵەکوتی
+💕;two hearts;دوو دڵ
+❣️;heart exclamation;نیشانەی سەرسامی دڵ
+💌;love letter;نامەی خۆشەویستی
+💋;kiss mark;ماچ
+🧠;brain;مێشک
+👁️;eye;چاو
+👀;eyes;چاوەکان
+👄;mouth;دەم
+🫦;biting lip;لێو گەستن
+👅;tongue;زمان
+🦷;tooth;دان
+🦴;bone;ئێسقان
+🫀;anatomical heart;دڵ
+🫁;lungs;سییەکان
+🩸;blood drop;دڵۆپە خوێن
+💧;droplet;دڵۆپە ئاو
+🔥;fire;ئاگر
+🫆;fingerprint;پەنجەمۆر
+💎;gem stone;ئەڵماس
+🌀;cyclone;گەردەلوول
+🫂;people hugging;باوەش
+💢;anger symbol;نیشانەی تووڕەیی
+💥;collision;تەقینەوە
+💯;hundred points;سەد لە سەد
+💤;zzz;خەو
+
+
+[people_body]
+
+🤲;palms up together;دوعا
+	🤲🏻;;
+	🤲🏼;;
+	🤲🏽;;
+	🤲🏾;;
+	🤲🏿;;
+☝️;index pointing up;یەک|پەنجە بۆ سەرەوە
+	☝🏻;;
+	☝🏼;;
+	☝🏽;;
+	☝🏾;;
+	☝🏿;;
+
+🫶;heart hands;دڵ بە دەست
+	🫶🏻;;
+	🫶🏼;;
+	🫶🏽;;
+	🫶🏾;;
+	🫶🏿;;
+
+
+👋;waving hand;سڵاو|دەست وەشاندن
+	👋🏻;;
+	👋🏼;;
+	👋🏽;;
+	👋🏾;;
+	👋🏿;;
+
+🤝;handshake;تەوقە
+	🤝🏻;;
+	🤝🏼;;
+	🤝🏽;;
+	🤝🏾;;
+	🤝🏿;;
+	🫱🏻‍🫲🏼;;
+	🫱🏻‍🫲🏽;;
+	🫱🏻‍🫲🏾;;
+	🫱🏻‍🫲🏿;;
+	🫱🏼‍🫲🏻;;
+	🫱🏼‍🫲🏽;;
+	🫱🏼‍🫲🏾;;
+	🫱🏼‍🫲🏿;;
+	🫱🏽‍🫲🏻;;
+	🫱🏽‍🫲🏼;;
+	🫱🏽‍🫲🏾;;
+	🫱🏽‍🫲🏿;;
+	🫱🏾‍🫲🏻;;
+	🫱🏾‍🫲🏼;;
+	🫱🏾‍🫲🏽;;
+	🫱🏾‍🫲🏿;;
+	🫱🏿‍🫲🏻;;
+	🫱🏿‍🫲🏼;;
+	🫱🏿‍🫲🏽;;
+	🫱🏿‍🫲🏾;;
+
+🖐️;hand with fingers splayed;دەست
+	🖐🏻;;
+	🖐🏼;;
+	🖐🏽;;
+	🖐🏾;;
+	🖐🏿;;
+
+👏;clapping hands;چەپڵە
+	👏🏻;;
+	👏🏼;;
+	👏🏽;;
+	👏🏾;;
+	👏🏿;;
+👐;open hands;دەستی کراوە
+	👐🏻;;
+	👐🏼;;
+	👐🏽;;
+	👐🏾;;
+	👐🏿;;
+
+🤌;pinched fingers;ئاماژەی دەست
+	🤌🏻;;
+	🤌🏼;;
+	🤌🏽;;
+	🤌🏾;;
+	🤌🏿;;
+
+🤏;pinching hand;کەمێک
+	🤏🏻;;
+	🤏🏼;;
+	🤏🏽;;
+	🤏🏾;;
+	🤏🏿;;
+
+👌;OK hand;باشە|ئۆکەی
+	👌🏻;;
+	👌🏼;;
+	👌🏽;;
+	👌🏾;;
+	👌🏿;;
+✌️;victory hand;سەرکەوتن
+	✌🏻;;
+	✌🏼;;
+	✌🏽;;
+	✌🏾;;
+	✌🏿;;
+
+🫰;hand with index finger and thumb crossed;دڵ بە پەنجە
+	🫰🏻;;
+	🫰🏼;;
+	🫰🏽;;
+	🫰🏾;;
+	🫰🏿;;
+
+🤞;crossed fingers;هیوای باش
+	🤞🏻;;
+	🤞🏼;;
+	🤞🏽;;
+	🤞🏾;;
+	🤞🏿;;
+
+🤙;call me hand;پەیوەندی بکە
+	🤙🏻;;
+	🤙🏼;;
+	🤙🏽;;
+	🤙🏾;;
+	🤙🏿;;
+✋;raised hand;وەستان|دەست
+	✋🏻;;
+	✋🏼;;
+	✋🏽;;
+	✋🏾;;
+	✋🏿;;
+
+👍;;
+	👍🏻;;
+	👍🏼;;
+	👍🏽;;
+	👍🏾;;
+	👍🏿;;
+👎;;
+	👎🏻;;
+	👎🏼;;
+	👎🏽;;
+	👎🏾;;
+	👎🏿;;
+🫵;;
+	🫵🏻;;
+	🫵🏼;;
+	🫵🏽;;
+	🫵🏾;;
+	🫵🏿;;
+✊;raised fist;بۆکس
+	✊🏻;;
+	✊🏼;;
+	✊🏽;;
+	✊🏾;;
+	✊🏿;;
+👊;oncoming fist;بۆکس
+	👊🏻;;
+	👊🏼;;
+	👊🏽;;
+	👊🏾;;
+	👊🏿;;
+
+🤛;;
+	🤛🏻;;
+	🤛🏼;;
+	🤛🏽;;
+	🤛🏾;;
+	🤛🏿;;
+🤜;;
+	🤜🏻;;
+	🤜🏼;;
+	🤜🏽;;
+	🤜🏾;;
+	🤜🏿;;
+💪;flexed biceps;ماسوولکە
+	💪🏻;;
+	💪🏼;;
+	💪🏽;;
+	💪🏾;;
+	💪🏿;;
+
+👆;;
+	👆🏻;;
+	👆🏼;;
+	👆🏽;;
+	👆🏾;;
+	👆🏿;;
+
+👇;;
+	👇🏻;;
+	👇🏼;;
+	👇🏽;;
+	👇🏾;;
+	👇🏿;;
+👉;;
+	👉🏻;;
+	👉🏼;;
+	👉🏽;;
+	👉🏾;;
+	👉🏿;;
+👈;;
+	👈🏻;;
+	👈🏼;;
+	👈🏽;;
+	👈🏾;;
+	👈🏿;;
+🫳;;
+	🫳🏻;;
+	🫳🏼;;
+	🫳🏽;;
+	🫳🏾;;
+	🫳🏿;;
+🫴;;
+	🫴🏻;;
+	🫴🏼;;
+	🫴🏽;;
+	🫴🏾;;
+	🫴🏿;;
+
+🫸;rightwards pushing hand;پاڵنان بە ڕاست
+	🫸🏻;;
+	🫸🏼;;
+	🫸🏽;;
+	🫸🏾;;
+	🫸🏿;;
+🫷;leftwards pushing hand;پاڵنان بە چەپ
+	🫷🏻;;
+	🫷🏼;;
+	🫷🏽;;
+	🫷🏾;;
+	🫷🏿;;
+
+🫱;;
+	🫱🏻;;
+	🫱🏼;;
+	🫱🏽;;
+	🫱🏾;;
+	🫱🏿;;
+🫲;;
+	🫲🏻;;
+	🫲🏼;;
+	🫲🏽;;
+	🫲🏾;;
+	🫲🏿;;
+
+👂;ear;گوێ
+	👂🏻;;
+	👂🏼;;
+	👂🏽;;
+	👂🏾;;
+	👂🏿;;
+
+🦻;ear with hearing aid;گوێ بە ئامێری بیستنەوە
+	🦻🏻;;
+	🦻🏼;;
+	🦻🏽;;
+	🦻🏾;;
+	🦻🏿;;
+
+👃;nose;لووت
+	👃🏻;;
+	👃🏼;;
+	👃🏽;;
+	👃🏾;;
+	👃🏿;;
+
+🦵;leg;قاچ
+	🦵🏻;;
+	🦵🏼;;
+	🦵🏽;;
+	🦵🏾;;
+	🦵🏿;;
+🦶;foot;پێ
+	🦶🏻;;
+	🦶🏼;;
+	🦶🏽;;
+	🦶🏾;;
+	🦶🏿;;
+
+✍️;writing hand;نووسین
+	✍🏻;;
+	✍🏼;;
+	✍🏽;;
+	✍🏾;;
+	✍🏿;;
+
+💅;nail polish;بۆیەی نینۆک
+	💅🏻;;
+	💅🏼;;
+	💅🏽;;
+	💅🏾;;
+	💅🏿;;
+
+🤳;selfie;سێڵفی
+	🤳🏻;;
+	🤳🏼;;
+	🤳🏽;;
+	🤳🏾;;
+	🤳🏿;;
+
+🦾;mechanical arm;دەستی دەستکرد
+🦿;mechanical leg;قاچی دەستکرد
+
+🤦‍♂️;man facepalming;پیاوی شەرمەزار
+	🤦🏻‍♂️;;
+	🤦🏼‍♂️;;
+	🤦🏽‍♂️;;
+	🤦🏾‍♂️;;
+	🤦🏿‍♂️;;
+🤦‍♀️;woman facepalming;ژنی شەرمەزار
+	🤦🏻‍♀️;;
+	🤦🏼‍♀️;;
+	🤦🏽‍♀️;;
+	🤦🏾‍♀️;;
+	🤦🏿‍♀️;;
+
+🤷‍♂️;man shrugging;پیاوێکی بێئاگا
+	🤷🏻‍♂️;;
+	🤷🏼‍♂️;;
+	🤷🏽‍♂️;;
+	🤷🏾‍♂️;;
+	🤷🏿‍♂️;;
+
+🤷‍♀️;woman shrugging;ژنێکی بێئاگا
+	🤷🏻‍♀️;;
+	🤷🏼‍♀️;;
+	🤷🏽‍♀️;;
+	🤷🏾‍♀️;;
+	🤷🏿‍♀️;;
+
+👳‍♂️;man wearing turban;تۆربانی پیاو
+	👳🏻‍♂️;;
+	👳🏼‍♂️;;
+	👳🏽‍♂️;;
+	👳🏾‍♂️;;
+	👳🏿‍♂️;;
+
+🧕;woman with headscarf;ژنی لەچکدار
+	🧕🏻;;
+	🧕🏼;;
+	🧕🏽;;
+	🧕🏾;;
+	🧕🏿;;
+
+👩;woman;ژن
+	👩🏻;;
+	👩🏼;;
+	👩🏽;;
+	👩🏾;;
+	👩🏿;;
+
+👨;man;پیاو
+	👨🏻;;
+	👨🏼;;
+	👨🏽;;
+	👨🏾;;
+	👨🏿;;
+🧔;person beard;ڕیش
+	🧔🏻;;
+	🧔🏼;;
+	🧔🏽;;
+	🧔🏾;;
+	🧔🏿;;
+
+👨‍🦳;man white hair;پیاوی قژ سپی
+	👨🏻‍🦳;;
+	👨🏼‍🦳;;
+	👨🏽‍🦳;;
+	👨🏾‍🦳;;
+	👨🏿‍🦳;;
+
+🧑‍🦱;person curly hair;کەسی قژ لوول
+	🧑🏻‍🦱;;
+	🧑🏼‍🦱;;
+	🧑🏽‍🦱;;
+	🧑🏾‍🦱;;
+	🧑🏿‍🦱;;
+
+👱‍♀️;woman blond hair;ژنی قژ زەرد
+	👱🏻‍♀️;;
+	👱🏼‍♀️;;
+	👱🏽‍♀️;;
+	👱🏾‍♀️;;
+	👱🏿‍♀️;;
+👱‍♂️;man blond hair;پیاوی قژ زەرد
+	👱🏻‍♂️;;
+	👱🏼‍♂️;;
+	👱🏽‍♂️;;
+	👱🏾‍♂️;;
+	👱🏿‍♂️;;
+
+🙆‍♂️;man gesturing OK;پیاوی ئۆکەی
+	🙆🏻‍♂️;;
+	🙆🏼‍♂️;;
+	🙆🏽‍♂️;;
+	🙆🏾‍♂️;;
+	🙆🏿‍♂️;;
+
+🙆‍♀️;woman gesturing OK;ژنی ئۆکەی
+	🙆🏻‍♀️;;
+	🙆🏼‍♀️;;
+	🙆🏽‍♀️;;
+	🙆🏾‍♀️;;
+	🙆🏿‍♀️;;
+
+🙋‍♂️;man raising hand;پیاوێک دەست بەرزدەکاتەوە
+	🙋🏻‍♂️;;
+	🙋🏼‍♂️;;
+	🙋🏽‍♂️;;
+	🙋🏾‍♂️;;
+	🙋🏿‍♂️;;
+🙋‍♀️;woman raising hand;ژنێک دەست بەرزدەکاتەوە
+	🙋🏻‍♀️;;
+	🙋🏼‍♀️;;
+	🙋🏽‍♀️;;
+	🙋🏾‍♀️;;
+	🙋🏿‍♀️;;
+
+🙅‍♂️;man gesturing NO;پیاوی نەخێر
+	🙅🏻‍♂️;;
+	🙅🏼‍♂️;;
+	🙅🏽‍♂️;;
+	🙅🏾‍♂️;;
+	🙅🏿‍♂️;;
+🙅‍♀️;woman gesturing NO;ژنی نەخێر
+	🙅🏻‍♀️;;
+	🙅🏼‍♀️;;
+	🙅🏽‍♀️;;
+	🙅🏾‍♀️;;
+	🙅🏿‍♀️;;
+
+💁‍♂️;man tipping hand;پیاوی زانیاری
+	💁🏻‍♂️;;
+	💁🏼‍♂️;;
+	💁🏽‍♂️;;
+	💁🏾‍♂️;;
+	💁🏿‍♂️;;
+💁‍♀️;woman tipping hand;ژنی زانیاری
+	💁🏻‍♀️;;
+	💁🏼‍♀️;;
+	💁🏽‍♀️;;
+	💁🏾‍♀️;;
+	💁🏿‍♀️;;
+
+👩‍🦰;woman red hair;ژنی قژ سوور
+	👩🏻‍🦰;;
+	👩🏼‍🦰;;
+	👩🏽‍🦰;;
+	👩🏾‍🦰;;
+	👩🏿‍🦰;;
+
+👨‍🦰;man red hair;پیاوی قژ سوور
+	👨🏻‍🦰;;
+	👨🏼‍🦰;;
+	👨🏽‍🦰;;
+	👨🏾‍🦰;;
+	👨🏿‍🦰;;
+👩‍🦳;woman white hair;ژنی قژ سپی
+	👩🏻‍🦳;;
+	👩🏼‍🦳;;
+	👩🏽‍🦳;;
+	👩🏾‍🦳;;
+	👩🏿‍🦳;;
+🧑‍🦳;person white hair;کەسی قژ سپی
+	🧑🏻‍🦳;;
+	🧑🏼‍🦳;;
+	🧑🏽‍🦳;;
+	🧑🏾‍🦳;;
+	🧑🏿‍🦳;;
+
+👩‍🦲;woman bald;ژنی ڕووت
+	👩🏻‍🦲;;
+	👩🏼‍🦲;;
+	👩🏽‍🦲;;
+	👩🏾‍🦲;;
+	👩🏿‍🦲;;
+
+👨‍🦱;man curly hair;پیاوی قژ لوول
+	👨🏻‍🦱;;
+	👨🏼‍🦱;;
+	👨🏽‍🦱;;
+	👨🏾‍🦱;;
+	👨🏿‍🦱;;
+👩‍🦱;woman curly hair;ژنی قژ لوول
+	👩🏻‍🦱;;
+	👩🏼‍🦱;;
+	👩🏽‍🦱;;
+	👩🏾‍🦱;;
+	👩🏿‍🦱;;
+🧓;older person;بەساڵاچوو
+	🧓🏻;;
+	🧓🏼;;
+	🧓🏽;;
+	🧓🏾;;
+	🧓🏿;;
+👴;old man;پیاوی پیر
+	👴🏻;;
+	👴🏼;;
+	👴🏽;;
+	👴🏾;;
+	👴🏿;;
+👵;old woman;ژنی پیر
+	👵🏻;;
+	👵🏼;;
+	👵🏽;;
+	👵🏾;;
+	👵🏿;;
+
+👶;baby;مناڵ
+	👶🏻;;
+	👶🏼;;
+	👶🏽;;
+	👶🏾;;
+	👶🏿;;
+🧒;child;مناڵ|مناڵی ناوەند
+	🧒🏻;;
+	🧒🏼;;
+	🧒🏽;;
+	🧒🏾;;
+	🧒🏿;;
+👦;boy;کوڕ
+	👦🏻;;
+	👦🏼;;
+	👦🏽;;
+	👦🏾;;
+	👦🏿;;
+👧;girl;کچ
+	👧🏻;;
+	👧🏼;;
+	👧🏽;;
+	👧🏾;;
+	👧🏿;;
+🧑;person;کەس
+	🧑🏻;;
+	🧑🏼;;
+	🧑🏽;;
+	🧑🏾;;
+	🧑🏿;;
+👱;person blond hair;کەسی قژ زەرد
+	👱🏻;;
+	👱🏼;;
+	👱🏽;;
+	👱🏾;;
+	👱🏿;;
+🧔‍♂️;man beard;پیاوی ڕیشدار
+	🧔🏻‍♂️;;
+	🧔🏼‍♂️;;
+	🧔🏽‍♂️;;
+	🧔🏾‍♂️;;
+	🧔🏿‍♂️;;
+🧔‍♀️;woman beard;ژنی ڕیشدار
+	🧔🏻‍♀️;;
+	🧔🏼‍♀️;;
+	🧔🏽‍♀️;;
+	🧔🏾‍♀️;;
+	🧔🏿‍♀️;;
+
+👨‍🦲;man bald;پیاوی ڕووت
+	👨🏻‍🦲;;
+	👨🏼‍🦲;;
+	👨🏽‍🦲;;
+	👨🏾‍🦲;;
+	👨🏿‍🦲;;
+
+🧑‍🦰;person red hair;کەسی قژ سوور
+	🧑🏻‍🦰;;
+	🧑🏼‍🦰;;
+	🧑🏽‍🦰;;
+	🧑🏾‍🦰;;
+	🧑🏿‍🦰;;
+🧑‍🦲;person bald;کەسی ڕووت
+	🧑🏻‍🦲;;
+	🧑🏼‍🦲;;
+	🧑🏽‍🦲;;
+	🧑🏾‍🦲;;
+	🧑🏿‍🦲;;
+🙍;person frowning;کەسی خەمبار
+	🙍🏻;;
+	🙍🏼;;
+	🙍🏽;;
+	🙍🏾;;
+	🙍🏿;;
+🙍‍♂️;man frowning;پیاوی خەمبار
+	🙍🏻‍♂️;;
+	🙍🏼‍♂️;;
+	🙍🏽‍♂️;;
+	🙍🏾‍♂️;;
+	🙍🏿‍♂️;;
+🙍‍♀️;woman frowning;ژنی خەمبار
+	🙍🏻‍♀️;;
+	🙍🏼‍♀️;;
+	🙍🏽‍♀️;;
+	🙍🏾‍♀️;;
+	🙍🏿‍♀️;;
+🙎;person pouting;پیاوی تووڕە
+	🙎🏻;;
+	🙎🏼;;
+	🙎🏽;;
+	🙎🏾;;
+	🙎🏿;;
+🙎‍♂️;man pouting;پیاوی تووڕە
+	🙎🏻‍♂️;;
+	🙎🏼‍♂️;;
+	🙎🏽‍♂️;;
+	🙎🏾‍♂️;;
+	🙎🏿‍♂️;;
+🙎‍♀️;woman pouting;ژنی تووڕە
+	🙎🏻‍♀️;;
+	🙎🏼‍♀️;;
+	🙎🏽‍♀️;;
+	🙎🏾‍♀️;;
+	🙎🏿‍♀️;;
+🙅;person gesturing NO;کەسی نەخێر
+	🙅🏻;;
+	🙅🏼;;
+	🙅🏽;;
+	🙅🏾;;
+	🙅🏿;;
+🙆;person gesturing OK;کەسی ئۆکەی
+	🙆🏻;;
+	🙆🏼;;
+	🙆🏽;;
+	🙆🏾;;
+	🙆🏿;;
+💁;person tipping hand;کەسی زانیاری
+	💁🏻;;
+	💁🏼;;
+	💁🏽;;
+	💁🏾;;
+	💁🏿;;
+🙋;person raising hand;کەسێک دەست بەرزدەکاتەوە
+	🙋🏻;;
+	🙋🏼;;
+	🙋🏽;;
+	🙋🏾;;
+	🙋🏿;;
+🧏;deaf person;کەسی کەڕ
+	🧏🏻;;
+	🧏🏼;;
+	🧏🏽;;
+	🧏🏾;;
+	🧏🏿;;
+🧏‍♂️;deaf man;پیاوی کەڕ
+	🧏🏻‍♂️;;
+	🧏🏼‍♂️;;
+	🧏🏽‍♂️;;
+	🧏🏾‍♂️;;
+	🧏🏿‍♂️;;
+🧏‍♀️;deaf woman;ژنی کەڕ
+	🧏🏻‍♀️;;
+	🧏🏼‍♀️;;
+	🧏🏽‍♀️;;
+	🧏🏾‍♀️;;
+	🧏🏿‍♀️;;
+🙇;person bowing;کەسی کڕنووش بەر
+	🙇🏻;;
+	🙇🏼;;
+	🙇🏽;;
+	🙇🏾;;
+	🙇🏿;;
+🙇‍♂️;man bowing;پیاوی کڕنووش بەر
+	🙇🏻‍♂️;;
+	🙇🏼‍♂️;;
+	🙇🏽‍♂️;;
+	🙇🏾‍♂️;;
+	🙇🏿‍♂️;;
+🙇‍♀️;woman bowing;ژنی کڕنووش بەر
+	🙇🏻‍♀️;;
+	🙇🏼‍♀️;;
+	🙇🏽‍♀️;;
+	🙇🏾‍♀️;;
+	🙇🏿‍♀️;;
+🤦;person facepalming;کەسی شەرمەزار
+	🤦🏻;;
+	🤦🏼;;
+	🤦🏽;;
+	🤦🏾;;
+	🤦🏿;;
+🤷;person shrugging;کەسی بێئاگا
+	🤷🏻;;
+	🤷🏼;;
+	🤷🏽;;
+	🤷🏾;;
+	🤷🏿;;
+🧑‍⚕️;health worker;کارمەندی تەندروستی
+	🧑🏻‍⚕️;;
+	🧑🏼‍⚕️;;
+	🧑🏽‍⚕️;;
+	🧑🏾‍⚕️;;
+	🧑🏿‍⚕️;;
+👨‍⚕️;man health worker;پیاوی کارمەندی تەندروستی
+	👨🏻‍⚕️;;
+	👨🏼‍⚕️;;
+	👨🏽‍⚕️;;
+	👨🏾‍⚕️;;
+	👨🏿‍⚕️;;
+👩‍⚕️;woman health worker;ژنی کارمەندی تەندروستی
+	👩🏻‍⚕️;;
+	👩🏼‍⚕️;;
+	👩🏽‍⚕️;;
+	👩🏾‍⚕️;;
+	👩🏿‍⚕️;;
+🧑‍🎓;student;قوتابی
+	🧑🏻‍🎓;;
+	🧑🏼‍🎓;;
+	🧑🏽‍🎓;;
+	🧑🏾‍🎓;;
+	🧑🏿‍🎓;;
+👨‍🎓;man student;پیاوی قوتابی
+	👨🏻‍🎓;;
+	👨🏼‍🎓;;
+	👨🏽‍🎓;;
+	👨🏾‍🎓;;
+	👨🏿‍🎓;;
+👩‍🎓;woman student;ژنی قوتابی
+	👩🏻‍🎓;;
+	👩🏼‍🎓;;
+	👩🏽‍🎓;;
+	👩🏾‍🎓;;
+	👩🏿‍🎓;;
+🧑‍🏫;teacher;مامۆستا
+	🧑🏻‍🏫;;
+	🧑🏼‍🏫;;
+	🧑🏽‍🏫;;
+	🧑🏾‍🏫;;
+	🧑🏿‍🏫;;
+👨‍🏫;man teacher;پیاوی مامۆستا
+	👨🏻‍🏫;;
+	👨🏼‍🏫;;
+	👨🏽‍🏫;;
+	👨🏾‍🏫;;
+	👨🏿‍🏫;;
+👩‍🏫;woman teacher;ژنی مامۆستا
+	👩🏻‍🏫;;
+	👩🏼‍🏫;;
+	👩🏽‍🏫;;
+	👩🏾‍🏫;;
+	👩🏿‍🏫;;
+🧑‍⚖️;judge;دادوەر
+	🧑🏻‍⚖️;;
+	🧑🏼‍⚖️;;
+	🧑🏽‍⚖️;;
+	🧑🏾‍⚖️;;
+	🧑🏿‍⚖️;;
+👨‍⚖️;man judge;پیاوی دادوەر
+	👨🏻‍⚖️;;
+	👨🏼‍⚖️;;
+	👨🏽‍⚖️;;
+	👨🏾‍⚖️;;
+	👨🏿‍⚖️;;
+👩‍⚖️;woman judge;ژنی دادوەر
+	👩🏻‍⚖️;;
+	👩🏼‍⚖️;;
+	👩🏽‍⚖️;;
+	👩🏾‍⚖️;;
+	👩🏿‍⚖️;;
+🧑‍🌾;farmer;جوتیار
+	🧑🏻‍🌾;;
+	🧑🏼‍🌾;;
+	🧑🏽‍🌾;;
+	🧑🏾‍🌾;;
+	🧑🏿‍🌾;;
+👨‍🌾;man farmer;پیاوی جوتیار
+	👨🏻‍🌾;;
+	👨🏼‍🌾;;
+	👨🏽‍🌾;;
+	👨🏾‍🌾;;
+	👨🏿‍🌾;;
+👩‍🌾;woman farmer;ژنی جوتیار
+	👩🏻‍🌾;;
+	👩🏼‍🌾;;
+	👩🏽‍🌾;;
+	👩🏾‍🌾;;
+	👩🏿‍🌾;;
+🧑‍🍳;cook;چێشتلێنەر
+	🧑🏻‍🍳;;
+	🧑🏼‍🍳;;
+	🧑🏽‍🍳;;
+	🧑🏾‍🍳;;
+	🧑🏿‍🍳;;
+👨‍🍳;man cook;پیاوی چێشتلێنەر
+	👨🏻‍🍳;;
+	👨🏼‍🍳;;
+	👨🏽‍🍳;;
+	👨🏾‍🍳;;
+	👨🏿‍🍳;;
+👩‍🍳;woman cook;ژنی چێشتلێنەر
+	👩🏻‍🍳;;
+	👩🏼‍🍳;;
+	👩🏽‍🍳;;
+	👩🏾‍🍳;;
+	👩🏿‍🍳;;
+🧑‍🔧;mechanic;میکانیک
+	🧑🏻‍🔧;;
+	🧑🏼‍🔧;;
+	🧑🏽‍🔧;;
+	🧑🏾‍🔧;;
+	🧑🏿‍🔧;;
+👨‍🔧;man mechanic;پیاوی میکانیک
+	👨🏻‍🔧;;
+	👨🏼‍🔧;;
+	👨🏽‍🔧;;
+	👨🏾‍🔧;;
+	👨🏿‍🔧;;
+👩‍🔧;woman mechanic;ژنی میکانیک
+	👩🏻‍🔧;;
+	👩🏼‍🔧;;
+	👩🏽‍🔧;;
+	👩🏾‍🔧;;
+	👩🏿‍🔧;;
+🧑‍🏭;factory worker;کرێکاری کارگە
+	🧑🏻‍🏭;;
+	🧑🏼‍🏭;;
+	🧑🏽‍🏭;;
+	🧑🏾‍🏭;;
+	🧑🏿‍🏭;;
+👨‍🏭;man factory worker;پیاوی کرێکاری کارگە
+	👨🏻‍🏭;;
+	👨🏼‍🏭;;
+	👨🏽‍🏭;;
+	👨🏾‍🏭;;
+	👨🏿‍🏭;;
+👩‍🏭;woman factory worker;ژنی کرێکاری کارگە
+	👩🏻‍🏭;;
+	👩🏼‍🏭;;
+	👩🏽‍🏭;;
+	👩🏾‍🏭;;
+	👩🏿‍🏭;;
+🧑‍💼;office worker;کارمەندی ئۆفیس
+	🧑🏻‍💼;;
+	🧑🏼‍💼;;
+	🧑🏽‍💼;;
+	🧑🏾‍💼;;
+	🧑🏿‍💼;;
+👨‍💼;man office worker;پیاوی کارمەندی ئۆفیس
+	👨🏻‍💼;;
+	👨🏼‍💼;;
+	👨🏽‍💼;;
+	👨🏾‍💼;;
+	👨🏿‍💼;;
+👩‍💼;woman office worker;ژنی کارمەندی ئۆفیس
+	👩🏻‍💼;;
+	👩🏼‍💼;;
+	👩🏽‍💼;;
+	👩🏾‍💼;;
+	👩🏿‍💼;;
+🧑‍🔬;scientist;زانای زانست
+	🧑🏻‍🔬;;
+	🧑🏼‍🔬;;
+	🧑🏽‍🔬;;
+	🧑🏾‍🔬;;
+	🧑🏿‍🔬;;
+👨‍🔬;man scientist;پیاوی زانای زانست
+	👨🏻‍🔬;;
+	👨🏼‍🔬;;
+	👨🏽‍🔬;;
+	👨🏾‍🔬;;
+	👨🏿‍🔬;;
+👩‍🔬;woman scientist;ژنی زانای زانست
+	👩🏻‍🔬;;
+	👩🏼‍🔬;;
+	👩🏽‍🔬;;
+	👩🏾‍🔬;;
+	👩🏿‍🔬;;
+🧑‍💻;technologist;تەکنەلۆژیست
+	🧑🏻‍💻;;
+	🧑🏼‍💻;;
+	🧑🏽‍💻;;
+	🧑🏾‍💻;;
+	🧑🏿‍💻;;
+👨‍💻;man technologist;پیاوی تەکنەلۆژیست
+	👨🏻‍💻;;
+	👨🏼‍💻;;
+	👨🏽‍💻;;
+	👨🏾‍💻;;
+	👨🏿‍💻;;
+👩‍💻;woman technologist;ژنی تەکنەلۆژیست
+	👩🏻‍💻;;
+	👩🏼‍💻;;
+	👩🏽‍💻;;
+	👩🏾‍💻;;
+	👩🏿‍💻;;
+🧑‍🎤;singer;گۆرانیبێژ
+	🧑🏻‍🎤;;
+	🧑🏼‍🎤;;
+	🧑🏽‍🎤;;
+	🧑🏾‍🎤;;
+	🧑🏿‍🎤;;
+👨‍🎤;man singer;پیاوی گۆرانیبێژ
+	👨🏻‍🎤;;
+	👨🏼‍🎤;;
+	👨🏽‍🎤;;
+	👨🏾‍🎤;;
+	👨🏿‍🎤;;
+👩‍🎤;woman singer;ژنی گۆرانیبێژ
+	👩🏻‍🎤;;
+	👩🏼‍🎤;;
+	👩🏽‍🎤;;
+	👩🏾‍🎤;;
+	👩🏿‍🎤;;
+🧑‍🎨;artist;هونەرمەند
+	🧑🏻‍🎨;;
+	🧑🏼‍🎨;;
+	🧑🏽‍🎨;;
+	🧑🏾‍🎨;;
+	🧑🏿‍🎨;;
+👨‍🎨;man artist;پیاوی هونەرمەند
+	👨🏻‍🎨;;
+	👨🏼‍🎨;;
+	👨🏽‍🎨;;
+	👨🏾‍🎨;;
+	👨🏿‍🎨;;
+👩‍🎨;woman artist;ژنی هونەرمەند
+	👩🏻‍🎨;;
+	👩🏼‍🎨;;
+	👩🏽‍🎨;;
+	👩🏾‍🎨;;
+	👩🏿‍🎨;;
+🧑‍✈️;pilot;فڕۆکەوان
+	🧑🏻‍✈️;;
+	🧑🏼‍✈️;;
+	🧑🏽‍✈️;;
+	🧑🏾‍✈️;;
+	🧑🏿‍✈️;;
+👨‍✈️;man pilot;پیاوی فڕۆکەوان
+	👨🏻‍✈️;;
+	👨🏼‍✈️;;
+	👨🏽‍✈️;;
+	👨🏾‍✈️;;
+	👨🏿‍✈️;;
+👩‍✈️;woman pilot;ژنی فڕۆکەوان
+	👩🏻‍✈️;;
+	👩🏼‍✈️;;
+	👩🏽‍✈️;;
+	👩🏾‍✈️;;
+	👩🏿‍✈️;;
+🧑‍🚀;astronaut;گەردوونگەڕ
+	🧑🏻‍🚀;;
+	🧑🏼‍🚀;;
+	🧑🏽‍🚀;;
+	🧑🏾‍🚀;;
+	🧑🏿‍🚀;;
+👨‍🚀;man astronaut;پیاوی گەردوونگەڕ
+	👨🏻‍🚀;;
+	👨🏼‍🚀;;
+	👨🏽‍🚀;;
+	👨🏾‍🚀;;
+	👨🏿‍🚀;;
+👩‍🚀;woman astronaut;ژنی گەردوونگەڕ
+	👩🏻‍🚀;;
+	👩🏼‍🚀;;
+	👩🏽‍🚀;;
+	👩🏾‍🚀;;
+	👩🏿‍🚀;;
+🧑‍🚒;firefighter;ئاگرکوژێنەوە
+	🧑🏻‍🚒;;
+	🧑🏼‍🚒;;
+	🧑🏽‍🚒;;
+	🧑🏾‍🚒;;
+	🧑🏿‍🚒;;
+👨‍🚒;man firefighter;پیاوی ئاگرکوژێنەوە
+	👨🏻‍🚒;;
+	👨🏼‍🚒;;
+	👨🏽‍🚒;;
+	👨🏾‍🚒;;
+	👨🏿‍🚒;;
+👩‍🚒;woman firefighter;ژنی ئۆگرکوژێنەوە
+	👩🏻‍🚒;;
+	👩🏼‍🚒;;
+	👩🏽‍🚒;;
+	👩🏾‍🚒;;
+	👩🏿‍🚒;;
+👮;police officer;پۆلیس
+	👮🏻;;
+	👮🏼;;
+	👮🏽;;
+	👮🏾;;
+	👮🏿;;
+👮‍♂️;man police officer;پۆلیس
+	👮🏻‍♂️;;
+	👮🏼‍♂️;;
+	👮🏽‍♂️;;
+	👮🏾‍♂️;;
+	👮🏿‍♂️;;
+👮‍♀️;woman police officer;ژنی پۆلیس
+	👮🏻‍♀️;;
+	👮🏼‍♀️;;
+	👮🏽‍♀️;;
+	👮🏾‍♀️;;
+	👮🏿‍♀️;;
+🕵️;detective;لێکۆڵەر
+	🕵🏻;;
+	🕵🏼;;
+	🕵🏽;;
+	🕵🏾;;
+	🕵🏿;;
+🕵️‍♂️;man detective;لێکۆڵەری پیاو
+	🕵🏻‍♂️;;
+	🕵🏼‍♂️;;
+	🕵🏽‍♂️;;
+	🕵🏾‍♂️;;
+	🕵🏿‍♂️;;
+🕵️‍♀️;woman detective;لێکۆڵەری ژن
+	🕵🏻‍♀️;;
+	🕵🏼‍♀️;;
+	🕵🏽‍♀️;;
+	🕵🏾‍♀️;;
+	🕵🏿‍♀️;;
+💂;guard;پاسەوان
+	💂🏻;;
+	💂🏼;;
+	💂🏽;;
+	💂🏾;;
+	💂🏿;;
+💂‍♂️;man guard;پاسەوان
+	💂🏻‍♂️;;
+	💂🏼‍♂️;;
+	💂🏽‍♂️;;
+	💂🏾‍♂️;;
+	💂🏿‍♂️;;
+💂‍♀️;woman guard;ژنی پاسەوان
+	💂🏻‍♀️;;
+	💂🏼‍♀️;;
+	💂🏽‍♀️;;
+	💂🏾‍♀️;;
+	💂🏿‍♀️;;
+🥷;ninja;نینجا
+	🥷🏻;;
+	🥷🏼;;
+	🥷🏽;;
+	🥷🏾;;
+	🥷🏿;;
+👷;construction worker;کرێکاری بیناسازی
+	👷🏻;;
+	👷🏼;;
+	👷🏽;;
+	👷🏾;;
+	👷🏿;;
+👷‍♂️;man construction worker;کرێکاری پیاو
+	👷🏻‍♂️;;
+	👷🏼‍♂️;;
+	👷🏽‍♂️;;
+	👷🏾‍♂️;;
+	👷🏿‍♂️;;
+👷‍♀️;woman construction worker;کرێکاری ژن
+	👷🏻‍♀️;;
+	👷🏼‍♀️;;
+	👷🏽‍♀️;;
+	👷🏾‍♀️;;
+	👷🏿‍♀️;;
+🫅;person with crown;کەسی تاجدار
+	🫅🏻;;
+	🫅🏼;;
+	🫅🏽;;
+	🫅🏾;;
+	🫅🏿;;
+🤴;prince;شازادە
+	🤴🏻;;
+	🤴🏼;;
+	🤴🏽;;
+	🤴🏾;;
+	🤴🏿;;
+👸;princess;شازادە خانم
+	👸🏻;;
+	👸🏼;;
+	👸🏽;;
+	👸🏾;;
+	👸🏿;;
+👳;person wearing turban;تۆربان
+	👳🏻;;
+	👳🏼;;
+	👳🏽;;
+	👳🏾;;
+	👳🏿;;
+👳‍♂️;man wearing turban;تۆربانی پیاو
+	👳🏻‍♂️;;
+	👳🏼‍♂️;;
+	👳🏽‍♂️;;
+	👳🏾‍♂️;;
+	👳🏿‍♂️;;
+👳‍♀️;woman wearing turban;تۆربانی ژن
+	👳🏻‍♀️;;
+	👳🏼‍♀️;;
+	👳🏽‍♀️;;
+	👳🏾‍♀️;;
+	👳🏿‍♀️;;
+👲;person with skullcap;کڵاو
+	👲🏻;;
+	👲🏼;;
+	👲🏽;;
+	👲🏾;;
+	👲🏿;;
+🤵;person in tuxedo;پیاوی قەشمەر
+	🤵🏻;;
+	🤵🏼;;
+	🤵🏽;;
+	🤵🏾;;
+	🤵🏿;;
+🤵‍♂️;man in tuxedo;پیاوی قەشمەر
+	🤵🏻‍♂️;;
+	🤵🏼‍♂️;;
+	🤵🏽‍♂️;;
+	🤵🏾‍♂️;;
+	🤵🏿‍♂️;;
+🤵‍♀️;woman in tuxedo;ژنی قەشمەر
+	🤵🏻‍♀️;;
+	🤵🏼‍♀️;;
+	🤵🏽‍♀️;;
+	🤵🏾‍♀️;;
+	🤵🏿‍♀️;;
+👰;person with veil;بووک
+	👰🏻;;
+	👰🏼;;
+	👰🏽;;
+	👰🏾;;
+	👰🏿;;
+👰‍♀️;woman with veil;بووک
+	👰🏻‍♀️;;
+	👰🏼‍♀️;;
+	👰🏽‍♀️;;
+	👰🏾‍♀️;;
+	👰🏿‍♀️;;
+🤰;pregnant woman;دووگیان
+	🤰🏻;;
+	🤰🏼;;
+	🤰🏽;;
+	🤰🏾;;
+	🤰🏿;;
+🤱;breast-feeding;شیردان
+	🤱🏻;;
+	🤱🏼;;
+	🤱🏽;;
+	🤱🏾;;
+	🤱🏿;;
+👩‍🍼;woman feeding baby;ژنی مناڵ بەخێوکەر
+	👩🏻‍🍼;;
+	👩🏼‍🍼;;
+	👩🏽‍🍼;;
+	👩🏾‍🍼;;
+	👩🏿‍🍼;;
+👨‍🍼;man feeding baby;پیاوی مناڵ بەخێوکەر
+	👨🏻‍🍼;;
+	👨🏼‍🍼;;
+	👨🏽‍🍼;;
+	👨🏾‍🍼;;
+	👨🏿‍🍼;;
+🧑‍🍼;person feeding baby;کەسی مناڵ بەخێوکەر
+	🧑🏻‍🍼;;
+	🧑🏼‍🍼;;
+	🧑🏽‍🍼;;
+	🧑🏾‍🍼;;
+	🧑🏿‍🍼;;
+👼;baby angel;فریشتە
+	👼🏻;;
+	👼🏼;;
+	👼🏽;;
+	👼🏾;;
+	👼🏿;;
+🦸;superhero;پاڵەوان
+	🦸🏻;;
+	🦸🏼;;
+	🦸🏽;;
+	🦸🏾;;
+	🦸🏿;;
+🦸‍♂️;man superhero;پاڵەوانی پیاو
+	🦸🏻‍♂️;;
+	🦸🏼‍♂️;;
+	🦸🏽‍♂️;;
+	🦸🏾‍♂️;;
+	🦸🏿‍♂️;;
+🦸‍♀️;woman superhero;پاڵەوانی ژن
+	🦸🏻‍♀️;;
+	🦸🏼‍♀️;;
+	🦸🏽‍♀️;;
+	🦸🏾‍♀️;;
+	🦸🏿‍♀️;;
+🦹;supervillain;خراپەکار
+	🦹🏻;;
+	🦹🏼;;
+	🦹🏽;;
+	🦹🏾;;
+	🦹🏿;;
+🦹‍♂️;man supervillain;پیاوی خراپەکار
+	🦹🏻‍♂️;;
+	🦹🏼‍♂️;;
+	🦹🏽‍♂️;;
+	🦹🏾‍♂️;;
+	🦹🏿‍♂️;;
+🦹‍♀️;woman supervillain;ژنی خراپەکار
+	🦹🏻‍♀️;;
+	🦹🏼‍♀️;;
+	🦹🏽‍♀️;;
+	🦹🏾‍♀️;;
+	🦹🏿‍♀️;;
+🧚;fairy;فریشتە
+	🧚🏻;;
+	🧚🏼;;
+	🧚🏽;;
+	🧚🏾;;
+	🧚🏿;;
+🧚‍♂️;man fairy;فریشتەی پیاو
+	🧚🏻‍♂️;;
+	🧚🏼‍♂️;;
+	🧚🏽‍♂️;;
+	🧚🏾‍♂️;;
+	🧚🏿‍♂️;;
+🧚‍♀️;woman fairy;فریشتەی ژن
+	🧚🏻‍♀️;;
+	🧚🏼‍♀️;;
+	🧚🏽‍♀️;;
+	🧚🏾‍♀️;;
+	🧚🏿‍♀️;;
+🧛;vampire;ڤامپایەر
+	🧛🏻;;
+	🧛🏼;;
+	🧛🏽;;
+	🧛🏾;;
+	🧛🏿;;
+🧛‍♂️;man vampire;ڤامپایەری پیاو
+	🧛🏻‍♂️;;
+	🧛🏼‍♂️;;
+	🧛🏽‍♂️;;
+	🧛🏾‍♂️;;
+	🧛🏿‍♂️;;
+🧛‍♀️;woman vampire;ڤامپایەری ژن
+	🧛🏻‍♀️;;
+	🧛🏼‍♀️;;
+	🧛🏽‍♀️;;
+	🧛🏾‍♀️;;
+	🧛🏿‍♀️;;
+🧜;merperson;پەری دەریا
+	🧜🏻;;
+	🧜🏼;;
+	🧜🏽;;
+	🧜🏾;;
+	🧜🏿;;
+🧜‍♂️;man merman;پەری دەریای پیاو
+	🧜🏻‍♂️;;
+	🧜🏼‍♂️;;
+	🧜🏽‍♂️;;
+	🧜🏾‍♂️;;
+	🧜🏿‍♂️;;
+🧜‍♀️;woman mermaid;پەری دەریای ژن
+	🧜🏻‍♀️;;
+	🧜🏼‍♀️;;
+	🧜🏽‍♀️;;
+	🧜🏾‍♀️;;
+	🧜🏿‍♀️;;
+🧝;elf;جنۆکە
+	🧝🏻;;
+	🧝🏼;;
+	🧝🏽;;
+	🧝🏾;;
+	🧝🏿;;
+🧝‍♂️;man elf;جنۆکەی پیاو
+	🧝🏻‍♂️;;
+	🧝🏼‍♂️;;
+	🧝🏽‍♂️;;
+	🧝🏾‍♂️;;
+	🧝🏿‍♂️;;
+🧝‍♀️;woman elf;جنۆکەی ژن
+	🧝🏻‍♀️;;
+	🧝🏼‍♀️;;
+	🧝🏽‍♀️;;
+	🧝🏾‍♀️;;
+	🧝🏿‍♀️;;
+🧞;genie;جنۆکە
+🧞‍♂️;man genie;جنۆکەی پیاو
+🧞‍♀️;woman genie;جنۆکەی ژن
+🧟;zombie;زۆمبی
+🧟‍♂️;man zombie;زۆمبی پیاو
+🧟‍♀️;woman zombie;زۆمبی ژن
+🧌;troll;تڕۆڵ
+💆;person getting massage;مەساج
+	💆🏻;;
+	💆🏼;;
+	💆🏽;;
+	💆🏾;;
+	💆🏿;;
+💆‍♂️;man getting massage;مەساجی پیاو
+	💆🏻‍♂️;;
+	💆🏼‍♂️;;
+	💆🏽‍♂️;;
+	💆🏾‍♂️;;
+	💆🏿‍♂️;;
+💆‍♀️;woman getting massage;مەساجی ژن
+	💆🏻‍♀️;;
+	💆🏼‍♀️;;
+	💆🏽‍♀️;;
+	💆🏾‍♀️;;
+	💆🏿‍♀️;;
+💇;person getting haircut;قژ بڕین
+	💇🏻;;
+	💇🏼;;
+	💇🏽;;
+	💇🏾;;
+	💇🏿;;
+💇‍♂️;man getting haircut;قژ بڕینی پیاو
+	💇🏻‍♂️;;
+	💇🏼‍♂️;;
+	💇🏽‍♂️;;
+	💇🏾‍♂️;;
+	💇🏿‍♂️;;
+💇‍♀️;woman getting haircut;قژ بڕینی ژن
+	💇🏻‍♀️;;
+	💇🏼‍♀️;;
+	💇🏽‍♀️;;
+	💇🏾‍♀️;;
+	💇🏿‍♀️;;
+🚶;person walking;ڕۆیشتن
+	🚶🏻;;
+	🚶🏼;;
+	🚶🏽;;
+	🚶🏾;;
+	🚶🏿;;
+🚶‍♂️;man walking;ڕۆیشتنی پیاو
+	🚶🏻‍♂️;;
+	🚶🏼‍♂️;;
+	🚶🏽‍♂️;;
+	🚶🏾‍♂️;;
+	🚶🏿‍♂️;;
+🚶‍♀️;woman walking;ڕۆیشتنی ژن
+	🚶🏻‍♀️;;
+	🚶🏼‍♀️;;
+	🚶🏽‍♀️;;
+	🚶🏾‍♀️;;
+	🚶🏿‍♀️;;
+🧍;person standing;وەستان
+	🧍🏻;;
+	🧍🏼;;
+	🧍🏽;;
+	🧍🏾;;
+	🧍🏿;;
+🧍‍♂️;man standing;وەستانی پیاو
+	🧍🏻‍♂️;;
+	🧍🏼‍♂️;;
+	🧍🏽‍♂️;;
+	🧍🏾‍♂️;;
+	🧍🏿‍♂️;;
+🧍‍♀️;woman standing;وەستانی ژن
+	🧍🏻‍♀️;;
+	🧍🏼‍♀️;;
+	🧍🏽‍♀️;;
+	🧍🏾‍♀️;;
+	🧍🏿‍♀️;;
+🧎;person kneeling;کڕنووش
+	🧎🏻;;
+	🧎🏼;;
+	🧎🏽;;
+	🧎🏾;;
+	🧎🏿;;
+🧎‍♂️;man kneeling;کڕنووشی پیاو
+	🧎🏻‍♂️;;
+	🧎🏼‍♂️;;
+	🧎🏽‍♂️;;
+	🧎🏾‍♂️;;
+	🧎🏿‍♂️;;
+🧎‍♀️;woman kneeling;کڕنووشی ژن
+	🧎🏻‍♀️;;
+	🧎🏼‍♀️;;
+	🧎🏽‍♀️;;
+	🧎🏾‍♀️;;
+	🧎🏿‍♀️;;
+🧑‍🦯;person with white cane;کەسی کەم بینا
+	🧑🏻‍🦯;;
+	🧑🏼‍🦯;;
+	🧑🏽‍🦯;;
+	🧑🏾‍🦯;;
+	🧑🏿‍🦯;;
+👨‍🦯;man with white cane;پیاوی کەم بینا
+	👨🏻‍🦯;;
+	👨🏼‍🦯;;
+	👨🏽‍🦯;;
+	👨🏾‍🦯;;
+	👨🏿‍🦯;;
+👩‍🦯;woman with white cane;ژنی کەم بینا
+	👩🏻‍🦯;;
+	👩🏼‍🦯;;
+	👩🏽‍🦯;;
+	👩🏾‍🦯;;
+	👩🏿‍🦯;;
+🧑‍🦼;person in motorized wheelchair;کورسی کارەبایی
+	🧑🏻‍🦼;;
+	🧑🏼‍🦼;;
+	🧑🏽‍🦼;;
+	🧑🏾‍🦼;;
+	🧑🏿‍🦼;;
+👨‍🦼;man in motorized wheelchair;کورسی کارەبایی پیاو
+	👨🏻‍🦼;;
+	👨🏼‍🦼;;
+	👨🏽‍🦼;;
+	👨🏾‍🦼;;
+	👨🏿‍🦼;;
+👩‍🦼;woman in motorized wheelchair;کورسی کارەبایی ژن
+	👩🏻‍🦼;;
+	👩🏼‍🦼;;
+	👩🏽‍🦼;;
+	👩🏾‍🦼;;
+	👩🏿‍🦼;;
+🧑‍🦽;person in manual wheelchair;کورسی پەککەوتە
+	🧑🏻‍🦽;;
+	🧑🏼‍🦽;;
+	🧑🏽‍🦽;;
+	🧑🏾‍🦽;;
+	🧑🏿‍🦽;;
+👨‍🦽;man in manual wheelchair;کورسی پەککەوتەی پیاو
+	👨🏻‍🦽;;
+	👨🏼‍🦽;;
+	👨🏽‍🦽;;
+	👨🏾‍🦽;;
+	👨🏿‍🦽;;
+👩‍🦽;woman in manual wheelchair;کورسی پەککەوتەی ژن
+	👩🏻‍🦽;;
+	👩🏼‍🦽;;
+	👩🏽‍🦽;;
+	👩🏾‍🦽;;
+	👩🏿‍🦽;;
+🏃;person running;ڕاکردن
+	🏃🏻;;
+	🏃🏼;;
+	🏃🏽;;
+	🏃🏾;;
+	🏃🏿;;
+🏃‍♂️;man running;ڕاکردنی پیاو
+	🏃🏻‍♂️;;
+	🏃🏼‍♂️;;
+	🏃🏽‍♂️;;
+	🏃🏾‍♂️;;
+	🏃🏿‍♂️;;
+🏃‍♀️;woman running;ڕاکردنی ژن
+	🏃🏻‍♀️;;
+	🏃🏼‍♀️;;
+	🏃🏽‍♀️;;
+	🏃🏾‍♀️;;
+	🏃🏿‍♀️;;
+💃;woman dancing;سەماکەری ژن
+	💃🏻;;
+	💃🏼;;
+	💃🏽;;
+	💃🏾;;
+	💃🏿;;
+🕺;man dancing;سەماکەری پیاو
+	🕺🏻;;
+	🕺🏼;;
+	🕺🏽;;
+	🕺🏾;;
+	🕺🏿;;
+🕴️;person in suit levitating;پیاوی سەیر
+	🕴🏻;;
+	🕴🏼;;
+	🕴🏽;;
+	🕴🏾;;
+	🕴🏿;;
+👯;people with bunny ears;کچانی کەمەریاین
+🧖;person in steamy room;ساونا
+	🧖🏻;;
+	🧖🏼;;
+	🧖🏽;;
+	🧖🏾;;
+	🧖🏿;;
+🧖‍♂️;man in steamy room;ساونای پیاو
+	🧖🏻‍♂️;;
+	🧖🏼‍♂️;;
+	🧖🏽‍♂️;;
+	🧖🏾‍♂️;;
+	🧖🏿‍♂️;;
+🧖‍♀️;woman in steamy room;ساونای ژن
+	🧖🏻‍♀️;;
+	🧖🏼‍♀️;;
+	🧖🏽‍♀️;;
+	🧖🏾‍♀️;;
+	🧖🏿‍♀️;;
+🧗;person climbing;سەرکەوتن
+	🧗🏻;;
+	🧗🏼;;
+	🧗🏽;;
+	🧗🏾;;
+	🧗🏿;;
+🧗‍♂️;man climbing;سەرکەوتنی پیاو
+	🧗🏻‍♂️;;
+	🧗🏼‍♂️;;
+	🧗🏽‍♂️;;
+	🧗🏾‍♂️;;
+	🧗🏿‍♂️;;
+🧗‍♀️;woman climbing;سەرکەوتنی ژن
+	🧗🏻‍♀️;;
+	🧗🏼‍♀️;;
+	🧗🏽‍♀️;;
+	🧗🏾‍♀️;;
+	🧗🏿‍♀️;;
+🤺;person fencing;شمشێربازی
+🏇;horse racing;ئەسپ سواری
+	🏇🏻;;
+	🏇🏼;;
+	🏇🏽;;
+	🏇🏾;;
+	🏇🏿;;
+⛷️;skier;خلیسکانێ
+🏂;snowboarding;خلیسکانێی سەر بەفر
+	🏂🏻;;
+	🏂🏼;;
+	🏂🏽;;
+	🏂🏾;;
+	🏂🏿;;
+🏌️;person golfing;گۆڵف
+	🏌🏻;;
+	🏌🏼;;
+	🏌🏽;;
+	🏌🏾;;
+	🏌🏿;;
+🏌️‍♂️;man golfing;گۆڵفی پیاو
+	🏌🏻‍♂️;;
+	🏌🏼‍♂️;;
+	🏌🏽‍♂️;;
+	🏌🏾‍♂️;;
+	🏌🏿‍♂️;;
+🏌️‍♀️;woman golfing;گۆڵفی ژن
+	🏌🏻‍♀️;;
+	🏌🏼‍♀️;;
+	🏌🏽‍♀️;;
+	🏌🏾‍♀️;;
+	🏌🏿‍♀️;;
+🏄;person surfing;شەپۆل سواری
+	🏄🏻;;
+	🏄🏼;;
+	🏄🏽;;
+	🏄🏾;;
+	🏄🏿;;
+🏄‍♂️;man surfing;شەپۆل سواری پیاو
+	🏄🏻‍♂️;;
+	🏄🏼‍♂️;;
+	🏄🏽‍♂️;;
+	🏄🏾‍♂️;;
+	🏄🏿‍♂️;;
+🏄‍♀️;woman surfing;شەپۆل سواری ژن
+	🏄🏻‍♀️;;
+	🏄🏼‍♀️;;
+	🏄🏽‍♀️;;
+	🏄🏾‍♀️;;
+	🏄🏿‍♀️;;
+🚣;person rowing boat;بەلەم سواری
+	🚣🏻;;
+	🚣🏼;;
+	🚣🏽;;
+	🚣🏾;;
+	🚣🏿;;
+🚣‍♂️;man rowing boat;بەلەم سواری پیاو
+	🚣🏻‍♂️;;
+	🚣🏼‍♂️;;
+	🚣🏽‍♂️;;
+	🚣🏾‍♂️;;
+	🚣🏿‍♂️;;
+🚣‍♀️;woman rowing boat;بەلەم سواری ژن
+	🚣🏻‍♀️;;
+	🚣🏼‍♀️;;
+	🚣🏽‍♀️;;
+	🚣🏾‍♀️;;
+	🚣🏿‍♀️;;
+🏊;person swimming;مەلەوانی
+	🏊🏻;;
+	🏊🏼;;
+	🏊🏽;;
+	🏊🏾;;
+	🏊🏿;;
+🏊‍♂️;man swimming;مەلەوانی پیاو
+	🏊🏻‍♂️;;
+	🏊🏼‍♂️;;
+	🏊🏽‍♂️;;
+	🏊🏾‍♂️;;
+	🏊🏿‍♂️;;
+🏊‍♀️;woman swimming;مەلەوانی ژن
+	🏊🏻‍♀️;;
+	🏊🏼‍♀️;;
+	🏊🏽‍♀️;;
+	🏊🏾‍♀️;;
+	🏊🏿‍♀️;;
+⛹️;person bouncing ball;تۆپ سواری
+	⛹🏻;;
+	⛹🏼;;
+	⛹🏽;;
+	⛹🏾;;
+	⛹🏿;;
+⛹️‍♂️;man bouncing ball;تۆپ سواری پیاو
+	⛹🏻‍♂️;;
+	⛹🏼‍♂️;;
+	⛹🏽‍♂️;;
+	⛹🏾‍♂️;;
+	⛹🏿‍♂️;;
+⛹️‍♀️;woman bouncing ball;تۆپ سواری ژن
+	⛹🏻‍♀️;;
+	⛹🏼‍♀️;;
+	⛹🏽‍♀️;;
+	⛹🏾‍♀️;;
+	⛹🏿‍♀️;;
+🏋️;person lifting weights;قورسایی بەرزکردنەوە
+	🏋🏻;;
+	🏋🏼;;
+	🏋🏽;;
+	🏋🏾;;
+	🏋🏿;;
+🏋️‍♂️;man lifting weights;قورسایی بەرزکردنەوە پیاو
+	🏋🏻‍♂️;;
+	🏋🏼‍♂️;;
+	🏋🏽‍♂️;;
+	🏋🏾‍♂️;;
+	🏋🏿‍♂️;;
+🏋️‍♀️;woman lifting weights;قورسایی بەرزکردنەوە ژن
+	🏋🏻‍♀️;;
+	🏋🏼‍♀️;;
+	🏋🏽‍♀️;;
+	🏋🏾‍♀️;;
+	🏋🏿‍♀️;;
+🚴;person cycling;پایسکیل سواری
+	🚴🏻;;
+	🚴🏼;;
+	🚴🏽;;
+	🚴🏾;;
+	🚴🏿;;
+🚴‍♂️;man cycling;پایسکیل سواری پیاو
+	🚴🏻‍♂️;;
+	🚴🏼‍♂️;;
+	🚴🏽‍♂️;;
+	🚴🏾‍♂️;;
+	🚴🏿‍♂️;;
+🚴‍♀️;woman cycling;پایسکیل سواری ژن
+	🚴🏻‍♀️;;
+	🚴🏼‍♀️;;
+	🚴🏽‍♀️;;
+	🚴🏾‍♀️;;
+	🚴🏿‍♀️;;
+🚵;person mountain biking;پایسکیل سواری چیا
+	🚵🏻;;
+	🚵🏼;;
+	🚵🏽;;
+	🚵🏾;;
+	🚵🏿;;
+🚵‍♂️;man mountain biking;پایسکیل سواری چیا پیاو
+	🚵🏻‍♂️;;
+	🚵🏼‍♂️;;
+	🚵🏽‍♂️;;
+	🚵🏾‍♂️;;
+	🚵🏿‍♂️;;
+🚵‍♀️;woman mountain biking;پایسکیل سواری چیا ژن
+	🚵🏻‍♀️;;
+	🚵🏼‍♀️;;
+	🚵🏽‍♀️;;
+	🚵🏾‍♀️;;
+	🚵🏿‍♀️;;
+🤸;person cartwheeling;سەماکەری جەستە
+	🤸🏻;;
+	🤸🏼;;
+	🤸🏽;;
+	🤸🏾;;
+	🤸🏿;;
+🤸‍♂️;man cartwheeling;سەماکەری جەستە پیاو
+	🤸🏻‍♂️;;
+	🤸🏼‍♂️;;
+	🤸🏽‍♂️;;
+	🤸🏾‍♂️;;
+	🤸🏿‍♂️;;
+🤸‍♀️;woman cartwheeling;سەماکەری جەستە ژن
+	🤸🏻‍♀️;;
+	🤸🏼‍♀️;;
+	🤸🏽‍♀️;;
+	🤸🏾‍♀️;;
+	🤸🏿‍♀️;;
+🫯;fight cloud;تۆزی شەڕ
+
+🤼;people wrestling;زۆرانبازی
+🤼‍♂️;men wrestling;زۆرانبازی پیاوان
+🤼‍♀️;women wrestling;زۆرانبازی ژنان
+🤽;person playing water polo;واتەر پۆلۆ
+	🤽🏻;;
+	🤽🏼;;
+	🤽🏽;;
+	🤽🏾;;
+	🤽🏿;;
+🤽‍♂️;man playing water polo;واتەر پۆلۆ پیاو
+	🤽🏻‍♂️;;
+	🤽🏼‍♂️;;
+	🤽🏽‍♂️;;
+	🤽🏾‍♂️;;
+	🤽🏿‍♂️;;
+🤽‍♀️;woman playing water polo;واتەر پۆلۆ ژن
+	🤽🏻‍♀️;;
+	🤽🏼‍♀️;;
+	🤽🏽‍♀️;;
+	🤽🏾‍♀️;;
+	🤽🏿‍♀️;;
+🤾;person playing handball;هۆکی
+	🤾🏻;;
+	🤾🏼;;
+	🤾🏽;;
+	🤾🏾;;
+	🤾🏿;;
+🤾‍♂️;man playing handball;هۆکی پیاو
+	🤾🏻‍♂️;;
+	🤾🏼‍♂️;;
+	🤾🏽‍♂️;;
+	🤾🏾‍♂️;;
+	🤾🏿‍♂️;;
+🤾‍♀️;woman playing handball;هۆکی ژن
+	🤾🏻‍♀️;;
+	🤾🏼‍♀️;;
+	🤾🏽‍♀️;;
+	🤾🏾‍♀️;;
+	🤾🏿‍♀️;;
+🤹;person juggling;گاڵتەجاڕ
+	🤹🏻;;
+	🤹🏼;;
+	🤹🏽;;
+	🤹🏾;;
+	🤹🏿;;
+🤹‍♂️;man juggling;گاڵتەجاڕ پیاو
+	🤹🏻‍♂️;;
+	🤹🏼‍♂️;;
+	🤹🏽‍♂️;;
+	🤹🏾‍♂️;;
+	🤹🏿‍♂️;;
+🤹‍♀️;woman juggling;گاڵتەجاڕ ژن
+	🤹🏻‍♀️;;
+	🤹🏼‍♀️;;
+	🤹🏽‍♀️;;
+	🤹🏾‍♀️;;
+	🤹🏿‍♀️;;
+🧘;person in lotus position;یۆگا
+	🧘🏻;;
+	🧘🏼;;
+	🧘🏽;;
+	🧘🏾;;
+	🧘🏿;;
+🧘‍♂️;man in lotus position;یۆگای پیاو
+	🧘🏻‍♂️;;
+	🧘🏼‍♂️;;
+	🧘🏽‍♂️;;
+	🧘🏾‍♂️;;
+	🧘🏿‍♂️;;
+🧘‍♀️;woman in lotus position;یۆگای ژن
+	🧘🏻‍♀️;;
+	🧘🏼‍♀️;;
+	🧘🏽‍♀️;;
+	🧘🏾‍♀️;;
+	🧘🏿‍♀️;;
+🛀;person taking bath;خۆشووشتن
+	🛀🏻;;
+	🛀🏼;;
+	🛀🏽;;
+	🛀🏾;;
+	🛀🏿;;
+🛌;person in bed;خەوتن
+	🛌🏻;;
+	🛌🏼;;
+	🛌🏽;;
+	🛌🏾;;
+	🛌🏿;;
+👫;man and woman holding hands;پیاو و ژن پێکەوە
+	👫🏻;;
+	👩🏻‍🤝‍👨🏼;;
+	👩🏻‍🤝‍👨🏽;;
+	👩🏻‍🤝‍👨🏾;;
+	👩🏻‍🤝‍👨🏿;;
+	👩🏼‍🤝‍👨🏻;;
+	👫🏼;;
+	👩🏼‍🤝‍👨🏽;;
+	👩🏼‍🤝‍👨🏾;;
+	👩🏼‍🤝‍👨🏿;;
+	👩🏽‍🤝‍👨🏻;;
+	👩🏽‍🤝‍👨🏼;;
+	👫🏽;;
+	👩🏽‍🤝‍👨🏾;;
+	👩🏽‍🤝‍👨🏿;;
+	👩🏾‍🤝‍👨🏻;;
+	👩🏾‍🤝‍👨🏼;;
+	👩🏾‍🤝‍👨🏽;;
+	👫🏾;;
+	👩🏾‍🤝‍👨🏿;;
+	👩🏿‍🤝‍👨🏻;;
+	👩🏿‍🤝‍👨🏼;;
+	👩🏿‍🤝‍👨🏽;;
+	👩🏿‍🤝‍👨🏾;;
+	👫🏿;;
+👩‍❤️‍👨;couple with heart: woman, man;ژن و پیاو و دڵ
+	👩🏻‍❤️‍👨🏻;;
+	👩🏻‍❤️‍👨🏼;;
+	👩🏻‍❤️‍👨🏽;;
+	👩🏻‍❤️‍👨🏾;;
+	👩🏻‍❤️‍👨🏿;;
+	👩🏼‍❤️‍👨🏻;;
+	👩🏼‍❤️‍👨🏼;;
+	👩🏼‍❤️‍👨🏽;;
+	👩🏼‍❤️‍👨🏾;;
+	👩🏼‍❤️‍👨🏿;;
+	👩🏽‍❤️‍👨🏻;;
+	👩🏽‍❤️‍👨🏼;;
+	👩🏽‍❤️‍👨🏽;;
+	👩🏽‍❤️‍👨🏾;;
+	👩🏽‍❤️‍👨🏿;;
+	👩🏾‍❤️‍👨🏻;;
+	👩🏾‍❤️‍👨🏼;;
+	👩🏾‍❤️‍👨🏽;;
+	👩🏾‍❤️‍👨🏾;;
+	👩🏾‍❤️‍👨🏿;;
+	👩🏿‍❤️‍👨🏻;;
+	👩🏿‍❤️‍👨🏼;;
+	👩🏿‍❤️‍👨🏽;;
+	👩🏿‍❤️‍👨🏾;;
+	👩🏿‍❤️‍👨🏿;;
+
+🗣️;speaking head;قسەکردن
+👤;bust in silhouette;کەس
+👥;busts in silhouette;کەسەکان
+👣;footprints;شوێن پێ
+
+[objects]
+
+☪️;star and crescent;مانگ و ئەستێرە
+📿;prayer beads;تەزبیح
+🕌;mosque;مزگەوت
+🕋;kaaba;کەعبە
+📖;open book;کتێبی کراوە
+📜;scroll;نامەی کۆن
+📚;books;کتێب
+📑;bookmark tabs;نیشانە
+
+📱;mobile phone;مۆبایل
+📲;mobile phone with arrow;مۆبایلی ناردن
+🔋;battery;باتری
+🪫;low battery;باتری نزم
+🔌;plug;پلاک
+💻;laptop;لابتۆپ
+🖥️;desktop computer;کۆمپیوتەر
+⌨️;keyboard;تەختەکلیل
+🖨️;printer;پرینتەر
+🎮;video game;یاری
+🎧;headphone;هێدفۆن
+🎤;microphone;مایکرۆفۆن
+📷;camera;کامێرا
+📺;television;تەلەفزیۆن
+📻;radio;ڕادیۆ
+🪙;coin;دراو
+💵;dollar banknote;دۆلار
+💷;pound banknote;پاوەند
+💶;euro banknote;یۆرۆ
+💴;yen banknote;یەن
+💸;money with wings;پارە
+💱;currency exchange;گۆڕینەوەی دراو
+💲;heavy dollar sign;دۆلار
+💳;credit card;کارت
+💰;money bag;پارە
+🧾;receipt;وەسل
+💹;chart increasing with yen;بازاڕ
+〽️;part alternation mark;نیشانە
+
+👓;glasses;چاویلکە
+🕶️;sunglasses;چاویلکەی دژە خۆر
+🥽;goggles;چاویلکە
+🤿;diving mask;دەمامکی مەلەوانی
+👖;jeans;پانتۆڵ
+👔;necktie;بۆینباخ
+👕;t-shirt;تیشێرت
+🦺;safety vest;هێلەکی سەلامەتی
+🥼;lab coat;کۆتی تاقیگە
+🎽;running shirt;درێسی وەرزشی
+🧥;coat;کۆت
+🥋;martial arts uniform;درێسی وەرزشی
+👘;kimono;کیمۆنۆ
+🥻;; sari;ساری
+👗;dress;کراسی ژنانە
+👚;woman's clothes;کراسی ژنانە
+🩲;bikini;جلی مەلەوانی
+🧣;scarf;ملپێچ
+🩳;shorts;شۆرت
+🧦;socks;گۆرەوی
+🧤;gloves;دەستکێش
+💍;ring;ئەڵقە
+💄;lipstick;سووراو
+👛;purse;جانتا
+👜;handbag;جانتا
+👝;clutch bag;جانتا
+🛍️;shopping bags;جانتا
+🎒;backpack;جانتا
+👡;thong sandal;نەعل
+👠;high-heeled shoe;پێڵاوی پاژنە بەرز
+🥾;hiking boot;پێڵاوی شاخ
+👟;sneaker;پێڵاوی وەرزشی
+👞;shoe;پێڵاو
+🩴;sandal;نەعل
+🩰;ballet shoes;پێڵاوی بالێ
+🥿;flat shoe;پێڵاوی ژنانە
+👢;boot;پۆتین
+👑;crown;تاج
+👒;woman's hat;کڵاوی ژنانە
+🎩;top hat;کڵاو
+🎓;graduation cap;کڵاوی دەرچوون
+🧢;bill cap;کڵاو
+🪖;rescue worker's helmet;کڵاوی سەلامەتی
+🪖;military helmet;کڵاوی سەربازی
+🕳️;hole;چاڵ
+💣;bomb;تەقینەوە
+💦;sweat droplets;ئاو|ئارەقە
+💬;speech balloon;قسەکردن
+👁️‍🗨️;eye in speech bubble;چاو لە قسەکردندا
+🗨️;left speech bubble;قسەکردن
+🗯️;right anger bubble;تووڕەیی
+💭;thought balloon;بیرکردنەوە
+💨;dash;با|خێرا
+⛓️‍💥;broken chain;زنجیری پچڕاو
+🪭;folding hand fan;باوەشێنی دەستی
+🪮;hair pick;شەنی قژ
+🌟;;
+💫;;
+🎗️;;
+
+🔇;muted speaker;بێدەنگ
+🔈;speaker low volume;دەنگی نزم
+🔉;speaker medium volume;دەنگی ناوەند
+🔊;speaker high volume;دەنگی بەرز
+📢;loudspeaker;بڵندگۆ
+📣;megaphone;بڵندگۆ
+🔔;bell;زەنگ
+🔕;bell with slash;بێدەنگ
+🎙️;studio microphone;مایکرۆفۆنی ستۆدیۆ
+🪦;headstone;کێلی گۆڕ
+
+☎️;telephone;تەلەفۆن
+📞;telephone receiver;تەلەفۆن
+📟;pager;پەیجەر
+📠;fax machine;فاکس
+💼;briefcase;جانتا
+
+🖱️;mouse;ماوس
+💽;computer disk;دیسک
+💾;floppy disk;فۆپی
+💿;optical disk;دیسک
+📀;optical disk;دیسک
+🧮;abacus;ژمێرە
+🎬;movie camera;کامێرا
+🎞️;film frames;فیلم
+📽️;projector;پڕۆجێکتەر
+🎬;clapper board;سینەما
+📸;camera with flash;کامێرا
+📹;video camera;ڤیدیۆ کامێرا
+📼;videocassette;فریتە
+🔍;magnifying glass tilted left;زەڕەبین
+🔎;magnifying glass tilted right;زەڕەبین
+🚬;cigarette;جگەرە
+🕯️;candle;مۆم
+💡;light bulb;ڵایت
+🔦;flashlight;لایت
+🏮;lantern;فانۆس
+🪔;diya lamp;چرای گڵۆڵە
+📔;notebook with decorative cover;دەفتەر
+📕;closed book;دەفتەر
+📗;green book;دەفتەر
+📘;blue book;دەفتەر
+📙;orange book;دەفتەر
+📓;notebook;دەفتەر
+📒;ledger;دەفتەر
+📃;page with curl;کاغەز
+📄;page facing up;کاغەز
+📰;newspaper;ڕۆژنامە
+🗞️;rolled-up newspaper;ڕۆژنامە
+🔖;bookmark;نیشانە
+🏷️;tag;تاگ
+✉️;envelope;نامە
+📧;e-mail;ئیمێڵ
+📨;incoming envelope;نامە
+📩;envelope with arrow;نامە
+📤;outbox tray;ناردنی نامە
+📥;inbox tray;هاتنی نامە
+📦;package;کارتۆن
+📫;closed mailbox with raised flag;سندووقی پۆستە
+📪;closed mailbox with lowered flag;سندووقی پۆستە
+📬;open mailbox with raised flag;سندووقی پۆستە
+📭;open mailbox with lowered flag;سندووقی پۆستە
+📮;postbox;سندووقی پۆستە
+🗳️;ballot box with ballot;سندووقی دەنگدان
+✏️;pencil;پێنووس
+✒️;black nib;پێنووس
+🖋️;fountain pen;پێنووس
+🖊️;pen;پێنووس
+🖌️;paintbrush;فڵچە
+🖍️;crayon;قەڵەم ڕەنگاوڕەنگ
+📝;memo;تێبینی
+
+📁;file folder;فۆڵدەر
+📂;open file folder;فۆڵدەر
+🗂️;card index dividers;فۆڵدەر
+📅;calendar;ساڵنامە
+📆;tear-off calendar;ساڵنامە
+🗒️;spiral notepad;دەفتەر
+🗓️;spiral calendar;ساڵنامە
+📇;card index;ناو و ناونیشان
+📈;chart increasing;گەشەسەندن
+📉;chart decreasing;دابەزین
+📊;bar chart;هێڵکاری
+📋;clipboard;تەختەی تێبینی
+📌;pushpin;پین
+📍;round pushpin;پین
+📎;paperclip;گیرەی کاغەز
+🖇️;linked paperclips;گیرەی کاغەز
+📏;straight ruler;ڕاستە
+📐;triangular ruler;ڕاستە
+✂️;scissors;مەقەست
+🗃️;card file box;سندووق
+🗄️;file cabinet;کۆنتێنەر
+🗑️;wastebasket;تەنەکەی خۆڵ
+🔒;locked;قفڵ
+🔓;unlocked;قفڵ
+🔏;locked with pen;قفڵ
+🔐;locked with key;قفڵ
+🔑;key;کلیل
+🗝️;old key;کلیل
+🔨;hammer;چەکوش
+🪓;axe;تەور
+⛏️;pick;قەمە
+⚒️;hammer and pick;چەکوش
+🛠️;hammer and wrench;چەکوش
+🗡️;dagger;خەنجەر
+⚔️;swords;شمشێر
+🔫;pistol;دەمانچە
+🪃;boomerang;بوومەرەنگ
+🏹;bow and arrow;کەوان
+🛡️;shield;قەڵغان
+🪚;carpentry saw;مشار
+🔧;wrench;سپانە
+🪛;screwdriver;سکرینداو
+🔩;bolt;بۆڵت
+⚙️;gear;گیەر
+🗜️;clamp;مەنگەنە
+⚖️;balance scale;تەرازوو
+🦯;probing cane;گۆچان
+🔗;link;پەیوەندی
+⛓️;chain;زنجیر
+🪝;hook;قۆڵاب
+🧰;toolbox;سندووقی ئامێرەکان
+🧲;magnet;موگناتیس
+🪜;ladder;پەیژە
+⚗️;alembic;تاقیگە
+🧪;test tube;تاقیگە
+🧫;petri dish;تاقیگە
+🧬;dna;دی ئێن ئەی
+🔬;microscope;مایکرۆسکۆپ
+🔭;telescope;تەلەسکۆپ
+📡;satellite antenna;سەتەلایت
+🩻;x-ray;ئێکس ڕەی
+⚕️;medical symbols;پزیشکی
+🩹;adhesive bandage;لەزگەی برین
+🧷;safety pin;دەرزی
+🩺;stethoscope;سەماعة
+💉;syringe;دەرزی
+💊;pill;حەب
+🩼;crutch;دارشەق
+🚪;door;دەرگا
+🪞;mirror;ئاوێنە
+🪟;window;پەنجەرە
+🛏️;bed;بێد
+🛋️;couch and lamp;قەنەفە
+🪑;chair;کورسی
+🚽;toilet;تەوالێت
+🪠;plunger;پەمپ
+🚿;showers;شاوەر
+🛁;bathtubs;بۆری مەلە
+🪤;mousetrap;تەڵەی مشک
+🪒;razor;گوێزان
+🧴;lotion bottle;کرێم
+🧹;broom;مەکنەسە
+🧺;basket;سەبەتە
+🧻;roll of paper;کاغەزی تەوالێت
+🪣;bucket;سەتڵ
+🧼;soap;سابوون
+🫧;bubbles;بڵق
+🪥;toothbrushes;فڵچەی ددان
+🧽;sponge;ئیسفنج
+🧯;fire extinguisher;ئاگرکوژێنەوە
+🛒;shopping cart;عەرەبانەی بازاڕ
+🪧;placard;تابلۆ
+🪪;identification card;ناسنامە
+🫟;splatter;پڕژان
+🪏;shovel;خاکەناز
+🪎;treasure chest;سندووقی گەنجینە
+
+[food_drink]
+🍞;bread;نان
+🥐;croissant;کرۆسان
+🥖;baguette bread;نانی فەڕەنسی
+🫓;flatbread;نان
+🥨;pretzel;پسکیتی لول
+🥯;bagel;نان
+🥞;pancake;پانکێک
+🧇;waffle;کێک
+🧀;cheese wedge;پەنیر
+🍖;meat on bone;گۆشت
+🍗;poultry leg;ڕانی مریشک
+🥩;cut of meat;گۆشت
+🥓;bacon;گۆشتی بەراز
+🍔;hamburger;هەمبەرگر
+🍟;french fries;پەتاتەی سوورەکراو
+🍕;pizza;پیتزا
+🌭;hot dog;هۆت دۆگ
+🥪;sandwich;سەندوویچ
+🌮;taco;تاکۆ
+🌯;burrito;بۆریتۆ
+🫔;tamale;تامالێ
+🥙;stuffed flatbread;سەندوویچ|لەفە
+🧆;falafel;فەلافل
+🥚;egg;هێلکە
+🍳;cooking;هێلکە و ڕۆن
+🥘;shallow pan of food;خواردن
+🍲;pot of food;خواردنی گەرم
+🫕;fondue;فۆندۆ
+🥣;bowl with spoon;قاپ
+🥗;salad;زەڵاتە
+🍿;popcorn;گوڵەگەنمە
+🧈;butter;کەرە
+🧂;salt;خوێ
+🥫;canned food;قوتوو
+🍱;bento box;خواردنی یابانی
+🍘;rice cracker;برنجی پسکیت
+🍙;rice ball;تۆپی برنج
+🍚;rice;برنج
+🍛;curry rice;شلمە و برنج
+🍜;steaming bowl;نۆدڵز
+🍝;spaghetti;سپاگێتی
+🍠;roasted sweet potato;پەتاتە
+🍢;oden;خواردنی یابانی
+🍣;sushi;سوشی
+🍤;fried shrimp;تەقڵە
+🍥;fish cake with swirl;کێکی ماسی
+🥮;moon cake;کێک
+🍡;dango;دانگۆ
+🥟;dumpling;دەمپڵینگ
+🥠;fortune cookie;پسکیت
+🥡;takeout box;خواردنی گواستراوە
+🦪;oyster;سەدەک
+🫜;root vegetable;سەوزەی ڕەگی
+🫛;pea pod;پاقلەمەنی
+🫚;ginger;زەنجەفیل
+🍋‍🟩;lime;لیمۆی سەوز
+🍄‍🟫;brown mushroom;قارچکی قاوەیی
+
+🍇;grapes;ترێ
+🍈;melon;کاڵەک
+🍉;watermelon;شوتی
+🍊;tangerine;لالەنگی
+🍋;lemon;لیمۆ
+🍌;banana;مۆز
+🍍;pineapple;ئەنەناس
+🥭;mango;مانگۆ
+🍎;red apple;سێوی سوور
+🍏;green apple;سێوی سەوز
+🍐;pear;هەرمێ
+🍑;peach;خۆخ
+🍒;cherries;گێلاس
+🍓;strawberry;شلیک
+🫐;blueberries;بلوبێری
+🥝;kiwi fruit;کیوی
+🍅;tomato;تەماتە
+🫒;olive;زەیتوون
+🥥;coconut;گوێزی هیندی
+🥑;avocado;ئاڤۆکادۆ
+🍆;eggplant;باینجان
+🥔;potato;پەتاتە
+🥕;carrot;گێزەر
+🌽;ear of corn;گەنمەشامی
+🌶️;hot pepper;بیبەری توون
+🫑;bell pepper;بیبەر
+🥒;cucumber;خەیار
+🥬;leafy green;سەوزە
+🥦;broccoli;برۆکلی
+🧄;garlic;سیر
+🧅;onion;پیاز
+🍄;mushroom;قارچک
+🥜;peanuts;فستق|باوی
+🫘;beans;پاقلە|فاسۆلیا
+🌰;chestnut;بەڕوو
+🍦;soft serve;ئایسکرێم
+🍧;shaved ice;ئایسکرێم
+🍨;ice cream;ئایسکرێم
+🍩;doughnut;دۆنات
+🍪;cookie;پسکیت
+🎂;birthday cake;کێکی لەدایکبوون
+🍰;shortcake;کێک
+🧁;cupcake;کەپکێک
+🥧;pie;پای
+🍫;chocolate bar;چۆکۆلاتە
+🍬;candy;شیرینی
+🍭;lollipop;مەمژە
+🍮;custard;کاستەر
+🍯;honey pot;هەنگوین
+🍼;baby bottle;مەمە شووشە
+🥛;glass of milk;شیر
+☕;hot beverage;چای|قاوە
+🫖;teapot;قۆری
+🍵;teacup without handle;چای سەوز
+🍹;tropical drink;شەربەت
+🧋;bubble tea;چا
+🧃;beverage box;شەربەت
+🧉;mate;ماتێ
+🧊;ice;سەهۆڵ
+🍽️;plate;خواردن
+🍴;fork and knife;کەوچک و چەتاڵ
+🥢;chopsticks;چۆپستیک
+🥄;spoon;کەوچک
+🔪;kitchen knife;چەقۆ
+🫙;jar;جام
+
+[animals_nature]
+🌼;blossom;گوڵ
+🌸;cherry blossom;گوڵی گێلاس
+💮;white flower;گوڵی سپی
+🪷;lotus;نیلوفەر
+🏵️;rosette;گوڵە رۆزێت
+🌺;hibiscus;گوڵی هیبیسکەس
+🌹;rose;گوڵ
+🥀;wilted flower;گوڵی ووشک
+🌷;tulip;گوڵی توولیپ
+🪻;hyacinth;گوڵی هیاسینت
+💐;bouquet;گوڵەبەستە
+🌻;sunflower;گوڵی خۆرەتاو
+🌱;seedling;گیای تازە
+🪴;potted plant;گوڵی ناو قاپ
+🪾;leafless tree;داری بێ گەڵا
+🌲;evergreen tree;داری هەمیشە سەوز
+🌳;deciduous tree;دار
+🌴;palm tree;داری دارخورما
+🌵;cactus;کاکتۆس
+🌾;sheaf of rice;کێڵگەی گەنم
+🌿;herb;گیای بۆندار
+☘️;shamrock;سێ گەڵا
+🍀;four leaf clover;چوار گەڵا
+🍁;maple leaf;گەڵای دار
+🍂;fallen leaf;گەڵای وەرزی
+🍃;leaves fluttering;گەڵا
+🐸;frog;بۆق
+🐞;lady beetle;خاڵخاڵۆکە
+🦋;butterfly;پەپوولە
+🕊️;dove;کۆتر
+🦜;parrot;تووتی
+🐣;hatching chick;جوچکی لە هێلکە دەرچوو
+🐤;chick;جوچک
+🐥;chick;جوچک
+🪶;feather;پەڕ
+🪽;wing;باڵ
+🐔;chicken;مریشک
+🐓;rooster;کەڵەشێر
+🦃;turkey;قەل
+🐦;bird;باڵندە
+🦆;duck;مراوی
+🦢;swan;قوڵینگ
+🪿;goose;قاز
+🐧;penguin;پەنگوین
+🦅;eagle;هەڵۆ
+🦉;owl;کۆنەپەپوو
+🪹;empty nest;هێلانەی چۆڵ
+🪺;nest with eggs;هێلانە
+🦤;dodo;دۆدۆ
+🐦‍🔥;phoenix;فینێکس|دەستەنووس
+🦩;flamingo;فلامینگۆ
+🦚;peacock;تاوس
+🦌;deer;ئاسک
+🫎;moose;ئاسکی گەورە
+🦬;bison;بایسۆن
+🐮;cow face;مانگا
+🐂;ox;گا
+🐃;water buffalo;گامێش
+🐄;cow;مانگا
+🐗;boar;بەرازی کێوی
+🐏;ram;بەران
+🐑;ewe;مەڕ
+🐐;goat;بزن
+🐪;camel;وشتر
+🐫;camel;وشتر
+🦙;llama;لاما
+🦒;giraffe;زەڕافە
+🐘;elephant;فیل
+🦣;mammoth;مامۆس
+🦏;rhinoceros;کەرکەدەن
+🦛;hippopotamus;گوێدرێژی ئاو
+🐵;monkey;مەیموون
+🐒;monkey;مەیموونی دارستان
+🦍;gorilla;گۆرێلا
+🫈;hairy creature;بوونەوەری موودار
+🦧;orangutan;ئۆرەنگۆتان
+🐶;dog;سەگ
+🐕;dog;سەگ
+🦮;guide dog;سەگی ڕێبەر
+🐕‍🦺;service dog;سەگی خزمەتگوزار
+🐩;poodle;پوودڵ
+🐺;wolf;گورگ
+🦊;fox;ڕێوی
+🦝;raccoon;راکوون
+🐱;cat;پشیلە
+🐈;cat;پشیلە
+🐈‍⬛;black cat;پشیلەی ڕەش
+🦁;lion;شێر
+🐯;tiger;پڵنگ
+🐅;tiger;پڵنگ
+🐆;leopard;پڵنگی لەکەدار
+🐴;horse;ئەسپ
+🐎;horse;ئەسپ
+🫏;donkey;گوێدرێژ
+🦓;zebra;کەرەکێوی
+🐭;mouse;مشک
+🐁;mouse;مشک
+🐀;rat;مشرۆک
+🐹;hamster;هامستەر
+🐰;rabbit;کەروێشک
+🐇;rabbit;کەروێشک
+🐿️;chipmunk;سمۆرە
+🦫;beaver;بێڤەر
+🦔;hedgehog;ژووژوو
+🦇;bat;شەمشەمەکوێرە
+🐻;bear;ورچ
+🐻‍❄️;polar bear;ورچی جەمسەری
+🐨;koala;کۆالا
+🐼;panda;پاندا
+🦥;sloth;تەمەڵ
+🦦;otter;سمۆرەی ئاو
+🦨;skunk;سکەنک
+🦘;kangaroo;کەنگەر
+🦡;badger;بەجەر
+🐾;paw prints;شوێن پێی ئاژەڵ
+🐊;crocodile;تیمساح
+🐢;turtle;کیسەڵ
+🦎;lizard;مارمێلکە
+🐍;snake;مار
+🐉;dragon;دێوی ئەفسانەیی
+🐲;dragon;دێوی ئەفسانەیی
+🦕;sauropod;دەیناسۆر
+🦖;t-rex;دەیناسۆری تێ-رێکس
+🐳;whale;نەهەنگ
+🐋;whale;نەهەنگ
+🫍;orca;ئۆرکا
+🐬;dolphin;دۆلفین
+🦭;seal;مۆری دەریا
+🐟;fish;ماسی
+🐠;tropical fish;ماسی ڕەنگاوڕەنگ
+🐡;blowfish;ماسی پفکەر
+🦈;shark;کۆسە
+🐙;octopus;هەشتپێ
+🐚;shell;قاوخ
+🦀;crab;قرژاڵ
+🦞;lobster;لۆبستەر
+🦐;shrimp;گوێچکەماسی
+🦑;squid;کالاماری
+🪸;coral;مەرجان
+🐌;snail;خەزنە
+🐛;caterpillar;تۆپەڵە
+🐜;ant;مێروولە
+🐝;bee;هەنگ
+🪲;beetle;خەپە
+🦗;cricket;کێچە
+🪳;cockroach;کەروێشکە
+🕷️;spider;جاڵجاڵۆکە
+🕸️;spider web;تۆڕی جاڵجاڵۆکە
+🦂;scorpion;دووپشک
+🦟;mosquito;مێش
+🪰;fly;مێش
+🪱;worm;کرم
+🦠;microbe;میکرۆب
+
+[travel_places]
+🚗;automobile;ئۆتۆمبێل
+🚓;police car;ئۆتۆمبێلی پۆلیس
+🚕;taxi;تەکسی
+🚙;sport utility vehicle;ئۆتۆمبێل
+🛻;pickup truck;پیکاپ
+🚌;bus;پاس
+🚑;ambulance;ئەمبوڵانس
+🚐;minibus;پاس
+🚒;fire engine;ئۆتۆمبێلی ئاگرکوژێنەوە
+🚚;delivery truck;بارهەڵگر
+🚛;articulated lorry;بارهەڵگر
+🚔;oncoming police car;ئۆتۆمبێلی پۆلیس
+🚖;oncoming taxi;تەکسی
+🚘;oncoming automobile;ئۆتۆمبێل
+🛞;wheel;تایە
+🚜;tractor;تراکتۆر
+🏎️;racing car;ئۆتۆمبێلی پێشبڕکێ
+🏍️;motorcycle;مۆتۆڕسکیل
+🛵;motor scooter;مۆتۆڕسکیل
+🛺;auto rickshaw;تیکتۆک
+🚲;bicycle;پایسکیل
+🛴;kick scooter;سکۆتەر
+🛹;skateboard;سکیتبۆرد
+🦽;manual wheelchair;کورسی پەککەوتە
+🦼;motorized wheelchair;کورسی کارەبایی
+🚂;locomotive;شەمەندەفەر
+🚄;high-speed train;شەمەندەفەری خێرا
+🚅;bullet train;شەمەندەفەری خێرا
+🚈;light rail;شەمەندەفەر
+🚝;monorail;شەمەندەفەر
+🚆;train;شەمەندەفەر
+🚇;metro;میترۆ
+🚉;station;وێستگە
+🚊;tram;شەمەندەفەر
+⛰️;mountain railway;شەمەندەفەری چیا
+🚋;railway car;شەمەندەفەر
+🚋;tram car;شەمەندەفەر
+🚎;trolleybus;پاس
+🚟;suspension railway;شەمەندەفەر
+🚠;mountain cableway;تەلەفریک
+🚡;aerial tramway;تەلەفریک
+
+✈️;airplanes;فڕۆکە
+🛩️;small airplane;فڕۆکەی بچووک
+🚁;helicopters;هەلیکۆپتەر
+🛰️;satellites;سەتەلایت
+🚀;rockets;مووشەک
+🛸;flying saucers;فەزایی
+🪂;parachutes;پەرەشوت
+🛫;airplanes;فڕینی فڕۆکە
+🛬;airplanes;نیشتنەوەی فڕۆکە
+💺;seats;کورسی
+⚓;anchors;لەنگەر
+🛟;ring buoys;قەڵغانی سەلامەتی
+⛵;sailboats;بەلەم
+🛶;canoes;بەلەم
+🚤;speedboats;بەلەم
+🛳️;passenger ships;کەشتی
+⛴️;ferrys;کەشتی
+🛥️;motorboats;بەلەم
+🚢;ships;کەشتی
+🚏;bus stops;وێستگەی پاس
+🛣️;motorways;ڕێگا
+🛤️;railway tracks;هێڵی ئاسن
+🛢️;fuel drums;بەرمیل
+⛽;gas pumps;بەنزینخانە
+🚨;sirens;لایت
+🚥;traffic lights;ترافیک لایت
+🚦;traffic lights;ترافیک لایت
+🛑;stop signs;وەستان
+🚧;construction signs;ئیشی شارەوانی
+
+🏟️;stadiums;یاریگا
+🏛️;classical buildings;بینا
+🏗️;building constructions;بیناسازی
+🧱;bricks;خشت
+🏠;houses;خانووەکان
+🏚️;derelict houses;خانووی کۆن
+🏘️;houses;خانوو
+🏡;houses;خانووی باخدار
+🏢;office buildings;بینا
+
+🏥;hospitals;نەخۆشخانە
+🏦;banks;بانک
+🏨;hotels;وتێل
+🏪;convenience stores;مارکێت
+🏫;schools;قوتابخانە
+🏬;department stores;بازاڕ
+🏭;factorys;کارگە
+🏯;japanese castles;قەڵا
+🏰;castles;قەڵا
+🎪;circuses;سێرک
+⛺;tents;خێوەت
+🗼;tokyo towers;بورج
+🗽;statues of liberty;پەیکەری ئازادی
+🗺️;maps of japan;نەخشە
+⛲;fountains;فووارە
+🖼️;framed pictures;وێنە
+🌫️;foggy;تەم و مژ
+🌃;nights;شەو
+🏙️;cityscapes;شار
+🌅;sunrises;خۆرکەوتن
+🌄;sunrises;خۆرکەوتن
+🌆;cityscapes;شار لە ئێوارەدا
+🌇;sunsets;خۆرئاوابوون
+🌉;bridges;پرد
+🌠;shooting stars;ئەستێرە
+🌌;milky ways;گەردوون
+🎆;fireworks;تەقەمەنی
+🎇;firecrackers;تەقەمەنی
+🎑;moon viewing ceremonys;مانگ
+🏞️;national parks;پارکی نیشتمانی
+🌫️;foggy;تەم و مژ
+🌙;crescent moon;مانگ
+🌑;new moons;مانگی نوێ
+🌕;full moons;مانگی پڕ
+🌒;waxing crescent moons;مانگ
+🌘;waning crescent moons;مانگ
+🌓;first quarter moons;مانگ
+🌗;last quarter moons;مانگ
+🌔;waxing gibbous moons;مانگ
+🌖;waning gibbous moons;مانگ
+🌛;first quarter moon faces;مانگ
+🌜;last quarter moon faces;مانگ
+⭐;stars;ئەستێرە
+🪐;ringed planets;هەسارە
+☀️;suns;خۆر
+🌞;sunface;خۆرەتاو
+🔅;dim buttons;لایت
+🔆;bright buttons;لایت
+☁️;clouds;هەور
+⛅;sun behind clouds;خۆر و هەور
+⛈️;cloud with lightning and rains;باران و بروسکە
+🌤️;sun behind small clouds;خۆر و هەور
+🌥️;sun behind large clouds;خۆر و هەور
+🌦️;sun behind rain clouds;خۆر و باران
+🌧️;cloud with rains;باران
+🌨️;cloud with snows;بەفر
+🌩️;cloud with lightnings;بروسکە
+🌪️;tornados;گەردەلوول
+🌊;waves;شەپۆل
+💨;winds;با
+🌈;rainbows;پەلکەزێڕینە
+🌂;closed umbrellas;چەتر
+☂️;umbrellas;چەتر
+☔;umbrella with rain drops;باران
+⛱️;umbrella on grounds;چەتر
+❄️;snowflakes;بەفر
+⛄;snowmans;پیاوی بەفرین
+☃️;snowmans;پیاوی بەفرین
+⚡;high voltage;بروسکە
+☄️;comets;ئەستێرە
+🌡️;thermometers;پلەی گەرمی
+♨️;hot springs;حەمامی گەرم
+♻️;recyclings;دوبارە بەکارهێنانەوە
+
+🏔️;snow-capped mountain;چیا
+⛰️;mountain;چیا
+🌋;volcanoes;گڕکان
+🗻;mount fujis;چیا
+🏕️;campings;کامپ
+🏖️;beach with umbrellas;دەریا
+🏜️;deserts;دەشت
+🏝️;islands;دوورگە
+🪨;rock;بەرد
+🪵;woods;دار
+🛖;huts;خانوو
+🛘;landslide;خاک ڕۆچوون
+
+🌍;globe showing europe-africa;زەوی
+🌎;globe showing americas;زەوی
+🌏;globe showing asia-australia;زەوی
+🌐;globes;زەوی
+
+🔔;bells;زەنگ
+⏳;hourglasses;کاتژمێر
+⌛;hourglasses;کاتژمێر
+⌚;watches;کاتژمێر
+⏰;alarm clocks;کاتژمێر
+🧭;compasses;قیبلەنوما
+⏱️;stopwatches;کاتژمێر
+⏲️;timers;کاتژمێر
+🕛;twelve o'clocks;کاتژمێر
+🕧;twelve-thirtys;کاتژمێر
+🕐;one o'clocks;کاتژمێر
+🕜;one-thirtys;کاتژمێر
+🕑;two o'clocks;کاتژمێر
+🕝;two-thirtys;کاتژمێر
+🕒;three o'clocks;کاتژمێر
+🕞;three-thirtys;کاتژمێر
+🕓;four o'clocks;کاتژمێر
+🕟;four-thirtys;کاتژمێر
+🕔;five o'clocks;کاتژمێر
+🕠;five-thirtys;کاتژمێر
+🕕;six o'clocks;کاتژمێر
+🕡;six-thirtys;کاتژمێر
+🕖;seven o'clocks;کاتژمێر
+🕢;seven-thirtys;کاتژمێر
+🕗;eight o'clocks;کاتژمێر
+🕣;eight-thirtys;کاتژمێر
+🕘;nine o'clocks;کاتژمێر
+🕤;nine-thirtys;کاتژمێر
+🕙;ten o'clocks;کاتژمێر
+🕥;ten-thirtys;کاتژمێر
+🕚;eleven o'clocks;کاتژمێر
+🕦;eleven-thirtys;کاتژمێر
+
+[activities]
+
+⚽;soccer balls;تۆپی پێ
+⚾;baseballs;بەیسبۆڵ
+🥎;softballs;سۆفتبۆڵ
+🏀;basketballs;باسکە
+🏐;volleyballs;ڤۆڵیبۆڵ
+🏈;american footballs;تۆپی ئەمریکی
+🏉;rugbys;رەگبی
+🎾;tennis;تێنس
+🥏;flying discs;یاری
+🎳;bowling;بۆڵێن
+🏏;cricket;کریکێت
+🏑;field hockeys;هۆکی
+🏒;ice hockeys;هۆکی
+🥍;lacrosses;لاکرۆس
+🏓;ping pongs;تێنس
+🏸;badmintons;بادمێنتۆن
+🥊;boxing gloves;بۆکس
+🥅;goals;گۆڵ
+⛳;flag in holes;گۆڵف
+⛸️;ice skates;خلیسکانێ
+🛼;roller skates;سکیت
+🎣;fishing poles;ماسیگری
+⛷️;skiers;خلیسکانێ
+🛷;sleds;خلیسکانێ
+🥌;curling stones;وەرزش
+🎯;darts;نیشانە
+🪀;yo-yos;یۆیۆ
+🪁;kited;کاغەزەفرۆکە
+🎱;billiards;بیلیارد
+🔮;crystal ball;شووشە
+🕹️;joystick;یاری
+🎰;slot machines;یاری
+🎲;dices;زار
+🧩;puzzles;یاری
+
+
+🎃;pumpkins;بەقڵەوێڵە
+🧨;firecrackers;تەقەمەنی
+🎈;balloons;باڵۆن
+🎉;party poppers;ئاهەنگ
+🎊;confetti balls;ئاهەنگ
+🎋;tanabata trees;ئاهەنگ
+🎍;pine decorations;ئاهەنگ
+🎎;japanese dolls;بووکەڵە
+🎏;carp streamers;ئاڵا
+🎐;wind chimes;زەنگ
+🧧;red envelopes;دیاری
+🎀;ribbons;ڕیبن
+🎁;gifts;دیاری
+🎟️;admission tickets;تیکێت
+🎫;tickets;تیکێت
+🎠;merry-go-rounds;یاری
+🛝;slide;خلیسکانێ
+🎡;ferris wheels;یاری
+🎢;roller coasters;یاری
+💈;barber poles;سەتاقیکردنەوە
+🎖️;military medals;مەدالیا
+🏆;trophies;جام
+🏅;medals;مەدالیا
+🥇;medals;مەدالیا
+🥈;medals;مەدالیا
+🥉;medals;مەدالیا
+🏅;medals;مەدالیا
+🧸;teddy bears;ورچ
+🪅;piñata;یاری
+🪩;mirror balls;گڵۆڵەی ئاوێنە
+🪆;nesting dolls;بووکەڵە
+🖼️;frames;وێنە
+🧵;threads;داو
+🪡;needles;دەرزی
+🧶;yarns;داو
+🪢;knot;گرێ
+🧳;suitcases;جانتا
+⚰️;coffins;تابووت
+
+[symbols]
+
+🆗;OK button;باشە|ئۆکەی
+🆒;COOL button;قەشەنگ
+🆓;FREE button;بەخۆڕایی
+🆕;NEW button;نوێ
+🆘;SOS button;فریاکەوتن
+🆚;VS button;بەرامبەر
+🆙;UP! button;بەرەو سەر
+🆔;ID button;ناسنامە
+ℹ️;informations;زانیاری
+🅰️;A button (blood type);گرووپی خوێن
+🅱️;B button (blood type);گرووپی خوێن
+🆎;AB button (blood type);گرووپی خوێن
+🅾️;O button (blood type);گرووپی خوێن
+
+🏧;ATM sign;ئامێری پارە
+✅;check mark buttons;ڕاست
+❌;cross mark buttons;هەڵە
+
+🅿️;P button;پارکینگ
+🔤;latin letters;پیتەکان
+🔠;latin capital letters;پیتە گەورەکان
+🔢;input numbers;ژمارەکان
+🔣;input symbols;نیشانەکان
+♀️;female signs;مێ
+♂️;male signs;نێر
+Ⓜ️;circled Ms;میترۆ
+
+🔞;eighteen plus;بۆ خوار هەژدە ساڵ نابێت
+🚭;no smokings;جگەرە کێشان قەدەغەیە
+🚳;no mobile phones;مۆبایل قەدەغەیە
+🚷;no bicycles;پایسکیل قەدەغەیە
+🚯;no litterings;خۆڵ فڕێدان قەدەغەیە
+🚱;non-potable waters;ئاوی نایەب
+🚷;no pedestrians;ڕۆیشتن قەدەغەیە
+🚫;prohibiteds;قەدەغەیە
+⭕;hollow red circles;بازنە
+⛔;no entrys;چوونە ژوورەوە قەدەغەیە
+☢️;radioactives;تیشکدەر
+☣️;biohazards;مەترسی بایۆلۆجی
+⚠️;warnings;ئاگاداری
+🚸;children crossings;پەڕینەوەی منداڵان
+📛;name badges;ناوی نیشانە
+🔰;japanese symbol for beginners;نیشانە
+
+🚮;litters;تەنەکەی خۆڵ
+🚾;restrooms;دەستشۆر
+🚻;water closets;تەوالێت
+🚹;mens;پیاوان
+🚺;womens;ژنان
+♿;wheelchairs;پەککەوتە
+🛂;passports;پاسپۆرت
+🛄;baggages;جانتا
+🛗;elevators;ئەسانسۆر
+🎦;cinemas;سینەما
+📳;vibrations;لەرزین
+📶;antennas;هێڵی مۆبایل
+
+💠;diamond with dots;ئەڵماس
+♦️;diamonds;ئەڵماس
+🔺;red triangle pointed ups;سێگۆشە
+🔻;red triangle pointed downs;سێگۆشە
+
+🟥;red squares;چوارگۆشەی سوور
+🟧;orange squares;چوارگۆشەی پرتەقاڵی
+🟨;yellow squares;چوارگۆشەی زەرد
+🟩;green squares;چوارگۆشەی سەوز
+🟦;blue squares;چوارگۆشەی شین
+🟪;purple squares;چوارگۆشەی مۆر
+🟫;brown squares;چوارگۆشەی قاوەیی
+⬛;black large squares;چوارگۆشەی ڕەش
+⬜;white large squares;چوارگۆشەی سپی
+
+🔴;red circles;بازنەی سوور
+🟠;orange circles;بازنەی پرتەقاڵی
+🟡;yellow circles;بازنەی زەرد
+🟢;green circles;بازنەی سەوز
+🔵;blue circles;بازنەی شین
+🟣;purple circles;بازنەی مۆر
+🟤;brown circles;بازنەی قاوەیی
+⚫;black circles;بازنەی ڕەش
+⚪;white circles;بازنەی سپی
+
+#️⃣;hashtag;هاش
+0️⃣;zeros;ژمارە سفر
+1️⃣;ones;ژمارە یەک
+2️⃣;twos;ژمارە دوو
+3️⃣;threes;ژمارە سێ
+4️⃣;fours;ژمارە چوار
+5️⃣;fives;ژمارە پێنج
+6️⃣;sixs;ژمارە شەش
+7️⃣;sevens;ژمارە حەوت
+8️⃣;eights;ژمارە هەشت
+9️⃣;nines;ژمارە نۆ
+🔟;tens;ژمارە دە
+🔄;counterclockwise arrows buttons;سووراندنەوە
+
+⬆️;up arrows;بەرەو سەرەوە
+⬇️;down arrows;بەرەو خوارەوە
+⬅️;left arrows;بەرەو چەپ
+➡️;right arrows;بەرەو ڕاست
+↕️;up-down arrows;سەر و خوار
+↔️;left-right arrows;چەپ و ڕاست
+🔄;clockwises;سووراندنەوە
+↗️;up-right arrows;سەر و ڕاست
+↘️;down-right arrows;خوار و ڕاست
+↙️;down-left arrows;خوار و چەپ
+↖️;up-left arrows;سەر و چەپ
+↪️;curves;گەڕانەوە
+↩️;curves;گەڕانەوە
+⤴️;curves;سەرەوە
+⤵️;curves;خوارەوە
+🔀;shuffles;تێکەڵکردن
+🔁;repeats;دووبارە کردنەوە
+🔂;repeats;دووبارە کردنەوە
+▶️;plays;لێدان
+⏩;forwards;بەرەو پێش
+⏭️;nexts;دواتر
+⏯️;plays;لێدان و وەستان
+⏪;reverses;بەرەو دوا
+⏮️;reverses;بەرەو دوا
+◀️;lasts;پێشتر
+⏫;upwards;بەرەو سەرەوە
+🔼;upwards;بەرەو سەرەوە
+⏬;downwards;بەرەو خوارەوە
+🔽;downwards;بەرەو خوارەوە
+⏸️;pauses;وەستان
+⏹️;stops;وەستان
+⏺️;records;تۆمارکردن
+⏏️;ejects;دەرکردن
+✳️;eight-pointed stars;ئەستێرە
+
+❗;exclamation marks;سەرسامی
+‼️;exclamation marks;سەرسامی
+❓;question marks;پرسیار
+❔;question marks;پرسیار
+❕;exclamation marks;سەرسامی
+❕;exclamation marks;سەرسامی
+✖️;multiplications;لێکدان
+➕;pluss;کۆکردنەوە
+➖;minuss;کەمکردنەوە
+🟰;equalss;یەکسانە
+➗;divides;دابەشکردن
+♾️;infinity;بێکۆتا
+➰;loops;نیشانە
+〰️;wavys;نیشانە
+©️;copyrights;مافی پارێزراوە
+®️;registereds;مافی پارێزراوە
+™️;trades;نیشانەی بازرگانی
+🔙;backs;گەڕانەوە
+🔛;ons;کارکردن
+🔜;soons;بەمزووانە
+🔝;tops;سەرەوە
+
+
+[flags]
+
+🇹🇯;kurdistan;کوردستان
+🇮🇶;iraq;عێراق
+🇮🇷;iran;ئێران
+🇦🇫;afghanistan;ئەفغانستان
+🇵🇰;pakistan;پاکستان
+🇸🇦;saudi arabia;سعودیە
+🇵🇸;palestine;فەلەستین
+🇬🇧;united kingdom;شانشینی یەکگرتوو
+🇺🇸;united states;ویلایەتە یەکگرتووەکانی ئەمریکا
+🇨🇦;canada;کەنەدا
+🇷🇺;russia;ڕووسیا
+🇮🇹;italy;ئیتاڵیا
+🇩🇪;germany;ئەڵمانیا
+🇫🇷;france;فەرەنسا
+🇧🇷;brazil;بەڕازیل
+🇦🇷;argentina;ئەرژەنتین
+🇪🇸;spain;ئیسپانیا
+🇵🇹;portugal;پورتوگال
+🇯🇵;japan;یابان
+🇨🇳;china;چین
+🇰🇷;south korea;کۆریای باشوور
+🏴󠁧󠁢󠁥󠁮󠁧󠁿;england;ئینگلتەرا
+🇮🇸;iceland;ئایسلەندا
+🇫🇴;faroe islands;دوورگەکانی فارۆ
+🇳🇴;norway;نەرویج
+🇸🇪;sweden;سوید
+🇫🇮;finland;فینلەندا
+🇳🇱;netherlands;هۆڵەندا
+🇧🇪;belgium;بەلجیکا
+🇲🇻;maldives;مالدیڤ
+🇧🇩;bangladesh;بەنگلادیش
+🇦🇺;australia;ئوسترالیا
+🇦🇩;andorra;ئەندۆرا
+🇦🇪;united arab emirates;میرنشینە یەکگرتووە عەرەبییەکان
+🇦🇱;albania;ئەلبانیا
+🇦🇲;armenia;ئەرمینیا
+🇦🇿;azerbaijan;ئازەربایجان
+🇦🇴;angola;ئەنگۆلا
+🇦🇹;austria;نەمسا
+🇦🇼;aruba;ئارووبا
+🇧🇦;bosnia and herzegovina;بۆسنیا و هەرزەگۆڤینا
+🇧🇫;burkina faso;بورکینافاسۆ
+🇧🇬;bulgaria;بولگاریا
+🇧🇭;bahrain;بەحرەین
+🇧🇮;burundi;بوروندی
+🇧🇯;benin;بێنین
+🇧🇳;brunei;برونای
+🇧🇴;bolivia;بۆلیڤیا
+🇧🇸;bahamas;بەهاما
+🇧🇹;bhutan;بووتان
+🇧🇼;botswana;بۆتسوانا
+🇧🇾;belarus;بیلاڕووس
+🇧🇿;belize;بەلیز
+🇨🇩;democratic republic of the congo;کۆماری دیموکراتی کۆنگۆ
+🇨🇫;central african republic;کۆماری ئەفریقای ناوەندی
+🇨🇬;congo;کۆنگۆ
+🇨🇭;switzerland;سویسرا
+🇨🇮;cote d'ivoire;کۆتدیڤوار
+🇨🇱;chile;چیلی
+🇨🇲;cameroon;کامیڕۆن
+🇨🇴;colombia;کۆڵۆمبیا
+🇨🇷;costa rica;کۆستاریکا
+🇨🇶;sark;سارک
+🇨🇺;cuba;کوبا
+🇨🇼;curacao;کوراساو
+🇨🇾;cyprus;قوبرس
+🇨🇿;czech republic;کۆماری چیک
+🇩🇯;djibouti;جیبوتی
+🇩🇲;dominica;دۆمینیکا
+🇩🇴;dominican republic;کۆماری دۆمینیکان
+🇩🇿;algeria;جەزائیر
+🇪🇨;ecuador;ئێکوادۆر
+🇪🇪;estonia;ئێستۆنیا
+🇪🇬;egypt;میسر
+🇪🇭;western sahara;سەحرای ڕۆژئاوا
+🇪🇷;eritrea;ئێریتریا
+🇪🇹;ethiopia;ئێتیۆپیا
+🇪🇺;european union;یەکێتی ئەوروپا
+🇬🇦;gabon;گابۆن
+🇬🇩;grenada;گرینادا
+🇬🇪;georgia;جۆرجیا
+🇬🇫;french guiana;گویانی فەڕەنسی
+🇬🇭;ghana;گانا
+🇬🇮;gibraltar;جەبەل تارق
+🇬🇱;greenland;گرینلاند
+🇬🇲;gambia;گامبیا
+🇬🇳;guinea;گینێ
+🇬🇶;equatorial guinea;گینەی ئیستوایی
+🇬🇷;greece;یۆنان
+🇬🇹;guatemala;گواتیمالا
+🇬🇺;guam;گوام
+🇬🇼;guinea-bissau;گینێ بیساو
+🇬🇾;guyana;گویانا
+🇭🇰;hong kong;هۆنگ کۆنگ
+🇭🇳;honduras;هۆندۆراس
+🇭🇷;croatia;کرواتیا
+🇭🇹;haiti;هایتی
+🇭🇺;hungary;هەنگاریا
+🇮🇩;indonesia;ئیندۆنیزیا
+🇮🇪;ireland;ئێرلەندا
+🇮🇳;india;هیندستان
+🇯🇲;jamaica;جامایکا
+🇯🇴;jordan;ئوردن
+🇰🇪;kenya;کینیا
+🇰🇬;kyrgyzstan;کیرغیزستان
+🇰🇭;cambodia;کەمبۆدیا
+🇰🇲;comoros;کۆمۆرۆس
+🇰🇵;north korea;کۆریای باکوور
+🇰🇼;kuwait;کوەیت
+🇰🇿;kazakhstan;کازاخستان
+🇱🇦;laos;لاوس
+🇱🇧;lebanon;لوبنان
+🇱🇮;liechtenstein;لیختنشتاین
+🇱🇰;sri lanka;سریلانکا
+🇱🇷;liberia;لیبێریا
+🇱🇸;lesotho;لێسۆتۆ
+🇱🇹;lithuania;لیتوانیا
+🇱🇺;luxembourg;لوکسمبۆرگ
+🇱🇻;latvia;لاتڤیا
+🇱🇾;libya;لیبیا
+🇲🇦;morocco;مەغریب
+🇲🇩;moldova;مۆڵدۆڤا
+🇲🇪;montenegro;مۆنتینیگرۆ
+🇲🇬;madagascar;ماداگاسکار
+🇲🇰;macedonia;مەکدۆنیا
+🇲🇱;mali;مالی
+🇲🇳;mongolia;مەنگۆلیا
+🇲🇷;mauritania;مۆریتانیا
+🇲🇹;malta;ماڵتا
+🇲🇼;malawi;مەلاوی
+🇲🇽;mexico;مەکسیک
+🇲🇾;malaysia;مالیزیا
+🇲🇿;mozambique;مۆزامبیک
+🇳🇦;namibia;نامیبیا
+🇳🇨;new caledonia;نیو کالیدۆنیا
+🇳🇪;niger;نیجەر
+🇳🇬;nigeria;نیجیریا
+🇳🇮;nicaragua;نیکاراگوا
+🇳🇷;nauru;نائورو
+🇳🇿;new zealand;نیوزیلاند
+🇴🇲;oman;عومان
+🇵🇦;panama;پاناما
+🇵🇪;peru;پێروو
+🇵🇬;papua new guinea;پاپوا گینێی نوێ
+🇵🇭;philippines;فلیپین
+🇵🇱;poland;پۆڵەندا
+🇵🇷;puerto rico;پۆرتۆ ڕیکۆ
+🇵🇼;palau;پاڵاو
+🇵🇾;paraguay;پاراگوای
+🇶🇦;qatar;قەتەر
+🇷🇴;romania;ڕۆمانیا
+🇷🇸;serbia;سڕبیا
+🇷🇼;rwanda;ڕواندا
+🇸🇨;seychelles;سیشێل
+🇸🇩;sudan;سوودان
+🇸🇬;singapore;سینگاپوور
+🇸🇮;slovenia;سلۆڤینیا
+🇸🇰;slovakia;سلۆڤاکیا
+🇸🇱;sierra leone;سیەرالیۆن
+🇸🇳;senegal;سینیگال
+🇸🇴;somalia;سۆماڵ
+🇸🇷;suriname;سورینام
+🇸🇸;south sudan;سوودانی باشوور
+🏴󠁧󠁢󠁳󠁣󠁴󠁿;scotland;سکۆتلەندا
+🏴󠁧󠁢󠁷󠁬󠁳󠁿;wales;وێڵز
+🇸🇻;el salvador;ئێلسالڤادۆر
+🇸🇾;syria;سووریا
+🇹🇩;chad;چاد
+🇹🇬;togo;تۆگۆ
+🇹🇭;thailand;تایلاند
+🇹🇲;turkmenistan;تورکمانستان
+🇹🇳;tunisia;توونس
+🇹🇹;trinidad and tobago;ترینیداد و تۆباگۆ
+🇹🇼;taiwan;تایوان
+🇹🇿;tanzania;تانزانیا
+🇺🇦;ukraine;ئوکراینا
+🇺🇬;uganda;ئوگاندا
+🇺🇾;uruguay;ئوروگوای
+🇺🇿;uzbekistan;ئۆزبەکستان
+🇻🇪;venezuela;ڤێنزوێلا
+🇻🇳;vietnam;ڤیێتنام
+🇽🇰;kosovo;کۆسۆڤۆ
+🇾🇪;yemen;یەمەن
+🇿🇦;south africa;ئەفریقای باشوور
+🇿🇲;zambia;زامبیا
+🇿🇼;zimbabwe;زیمبابوی
+🏁;chequered flag;ئاڵای پێشبڕکێ
+🚩;triangular flag;ئاڵای سێگۆشە
+🎌;crossed flags;ئاڵای تێکەڵاو
+🏴;black flag;ئاڵای ڕەش
+🏳️;white flag;ئاڵای سپی
+🏴‍☠️;pirate flag;ئاڵای دزە دەریاییەکان

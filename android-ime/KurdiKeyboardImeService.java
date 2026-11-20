@@ -1,0 +1,300 @@
+package io.kurdikebord.app;
+
+import android.annotation.SuppressLint;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Color;
+import android.inputmethodservice.InputMethodService;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.TextUtils;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
+import android.webkit.JavascriptInterface;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+/**
+ * KurdiKeyboard native Android InputMethodService (Direct Boot Aware).
+ * Renders the full KurdiKeyboard web deck offline from assets/public/index.html?ime=1
+ * and bridges all key events directly to Android's InputConnection.
+ */
+public class KurdiKeyboardImeService extends InputMethodService {
+    private static final String VIRTUAL_HOST = "kurdikebord.local";
+    private WebView webView;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private int keyboardHeightDp = 365;
+
+    @SuppressLint("SetJavaScriptEnabled")
+    @Override
+    public View onCreateInputView() {
+        FrameLayout container = new FrameLayout(this);
+        container.setBackgroundColor(Color.BLACK);
+
+        webView = new WebView(this);
+        webView.setBackgroundColor(Color.BLACK);
+        webView.setVerticalScrollBarEnabled(false);
+        webView.setHorizontalScrollBarEnabled(false);
+
+        WebSettings ws = webView.getSettings();
+        ws.setJavaScriptEnabled(true);
+        ws.setDomStorageEnabled(true);
+        ws.setDatabaseEnabled(true);
+        ws.setAllowFileAccess(false);
+        ws.setMediaPlaybackRequiresUserGesture(false);
+        ws.setCacheMode(WebSettings.LOAD_DEFAULT);
+
+        webView.addJavascriptInterface(new AndroidImeBridge(), "AndroidIME");
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                if (uri != null && VIRTUAL_HOST.equalsIgnoreCase(uri.getHost())) {
+                    String path = uri.getPath();
+                    if (path == null || path.equals("/") || path.isEmpty()) {
+                        path = "/index.html";
+                    }
+                    String assetPath = "public" + path;
+                    try {
+                        InputStream is = getAssets().open(assetPath);
+                        return new WebResourceResponse(guessMimeType(path), "UTF-8", is);
+                    } catch (IOException e) {
+                        try {
+                            InputStream fallback = getAssets().open("public/index.html");
+                            return new WebResourceResponse("text/html", "UTF-8", fallback);
+                        } catch (IOException ignored) {
+                            return null;
+                        }
+                    }
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+        });
+
+        int heightPx = dpToPx(keyboardHeightDp);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                heightPx
+        );
+        container.addView(webView, lp);
+        webView.loadUrl("https://" + VIRTUAL_HOST + "/index.html?ime=1");
+        return container;
+    }
+
+    @Override
+    public void onStartInputView(EditorInfo info, boolean restarting) {
+        super.onStartInputView(info, restarting);
+        syncLatestSystemClipboard();
+    }
+
+    private void syncLatestSystemClipboard() {
+        if (webView == null) return;
+        try {
+            ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cm != null && cm.hasPrimaryClip()) {
+                ClipData clip = cm.getPrimaryClip();
+                if (clip != null && clip.getItemCount() > 0) {
+                    CharSequence text = clip.getItemAt(0).coerceToText(this);
+                    if (!TextUtils.isEmpty(text)) {
+                        String escaped = text.toString()
+                                .replace("\\", "\\\\")
+                                .replace("'", "\\'")
+                                .replace("\n", "\\n")
+                                .replace("\r", "");
+                        mainHandler.post(() -> {
+                            if (webView != null) {
+                                webView.evaluateJavascript(
+                                        "window.__onAndroidClipboardSync && window.__onAndroidClipboardSync('" + escaped + "');",
+                                        null
+                                );
+                            }
+                        });
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+
+    private String guessMimeType(String path) {
+        String lower = path.toLowerCase();
+        if (lower.endsWith(".html")) return "text/html";
+        if (lower.endsWith(".js") || lower.endsWith(".mjs")) return "application/javascript";
+        if (lower.endsWith(".css")) return "text/css";
+        if (lower.endsWith(".json")) return "application/json";
+        if (lower.endsWith(".svg")) return "image/svg+xml";
+        if (lower.endsWith(".png")) return "image/png";
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        if (lower.endsWith(".wav")) return "audio/wav";
+        if (lower.endsWith(".mp3")) return "audio/mpeg";
+        if (lower.endsWith(".ogg")) return "audio/ogg";
+        if (lower.endsWith(".woff2")) return "font/woff2";
+        if (lower.endsWith(".ttf")) return "font/ttf";
+        return "application/octet-stream";
+    }
+
+    public class AndroidImeBridge {
+        @JavascriptInterface
+        public void commitText(final String text) {
+            if (text == null) return;
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic != null) {
+                    ic.commitText(text, 1);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void deleteBackward() {
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic != null) {
+                    CharSequence selected = ic.getSelectedText(0);
+                    if (!TextUtils.isEmpty(selected)) {
+                        ic.commitText("", 1);
+                    } else {
+                        ic.deleteSurroundingText(1, 0);
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void deleteWord() {
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic == null) return;
+                CharSequence before = ic.getTextBeforeCursor(64, 0);
+                if (TextUtils.isEmpty(before)) return;
+                String s = before.toString();
+                int len = s.length();
+                int i = len - 1;
+                while (i >= 0 && Character.isWhitespace(s.charAt(i))) i--;
+                while (i >= 0 && !Character.isWhitespace(s.charAt(i))) i--;
+                int count = len - (i + 1);
+                if (count > 0) {
+                    ic.deleteSurroundingText(count, 0);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void sendEnter() {
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                EditorInfo ei = getCurrentInputEditorInfo();
+                if (ic == null) return;
+                if (ei != null) {
+                    int action = ei.imeOptions & EditorInfo.IME_MASK_ACTION;
+                    if (action != EditorInfo.IME_ACTION_NONE
+                            && action != EditorInfo.IME_ACTION_UNSPECIFIED
+                            && (ei.imeOptions & EditorInfo.IME_FLAG_NO_ENTER_ACTION) == 0) {
+                        ic.performEditorAction(action);
+                        return;
+                    }
+                }
+                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
+                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
+            });
+        }
+
+        @JavascriptInterface
+        public void moveCursor(final int delta) {
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic == null) return;
+                int keyCode = delta < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT;
+                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
+                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyCode));
+            });
+        }
+
+        @JavascriptInterface
+        public void selectAll() {
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic != null) ic.performContextMenuAction(android.R.id.selectAll);
+            });
+        }
+
+        @JavascriptInterface
+        public void copy() {
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic != null) {
+                    ic.performContextMenuAction(android.R.id.copy);
+                    mainHandler.postDelayed(KurdiKeyboardImeService.this::syncLatestSystemClipboard, 120);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void cut() {
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic != null) {
+                    ic.performContextMenuAction(android.R.id.cut);
+                    mainHandler.postDelayed(KurdiKeyboardImeService.this::syncLatestSystemClipboard, 120);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void paste() {
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic != null) ic.performContextMenuAction(android.R.id.paste);
+            });
+        }
+
+        @JavascriptInterface
+        public void hideKeyboard() {
+            mainHandler.post(() -> requestHideSelf(0));
+        }
+
+        @JavascriptInterface
+        public void openSettings() {
+            mainHandler.post(() -> {
+                try {
+                    Intent intent = new Intent(KurdiKeyboardImeService.this, MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                } catch (Exception ignored) {
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void setKeyboardHeightDp(final int dp) {
+            mainHandler.post(() -> {
+                if (webView != null && dp >= 280 && dp <= 520) {
+                    keyboardHeightDp = dp;
+                    ViewGroup.LayoutParams lp = webView.getLayoutParams();
+                    if (lp != null) {
+                        lp.height = dpToPx(dp);
+                        webView.setLayoutParams(lp);
+                    }
+                }
+            });
+        }
+    }
+}

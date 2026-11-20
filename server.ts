@@ -1,0 +1,311 @@
+import 'dotenv/config';
+import express from 'express';
+import fs from 'fs';
+import path from 'path';
+import zlib from 'zlib';
+import { fileURLToPath } from 'url';
+import { createServer as createViteServer } from 'vite';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const PORT = 3000;
+const isProd = process.env.NODE_ENV === 'production';
+
+function getGeminiClient(): GoogleGenAI | null {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+    return null;
+  }
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
+    },
+  });
+}
+
+async function startServer() {
+  const app = express();
+  app.use(express.json({ limit: '1mb' }));
+
+  app.get('/api/health', (_req, res) => {
+    res.json({ ok: true, aiConfigured: Boolean(getGeminiClient()) });
+  });
+
+  app.get('/api/download-github-zip', (_req, res) => {
+    try {
+      const filesToPack: { name: string; data: Buffer }[] = [];
+
+      const addFileIfExists = (relPath: string) => {
+        const abs = path.join(__dirname, relPath);
+        if (fs.existsSync(abs) && fs.statSync(abs).isFile()) {
+          filesToPack.push({ name: relPath.replace(/\\/g, '/'), data: fs.readFileSync(abs) });
+        }
+      };
+
+      const addDirRecursive = (relDir: string, filter?: (relFile: string) => boolean) => {
+        const absDir = path.join(__dirname, relDir);
+        if (!fs.existsSync(absDir)) return;
+        for (const entry of fs.readdirSync(absDir, { withFileTypes: true })) {
+          const relChild = path.posix.join(relDir.replace(/\\/g, '/'), entry.name);
+          if (entry.isDirectory()) {
+            addDirRecursive(relChild, filter);
+          } else if (entry.isFile()) {
+            if (!filter || filter(relChild)) {
+              filesToPack.push({
+                name: relChild,
+                data: fs.readFileSync(path.join(__dirname, relChild)),
+              });
+            }
+          }
+        }
+      };
+
+      // Root project & build config files
+      for (const f of [
+        'package.json',
+        'tsconfig.json',
+        'vite.config.ts',
+        'index.html',
+        'capacitor.config.json',
+        'README.md',
+        '.gitignore',
+        '.env.example',
+        'metadata.json',
+        'server.ts',
+      ]) {
+        addFileIfExists(f);
+      }
+
+      // GitHub Actions workflow, Android IME Java overlay, build script & source code
+      addDirRecursive('.github');
+      addDirRecursive('android-ime');
+      addDirRecursive('scripts');
+      addDirRecursive('src');
+
+      // Only include runtime public assets (logo + fx_* sound packs), skip raw 20MB upload archive
+      addDirRecursive('public', (rel) => {
+        if (rel.startsWith('public/assets/aistudio/')) {
+          return path.basename(rel).startsWith('fx_');
+        }
+        return true;
+      });
+
+      // Pure-Node PKZIP (DEFLATE) builder with CRC32
+      const crcTable = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let k = 0; k < 8; k++) {
+          c = (c & 1) ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+        }
+        crcTable[i] = c >>> 0;
+      }
+      const crc32 = (buf: Buffer): number => {
+        let crc = 0xffffffff;
+        for (let i = 0; i < buf.length; i++) {
+          crc = crcTable[(crc ^ buf[i]) & 0xff] ^ (crc >>> 8);
+        }
+        return (crc ^ 0xffffffff) >>> 0;
+      };
+
+      const localParts: Buffer[] = [];
+      const centralParts: Buffer[] = [];
+      let offset = 0;
+
+      for (const file of filesToPack) {
+        const nameBuf = Buffer.from(file.name, 'utf8');
+        const compressed = zlib.deflateRawSync(file.data, { level: 6 });
+        const crc = crc32(file.data);
+
+        const localHeader = Buffer.alloc(30);
+        localHeader.writeUInt32LE(0x04034b50, 0);
+        localHeader.writeUInt16LE(20, 4);
+        localHeader.writeUInt16LE(0x0800, 6); // UTF-8 filename flag
+        localHeader.writeUInt16LE(8, 8); // DEFLATE
+        localHeader.writeUInt16LE(0, 10);
+        localHeader.writeUInt16LE(0, 12);
+        localHeader.writeUInt32LE(crc, 14);
+        localHeader.writeUInt32LE(compressed.length, 18);
+        localHeader.writeUInt32LE(file.data.length, 22);
+        localHeader.writeUInt16LE(nameBuf.length, 26);
+        localHeader.writeUInt16LE(0, 28);
+
+        localParts.push(localHeader, nameBuf, compressed);
+
+        const centralHeader = Buffer.alloc(46);
+        centralHeader.writeUInt32LE(0x02014b50, 0);
+        centralHeader.writeUInt16LE(20, 4);
+        centralHeader.writeUInt16LE(20, 6);
+        centralHeader.writeUInt16LE(0x0800, 8);
+        centralHeader.writeUInt16LE(8, 10);
+        centralHeader.writeUInt16LE(0, 12);
+        centralHeader.writeUInt16LE(0, 14);
+        centralHeader.writeUInt32LE(crc, 16);
+        centralHeader.writeUInt32LE(compressed.length, 20);
+        centralHeader.writeUInt32LE(file.data.length, 24);
+        centralHeader.writeUInt16LE(nameBuf.length, 28);
+        centralHeader.writeUInt16LE(0, 30);
+        centralHeader.writeUInt16LE(0, 32);
+        centralHeader.writeUInt16LE(0, 34);
+        centralHeader.writeUInt16LE(0, 36);
+        centralHeader.writeUInt32LE(0, 38);
+        centralHeader.writeUInt32LE(offset, 42);
+
+        centralParts.push(centralHeader, nameBuf);
+        offset += localHeader.length + nameBuf.length + compressed.length;
+      }
+
+      const centralDir = Buffer.concat(centralParts);
+      const eocd = Buffer.alloc(22);
+      eocd.writeUInt32LE(0x06054b50, 0);
+      eocd.writeUInt16LE(0, 4);
+      eocd.writeUInt16LE(0, 6);
+      eocd.writeUInt16LE(filesToPack.length, 8);
+      eocd.writeUInt16LE(filesToPack.length, 10);
+      eocd.writeUInt32LE(centralDir.length, 12);
+      eocd.writeUInt32LE(offset, 16);
+      eocd.writeUInt16LE(0, 20);
+
+      const zipBuffer = Buffer.concat([...localParts, centralDir, eocd]);
+
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', 'attachment; filename="kurdikeyboard-github-apk.zip"');
+      res.setHeader('Content-Length', String(zipBuffer.length));
+      res.send(zipBuffer);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'ZIP generation failed';
+      res.status(500).json({ error: msg });
+    }
+  });
+
+  app.post('/api/ai/translate', async (req, res) => {
+    try {
+      const { text, sourceLang, targetLang, engine } = req.body as {
+        text?: string;
+        sourceLang?: string;
+        targetLang?: string;
+        engine?: 'google_fast' | 'ai_fluent';
+      };
+
+      if (!text || !text.trim()) {
+        res.status(400).json({ error: 'تکایە دەقێک بنووسە بۆ وەرگێڕان.' });
+        return;
+      }
+
+      const ai = getGeminiClient();
+      if (!ai) {
+        res.status(503).json({
+          error: 'کلیلی GEMINI_API_KEY لە ڕێکخستنی سێرڤەردا دیاری نەکراوە.',
+        });
+        return;
+      }
+
+      const langLabels: Record<string, string> = {
+        auto: 'Auto-detect',
+        ckb: 'Central Kurdish (Sorani, Arabic script)',
+        en: 'English',
+        ar: 'Arabic',
+        fa: 'Persian',
+        tr: 'Turkish',
+      };
+
+      const src = langLabels[sourceLang || 'auto'] || sourceLang || 'Auto-detect';
+      const tgt = langLabels[targetLang || 'en'] || targetLang || 'English';
+      const styleNote =
+        engine === 'ai_fluent'
+          ? 'Produce a natural, idiomatic, fluent translation with proper Kurdish/target phrasing.'
+          : 'Produce a direct, fast, accurate translation.';
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-4-hydrogen',
+        contents: text.trim(),
+        config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          systemInstruction: `You are an expert Kurdish Sorani and multilingual keyboard translator.
+Translate the user's text from ${src} into ${tgt}.
+${styleNote}
+Return ONLY the translated text without quotes, explanations, or markdown.`,
+        },
+      });
+
+      const translated = (response.text ?? '').trim();
+      res.json({ translated });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'هەڵە لە کاتی وەرگێڕاندا ڕوویدا.';
+      res.status(500).json({ error: message });
+    }
+  });
+
+  app.post('/api/ai/rewrite', async (req, res) => {
+    try {
+      const { text, mode } = req.body as {
+        text?: string;
+        mode?: 'fix' | 'formal' | 'friendly' | 'shorten' | 'reply';
+      };
+
+      if (!text || !text.trim()) {
+        res.status(400).json({ error: 'تکایە دەقێک بنووسە بۆ داڕشتنەوە.' });
+        return;
+      }
+
+      const ai = getGeminiClient();
+      if (!ai) {
+        res.status(503).json({
+          error: 'کلیلی GEMINI_API_KEY لە ڕێکخستنی سێرڤەردا دیاری نەکراوە.',
+        });
+        return;
+      }
+
+      const modeInstructions: Record<string, string> = {
+        fix: 'Fix spelling, grammar, and punctuation while preserving the original language (Kurdish Sorani, English, or Arabic) and meaning. Keep it clean and natural.',
+        formal: 'Rewrite the text in a polite, professional, formal tone in the same language as the input.',
+        friendly: 'Rewrite the text in a warm, friendly, conversational tone in the same language as the input.',
+        shorten: 'Make the text concise and clear while preserving the core message, in the same language as the input.',
+        reply: 'Write a natural, helpful, polite short reply to the message in the exact same language as the input (e.g., Kurdish Sorani if input is Kurdish Sorani).',
+      };
+
+      const instruction = modeInstructions[mode || 'fix'] || modeInstructions.fix;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-4-hydrogen',
+        contents: text.trim(),
+        config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          systemInstruction: `You are an intelligent Kurdish & multilingual mobile keyboard writing assistant.
+${instruction}
+Return ONLY the resulting text with no preamble, quotes, or extra commentary.`,
+        },
+      });
+
+      const result = (response.text ?? '').trim();
+      res.json({ result });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'هەڵە لە کاتی پەیوەندی بە ژیری دەسکرددا ڕوویدا.';
+      res.status(500).json({ error: message });
+    }
+  });
+
+  if (!isProd) {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.resolve(__dirname, 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`KurdiKeyboard server listening on http://localhost:${PORT}`);
+  });
+}
+
+startServer();

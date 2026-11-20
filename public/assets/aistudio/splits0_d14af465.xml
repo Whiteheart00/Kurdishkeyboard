@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<splits>
+    <module name="">
+        <language>
+            <entry
+                key="ar"
+                split=""/>
+            <entry
+                key="ckb"
+                split=""/>
+            <entry
+                key="fa"
+                split=""/>
+            <entry
+                key="ku"
+                split=""/>
+        </language>
+    </module>
+</splits>

@@ -1,0 +1,38 @@
+[
+    [
+      { "code":   43, "label": "+", "popup": {
+        "main": { "code":   45, "label": "-" }
+      } },
+      { "code":   1633, "label": "١", "type": "numeric" },
+      { "code":   1634, "label": "٢", "type": "numeric" },
+      { "code":   1635, "label": "٣", "type": "numeric" },
+      { "code":   1642, "label": "٪" }
+    ],
+    [
+      { "code":   40, "label": "(", "popup": {
+        "main": { "code":   91, "label": "[" }
+      } },
+      { "code":   1780, "label": "۴", "type": "numeric" },
+      { "code":   1781, "label": "۵", "type": "numeric" },
+      { "code":   1782, "label": "۶", "type": "numeric" },
+      { "code":   46, "label": "." }
+    ],
+    [
+      { "code":   41, "label": ")", "popup": {
+        "main": { "code":   93, "label": "]" }
+      } },
+      { "code":   1639, "label": "٧", "type": "numeric" },
+      { "code":   1640, "label": "٨", "type": "numeric" },
+      { "code":   1641, "label": "٩", "type": "numeric" },
+      { "code":   -7, "label": "delete", "type": "enter_editing" }
+    ],
+    [
+      { "code": -201, "label": "view_characters", "type": "system_gui" },
+      { "code": -202, "label": "view_symbols", "type": "system_gui" },
+      { "code":   1548, "label": "،" },
+      { "code":   1632, "label": "٠", "type": "numeric" },
+      { "code":   61, "label": "=" },
+      { "code":   32, "label": "space" },
+      { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]

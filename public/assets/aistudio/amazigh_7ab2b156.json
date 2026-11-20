@@ -1,0 +1,34 @@
+[
+  [
+    { "code": 11568, "label": "ⴰ" },
+    { "code": 11619, "label": "ⵣ", "popup": { "main": { "code": 11621, "label": "ⵥ" }, "relevant": [ { "code": 11620, "label": "ⵤ" } ] } },
+    { "code": 11579, "label": "ⴻ", "popup": { "main": { "code": 11622, "label": "ⵦ" } } },
+    { "code": 11604, "label": "ⵔ", "popup": { "main": { "code": 11605, "label": "ⵕ" } } },
+    { "code": 11612, "label": "ⵜ", "popup": { "main": { "code": 11615, "label": "ⵟ" }, "relevant": [ { "code": 11613, "label": "ⵝ" } ] } },
+    { "code": 11618, "label": "ⵢ" },
+    { "code": 11603, "label": "ⵓ", "popup": { "main": { "code": 11623, "label": "ⵧ" } } },
+    { "code": 11593, "label": "ⵉ" },
+    { "code": 11588, "label": "ⵄ" },
+    { "code": 11587, "label": "ⵃ" }
+  ],
+  [
+    { "code": 11591, "label": "ⵇ", "popup": { "main": { "code": 11592, "label": "ⵈ" } } },
+    { "code": 11609, "label": "ⵙ", "popup": { "main": { "code": 11610, "label": "ⵚ" } } },
+    { "code": 11575, "label": "ⴷ", "popup": { "main": { "code": 11576, "label": "ⴹ" }, "relevant": [ { "code": 11577, "label": "ⴸ" }, { "code": 11578, "label": "ⴺ" } ] } },
+    { "code": 11580, "label": "ⴼ", "popup": { "main": { "code": 11616, "label": "ⵠ" } } },
+    { "code": 11571, "label": "ⴳ", "popup": { "main": { "code": 11572, "label": "ⴴ" }, "relevant": [ { "code": 11573, "label": "ⴵ" }, { "code": 11574, "label": "ⴶ" } ] } },
+    { "code": 11584, "label": "ⵀ", "popup": { "main": { "code": 11586, "label": "ⵂ" }, "relevant": [ { "code": 11585, "label": "ⵁ" } ] } },
+    { "code": 11598, "label": "ⵊ", "popup": { "main": { "code": 11600, "label": "ⵌ" }, "relevant": [ { "code": 11599, "label": "ⵋ" } ] } },
+    { "code": 11581, "label": "ⴽ", "popup": { "main": { "code": 11582, "label": "ⴾ" }, "relevant": [ { "code": 11583, "label": "ⴿ" } ] } },
+    { "code": 11596, "label": "ⵍ", "popup": { "main": { "code": 11632, "label": "⵰" } } }
+  ],
+  [
+    { "code": 11597, "label": "ⵎ", "popup": { "main": { "code": 11647, "label": "⵿" } } },
+    { "code": 11617, "label": "ⵡ" },
+    { "code": 11589, "label": "ⵅ", "popup": { "main": { "code": 11590, "label": "ⵆ" } } },
+    { "code": 11611, "label": "ⵛ", "popup": { "main": { "code": 11614, "label": "ⵞ" } } },
+    { "code": 11606, "label": "ⵖ", "popup": { "main": { "code": 11607, "label": "ⵗ" }, "relevant": [ { "code": 11608, "label": "ⵘ" } ] } },
+    { "code": 11569, "label": "ⴱ", "popup": { "main": { "code": 11570, "label": "ⴲ" }, "relevant": [ { "code": 11602, "label": "ⵒ" } ] } },
+    { "code": 11595, "label": "ⵏ", "popup": { "main": { "code": 11600, "label": "ⵐ" }, "relevant": [ { "code": 11601, "label": "ⵑ" } ] } }
+  ]
+]

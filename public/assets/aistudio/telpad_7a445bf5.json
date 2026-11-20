@@ -1,0 +1,44 @@
+[
+  [
+    { "code": 1633, "label": "١", "type": "numeric" },
+    { "code": 1634, "label": "٢", "type": "numeric" },
+    { "code": 1635, "label": "٣", "type": "numeric" },
+    { "code": 1636, "label": "٤", "type": "numeric" },
+    { "code": 1637, "label": "٥", "type": "numeric" },
+    { "code": 1638, "label": "٦", "type": "numeric" },
+    { "code": 1639, "label": "٧", "type": "numeric" },
+    { "code": 1640, "label": "٨", "type": "numeric" },
+    { "code": 1641, "label": "٩", "type": "numeric" },
+    { "code": 1632, "label": "٠", "type": "numeric" }
+  ],
+  [
+    { "$": "layout_direction_selector",
+      "ltr": { "code":   40, "label": "(" },
+      "rtl": { "code":   41, "label": "(" }
+    },
+    { "code":   47, "label": "/" },
+    { "$": "layout_direction_selector",
+      "ltr": { "code":   41, "label": ")" },
+      "rtl": { "code":   40, "label": ")" }
+    },
+    { "code":   45, "label": "-" }
+  ],
+  [
+    { "code":   78, "label": "N" },
+    { "code":   44, "label": "pause", "type": "system_gui" },
+    { "code":   44, "label": "," , "type": "numeric" },
+    { "code":   32, "label": "space" }
+  ],
+  [
+    { "code":   42, "label": "*" },
+    { "code":   59, "label": "wait", "type": "system_gui" },
+    { "code":   35, "label": "#" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -206, "label": "view_phone", "type": "system_gui" },
+    { "code":   43, "label": "+" },
+    { "code":   46, "label": "." },
+    { "code":   10, "label": "enter", "type": "enter_editing" }
+  ]
+]

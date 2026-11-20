@@ -1,0 +1,105 @@
+[
+    [
+      { "code":  1602, "label": "Q", "popup": {
+        "main": { "code": 1647, "label": "ٯ" }
+      } },
+      { "code":  1608, "label": "W", "popup": {
+        "main": { "code": -255, "label": "وو" }
+      } },
+      { "code":  1749, "label": "E", "popup": {
+        "main": { "code": 1577, "label": "ة" }
+      } },
+      { "code":  1585, "label": "R", "popup": {
+        "main": { "code": 1685, "label": "ڕ" }
+      } },
+      { "code":  1578, "label": "T", "popup": {
+        "main": { "code": 1591, "label": "ط" }
+      } },
+      { "code":  1740, "label": "Y", "popup": {
+        "main": { "code": 1742, "label": "ێ" }
+      } },
+      { "code":  1574, "label": "U", "popup": {
+        "main": { "code": 1569, "label": "ء" }
+      } },
+      { "code":  1581, "label": "I", "popup": {
+        "main": { "code": 1593, "label": "ع" }
+      } },
+      { "code":  1734, "label": "O" },
+      { "code":  1662, "label": "P", "popup": {
+        "main": { "code": 1579, "label": "ث" }
+      } }
+    ],
+    [
+
+      { "code":   1575, "label": "A", "popup": {
+        "main": { "code":   1570, "label": "آ" },
+        "relevant": [
+          { "code": 1571, "label": "أ" },
+          { "code": 1573, "label": "إ" },
+          { "code": 1649, "label": "ٱ" }
+        ]
+      } },
+      { "code":  1587, "label": "S", "popup": {
+        "main": { "code": 1588, "label": "ش"},
+        "relevant": [
+          { "code": -255, "label": "سلام|السَّلَاْمُ \u200Cعَلَیْکُم\u200C " },
+          { "code": 1590, "label": "ص" }
+        ]
+      }},
+
+      { "code":  1583, "label": "D", "popup": {
+        "main": { "code": 1584, "label": "ذ"},
+        "relevant": [
+          { "code":   -255, "label": "وعلیکم|وَ \u200Cعَلَيْكُمُ \u200Cالسَّلَاْم\u200C " }
+        ]
+      } },
+
+      { "code":  1601, "label": "F" },
+      { "code":  1711, "label": "G", "popup": {
+        "main": { "code": 1594, "label": "غ" }
+      } },
+      { "code":  1607, "label": "H", "popup": {
+        "main": { "code": -255, "label": "الْحَمْدُ‌ لِلّٰه "}
+      }},
+      { "code":  1688, "label": "J" },
+      { "code":  1705, "label": "K", "popup": {
+        "main": { "code": 1603, "label": "ك"},
+        "relevant": [
+          { "code":   1706, "label": "ڪ " }
+        ]
+      } },
+
+      { "code":  1604, "label": "L", "popup": {
+        "main": { "code": 1717, "label": "ڵ" }
+      } }
+    ],
+    [
+
+      { "code":  1600, "label": "━" },
+
+      { "code":  1586, "label": "Z", "popup": {
+        "main": {"code": 1592, "label": "ظ" }
+      } },
+      { "code":  1582, "label": "X" },
+      { "code":  1580, "label": "C", "popup": {
+        "main": {"code": 1670, "label": "چ" }
+      } },
+      { "code":  1700, "label": "V", "popup": {
+        "main": { "code": -255, "label": "إِنْ ‌‌شَاءَ ‌اللّٰه "},
+        "relevant": [
+          { "code": -255, "label": "مَاشَاءَ\u200C اللّٰه " }]
+      }},
+      { "code":  1576, "label": "B", "popup": {
+        "main": { "code": -255, "label": "﷽"},
+        "relevant": [
+          { "code": -255, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ" }]
+      }},
+      { "code":  1606, "label": "N" },
+      { "code":  1605, "label": "M", "popup": {
+        "main": { "code": -255, "label": "ﷴ"},
+        "relevant": [
+          { "code":   65018, "label": "ﷺ" }
+        ]
+      } }
+    ]
+  ]

@@ -1,0 +1,11 @@
+[
+  [
+    {"$":"auto_text_key","label":"𝓺"},{"$":"auto_text_key","label":"𝔀"},{"$":"auto_text_key","label":"𝓮"},{"$":"auto_text_key","label":"𝓻"},{"$":"auto_text_key","label":"𝓽"},{"$":"auto_text_key","label":"𝔂"},{"$":"auto_text_key","label":"𝓾"},{"$":"auto_text_key","label":"𝓲"},{"$":"auto_text_key","label":"𝓸"},{"$":"auto_text_key","label":"𝓹"}
+  ],
+  [
+    {"$":"auto_text_key","label":"𝓪"},{"$":"auto_text_key","label":"𝓼"},{"$":"auto_text_key","label":"𝓭"},{"$":"auto_text_key","label":"𝓯"},{"$":"auto_text_key","label":"𝓰"},{"$":"auto_text_key","label":"𝓱"},{"$":"auto_text_key","label":"𝓳"},{"$":"auto_text_key","label":"𝓴"},{"$":"auto_text_key","label":"𝓵"}
+  ],
+  [
+    {"$":"auto_text_key","label":"𝔃"},{"$":"auto_text_key","label":"𝔁"},{"$":"auto_text_key","label":"𝓬"},{"$":"auto_text_key","label":"𝓿"},{"$":"auto_text_key","label":"𝓫"},{"$":"auto_text_key","label":"𝓷"},{"$":"auto_text_key","label":"𝓶"}
+  ]
+]
