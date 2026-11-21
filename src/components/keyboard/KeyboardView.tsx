@@ -1762,6 +1762,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                     }
 
                     // 5. Genuine key tap
+                    e.preventDefault();
+                    e.stopPropagation();
                     const wasMenuOpen =
                       act.longPressMenu?.keyId === key.id ||
                       (key.type === 'globe' && act.showLangPicker);

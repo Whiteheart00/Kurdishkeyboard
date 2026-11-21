@@ -78,6 +78,8 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
   const [kaomojiCat, setKaomojiCat] = useState<'recent' | 'all'>('all');
 
   const pressTimerRef = useRef<number | null>(null);
+  const mountedAtRef = useRef<number>(Date.now());
+  const hasSeenPointerDownRef = useRef(false);
 
   const isLight = Boolean(theme.isLight);
   const panelBg = theme.bg;
@@ -116,6 +118,16 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
       className="flex flex-col w-full kb-noselect relative"
       style={{ backgroundColor: panelBg, height: `${Math.max(settings.keyboardHeightPx + 44, 325)}px` }}
       dir="ltr"
+      onPointerDownCapture={() => {
+        hasSeenPointerDownRef.current = true;
+      }}
+      onClickCapture={(e) => {
+        // Ignore synthetic ghost click from the keyboard Emoji key tap that mounted this panel
+        if (!hasSeenPointerDownRef.current && Date.now() - mountedAtRef.current < 450) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
       onClick={() => {
         if (variantPopup) setVariantPopup(null);
       }}
