@@ -10,7 +10,7 @@ import {
   generateTextWithFailover,
   MODEL_CANDIDATES,
   streamTextWithFailover,
-} from './api/_geminiPool';
+} from './api/_geminiPool.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

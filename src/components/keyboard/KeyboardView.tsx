@@ -9,6 +9,8 @@ import {
   Loader2,
   Maximize2,
   MicOff,
+  MoveVertical,
+  RotateCcw,
   Search,
   Send,
   X,
@@ -137,6 +139,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const [kanaMode, setKanaMode] = useState<'hira' | 'kata'>('hira');
   const [shiftState, setShiftState] = useState<'off' | 'once' | 'caps'>('off');
   const [activeDecoratorId, setActiveDecoratorId] = useState<string>('none');
+  const [inlineResizeMode, setInlineResizeMode] = useState(false);
   const emojiSearchModeRef = useRef(false);
   emojiSearchModeRef.current = emojiSearchMode;
   const liveTranslateModeRef = useRef(false);
@@ -151,7 +154,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     if (activePanel !== 'keys' && liveTranslateMode) {
       setLiveTranslateMode(false);
     }
-  }, [activePanel, emojiSearchMode, liveTranslateMode]);
+    if (activePanel !== 'keys' && inlineResizeMode) {
+      setInlineResizeMode(false);
+    }
+  }, [activePanel, emojiSearchMode, liveTranslateMode, inlineResizeMode]);
 
   // Debounced Direct Google Translate for Live Inline Translate Bar (~250ms debounce)
   useEffect(() => {
@@ -250,6 +256,20 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const [isListeningVoice, setIsListeningVoice] = useState(false);
   const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
 
+  const maxHalfScreenHeight = useMemo(() => {
+    if (typeof window === 'undefined') return 440;
+    const nativeScreenDp = window.AndroidIME?.getScreenHeightDp?.();
+    if (nativeScreenDp && nativeScreenDp > 400) {
+      // Half of total Android screen height (minus ~60dp for toolbar/suggestion bar)
+      return Math.max(380, Math.min(540, Math.round(nativeScreenDp * 0.5)));
+    }
+    const dpr = window.devicePixelRatio || 1;
+    const rawScreenH = window.screen?.height || 0;
+    const cssScreenH = rawScreenH > 1200 && dpr > 1.2 ? rawScreenH / dpr : rawScreenH;
+    const refH = Math.max(window.innerHeight || 0, cssScreenH || 840);
+    return Math.max(380, Math.min(540, Math.round(refH * 0.5)));
+  }, []);
+
   const deckContainerRef = useRef<HTMLDivElement | null>(null);
   const keyPreviewRef = useRef<HTMLDivElement | null>(null);
   const extendedPopupRef = useRef<HTMLDivElement | null>(null);
@@ -271,6 +291,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     >
   >(new Map());
   const emailSlidRef = useRef<boolean>(false);
+  const emojiLongPressedRef = useRef<boolean>(false);
+  const resizeDragRef = useRef<{ pointerId: number; startY: number; startHeight: number } | null>(null);
   const deckGapSwipeRef = useRef<{ pointerId: number; startX: number; startY: number; time: number } | null>(null);
   const lastSpaceTapRef = useRef<number>(0);
   const lastShiftTapRef = useRef<number>(0);
@@ -953,6 +975,29 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       return;
     }
 
+    // Long-press on Emoji (smiley) key activates Live Interactive Keyboard Resize (up to 50% of screen)
+    if (key.type === 'emoji') {
+      emojiLongPressedRef.current = false;
+      if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = window.setTimeout(() => {
+        emojiLongPressedRef.current = true;
+        hideKeyPreviewBubble();
+        setLongPressMenu(null);
+        setShowLangPicker(false);
+        setActivePanel('keys');
+        setInlineResizeMode(true);
+        triggerSound('special');
+        if (settings.vibrationEnabled && navigator.vibrate) {
+          try {
+            navigator.vibrate(16);
+          } catch {
+            // ignore
+          }
+        }
+      }, 360);
+      return;
+    }
+
     const rawAlts =
       key.alts && key.alts.length > 0 ? key.alts : key.secondary ? [key.secondary] : [];
     const normalized: PopupOption[] = [];
@@ -1224,7 +1269,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
         setActivePanel('translate');
         break;
       case 'resize':
-        setActivePanel('resize');
+        setActivePanel('keys');
+        setInlineResizeMode(true);
         break;
       case 'decorate':
         setActivePanel('decorate');
@@ -1291,8 +1337,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 
   const hGapPx = Math.max(2.5, Math.round((settings.keySpacingPercent / 100) * 3.6 * 2) / 2);
   const vGapPx = Math.max(4, Math.round((settings.keySpacingPercent / 100) * 6));
-  const letterFontSize = Math.round(16 * (settings.fontSizePercent / 100));
-  const iconSize = Math.round(17 * (settings.iconSizePercent / 100));
+  const heightRatio = settings.keyboardHeightPx / 248;
+  const keyContentScale = Math.max(0.9, Math.min(1.48, 1 + (heightRatio - 1) * 0.65));
+  const letterFontSize = Math.round(16 * (settings.fontSizePercent / 100) * keyContentScale);
+  const iconSize = Math.round(17 * (settings.iconSizePercent / 100) * keyContentScale);
   const spaceLabel =
     settings.spacebarLabelMode === 'none'
       ? ''
@@ -1764,6 +1812,11 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                     // 5. Genuine key tap
                     e.preventDefault();
                     e.stopPropagation();
+                    if (key.type === 'emoji' && emojiLongPressedRef.current) {
+                      emojiLongPressedRef.current = false;
+                      act.clearPointerState();
+                      return;
+                    }
                     const wasMenuOpen =
                       act.longPressMenu?.keyId === key.id ||
                       (key.type === 'globe' && act.showLangPicker);
@@ -1811,10 +1864,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                   {visibleSecondary &&
                     (isPhraseHint ? (
                       <span
-                        className="absolute top-[2px] inset-x-[0.5px] text-center whitespace-nowrap leading-none font-semibold pointer-events-none"
+                        className="absolute top-[2.5px] inset-x-[0.5px] text-center whitespace-nowrap leading-none font-semibold pointer-events-none"
                         style={{
                           color: theme.secondaryText,
-                          fontSize: `${phraseHintFontPx}px`,
+                          fontSize: `${(phraseHintFontPx * Math.min(1.12, keyContentScale)).toFixed(1)}px`,
                           letterSpacing: visualSecondaryLen > 12 ? '-0.025em' : '0px',
                         }}
                       >
@@ -1822,8 +1875,11 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       </span>
                     ) : (
                       <span
-                        className="absolute top-[2.5px] right-[4px] text-[10px] leading-none font-semibold pointer-events-none"
-                        style={{ color: theme.secondaryText }}
+                        className="absolute top-[3px] right-[4px] leading-none font-semibold pointer-events-none"
+                        style={{
+                          color: theme.secondaryText,
+                          fontSize: `${Math.round(10 * Math.min(1.32, keyContentScale))}px`,
+                        }}
                       >
                         {visibleSecondary}
                       </span>
@@ -1877,12 +1933,15 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       style={{ width: iconSize, height: iconSize }}
                     />
                   ) : key.type === 'space' ? (
-                    <span className="text-[13px] font-semibold truncate px-2 flex items-center gap-3 pointer-events-none">
+                    <span
+                      className="font-semibold truncate px-2 flex items-center gap-3 pointer-events-none"
+                      style={{ fontSize: `${Math.round(13 * Math.min(1.28, keyContentScale))}px` }}
+                    >
                       {spaceLabel ? (
                         <>
-                          <span className="opacity-65 text-[12px]">‹</span>
+                          <span className="opacity-65 text-[0.92em]">‹</span>
                           <span>{spaceLabel}</span>
-                          <span className="opacity-65 text-[12px]">›</span>
+                          <span className="opacity-65 text-[0.92em]">›</span>
                         </>
                       ) : null}
                     </span>
@@ -1914,8 +1973,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                         }px`,
                         marginTop: visibleSecondary
                           ? isPhraseHint
-                            ? '8px'
-                            : '6px'
+                            ? `${Math.round(8 * keyContentScale)}px`
+                            : `${Math.round(6 * keyContentScale)}px`
                           : key.type === 'period'
                           ? '-2px'
                           : '0px',
@@ -1948,6 +2007,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     settings.enabledLanguages,
     settings.activeLanguage,
     showLangPicker,
+    keyContentScale,
     iconSize,
     letterFontSize,
   ]);
@@ -2557,8 +2617,95 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           </div>
           )}
 
+          {/* Live Interactive Drag-to-Resize Top Handle Bar (activated via long-press on Emoji or Resize tool) */}
+          {inlineResizeMode && (
+            <div
+              className="w-full px-3 py-1.5 flex items-center justify-between gap-2 cursor-ns-resize touch-none select-none border-t-2 border-b"
+              style={{
+                borderTopColor: theme.accent,
+                borderBottomColor: `${theme.accent}44`,
+                backgroundColor: isLight ? 'rgba(14,165,233,0.12)' : 'rgba(14,165,233,0.16)',
+                touchAction: 'none',
+              }}
+              dir="rtl"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                try {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                } catch {
+                  // ignore
+                }
+                const startY = e.screenY || e.clientY;
+                resizeDragRef.current = {
+                  pointerId: e.pointerId,
+                  startY,
+                  startHeight: settings.keyboardHeightPx,
+                };
+              }}
+              onPointerMove={(e) => {
+                const drag = resizeDragRef.current;
+                if (!drag || drag.pointerId !== e.pointerId) return;
+                const curY = e.screenY || e.clientY;
+                // Dragging UP decreases Y -> increases keyboard height smoothly up to half-screen
+                const deltaUp = drag.startY - curY;
+                const nextH = Math.max(
+                  210,
+                  Math.min(maxHalfScreenHeight, Math.round(drag.startHeight + deltaUp))
+                );
+                if (nextH !== settings.keyboardHeightPx) {
+                  onUpdateSettings({ keyboardHeightPx: nextH });
+                }
+              }}
+              onPointerUp={(e) => {
+                if (resizeDragRef.current?.pointerId === e.pointerId) {
+                  resizeDragRef.current = null;
+                }
+              }}
+              onPointerCancel={() => {
+                resizeDragRef.current = null;
+              }}
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                <MoveVertical className="w-4 h-4 shrink-0" style={{ color: theme.accent }} />
+                <span
+                  className={`text-[11px] font-bold truncate ${
+                    isLight ? 'text-slate-900' : 'text-white'
+                  }`}
+                >
+                  بەرزی تەختەکلیل ڕابکێشە
+                </span>
+              </div>
+
+              {/* Center Grab Pill */}
+              <div
+                className="w-12 h-1.5 rounded-full shrink-0 opacity-85"
+                style={{ backgroundColor: theme.accent }}
+              />
+
+              <span
+                className="text-[11px] font-mono font-bold tabular-nums px-2 py-0.5 rounded-md shrink-0"
+                style={{
+                  backgroundColor: `${theme.accent}28`,
+                  color: isLight ? '#0369A1' : '#FFFFFF',
+                }}
+              >
+                {settings.keyboardHeightPx}px
+              </span>
+            </div>
+          )}
+
           {/* One-handed wrapper */}
-          <div className="flex w-full items-stretch">
+          <div
+            className={`flex w-full items-stretch relative ${
+              inlineResizeMode ? 'ring-2 ring-inset' : ''
+            }`}
+            style={
+              inlineResizeMode
+                ? ({ '--tw-ring-color': `${theme.accent}AA` } as React.CSSProperties)
+                : undefined
+            }
+          >
             {settings.oneHandedMode === 'right' && (
               <div className="w-12 flex flex-col items-center justify-center gap-3 px-1">
                 <button
@@ -2622,6 +2769,125 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 if (gesturePopup) setGesturePopup(null);
               }}
             >
+              {/* Live Interactive Resize Floating Overlay (keeps real keys visible while resizing up to 50% of screen) */}
+              {inlineResizeMode && (
+                <div
+                  className="absolute inset-0 z-50 flex items-center justify-center p-3 backdrop-blur-[1.5px]"
+                  style={{
+                    backgroundColor: isLight ? 'rgba(248,250,252,0.48)' : 'rgba(6,8,12,0.52)',
+                  }}
+                  dir="rtl"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerUp={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div
+                    className={`w-full max-w-[330px] rounded-2xl p-3.5 shadow-2xl border space-y-3 ${
+                      isLight
+                        ? 'bg-white/95 border-slate-200 text-slate-900'
+                        : 'bg-[#151821]/95 border-white/15 text-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <KurdiIcon name="ic_resize" className="w-4 h-4 text-sky-400" />
+                        <span className="text-xs font-extrabold">گۆڕینی قەبارەی کیبۆرد</span>
+                      </div>
+                      <span
+                        className="text-[11px] font-mono font-bold tabular-nums px-2 py-0.5 rounded-lg"
+                        style={{
+                          backgroundColor: `${theme.accent}24`,
+                          color: theme.accent,
+                        }}
+                      >
+                        {settings.keyboardHeightPx}px ·{' '}
+                        {Math.min(50, Math.round((settings.keyboardHeightPx / maxHalfScreenHeight) * 50))}%
+                      </span>
+                    </div>
+
+                    {/* Smooth Height Slider (up to 50% of screen) */}
+                    <div className="space-y-1">
+                      <input
+                        type="range"
+                        min={210}
+                        max={maxHalfScreenHeight}
+                        value={Math.min(maxHalfScreenHeight, Math.max(210, settings.keyboardHeightPx))}
+                        onChange={(e) => onUpdateSettings({ keyboardHeightPx: Number(e.target.value) })}
+                        className="w-full accent-sky-500 h-2 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] opacity-65">
+                        <span>بچووک</span>
+                        <span>ئاسایی</span>
+                        <span>نیوەی شاشە (٥٠٪)</span>
+                      </div>
+                    </div>
+
+                    {/* Quick 1-Tap Size Presets */}
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { label: 'بچووک', val: 224 },
+                        { label: 'ئاسایی', val: 248 },
+                        { label: 'نیوەی شاشە', val: maxHalfScreenHeight },
+                      ].map((preset) => {
+                        const isSel = Math.abs(settings.keyboardHeightPx - preset.val) <= 6;
+                        return (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => {
+                              triggerSound('special');
+                              onUpdateSettings({ keyboardHeightPx: preset.val });
+                            }}
+                            className={`h-8 rounded-xl text-[11px] font-bold border transition-all active:scale-95 ${
+                              isSel
+                                ? 'text-white border-transparent'
+                                : isLight
+                                ? 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                                : 'bg-white/[0.06] border-white/10 text-zinc-200 hover:bg-white/10'
+                            }`}
+                            style={isSel ? { backgroundColor: theme.accent } : undefined}
+                          >
+                            {preset.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Bottom Action Buttons: Reset + Save/Done */}
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          triggerSound('special');
+                          onUpdateSettings({ keyboardHeightPx: 248 });
+                        }}
+                        className={`h-9 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-colors active:scale-95 ${
+                          isLight
+                            ? 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                            : 'bg-white/[0.07] border-white/10 text-zinc-200 hover:bg-white/15'
+                        }`}
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>بنەڕەتی</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          triggerSound('special');
+                          setInlineResizeMode(false);
+                        }}
+                        className="flex-1 h-9 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 text-white shadow-md active:scale-95 transition-transform"
+                        style={{ backgroundColor: theme.accent }}
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>تەواو و پاشەکەوت</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Zero-rerender Floating Key Press Preview Bubble */}
               <div
                 ref={keyPreviewRef}

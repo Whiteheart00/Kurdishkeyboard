@@ -1,19 +1,20 @@
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 export interface ModelCandidate {
   id: string;
-  thinkingLevel?: ThinkingLevel;
+  thinkingLevel?: 'MINIMAL' | 'LOW';
 }
 
 /**
  * Multi-model failover chain (each model carries its own independent quota per API key).
- * Ordered from fastest/highest-quota to fallback models.
+ * Ordered from highest-availability GA flash-lite models to additional independent-quota fallbacks.
  */
 export const MODEL_CANDIDATES: ModelCandidate[] = [
-  { id: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL },
-  { id: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW },
   { id: 'gemini-2.5-flash-lite' },
   { id: 'gemini-2.5-flash' },
+  { id: 'gemini-3.1-flash-lite', thinkingLevel: 'MINIMAL' },
+  { id: 'gemini-2.0-flash-lite' },
+  { id: 'gemini-2.0-flash' },
 ];
 
 const PLACEHOLDER_KEYS = new Set(['MY_GEMINI_API_KEY', 'YOUR_GEMINI_API_KEY', '']);
@@ -61,6 +62,7 @@ export function collectGeminiApiKeys(): string[] {
 let roundRobinCursor = 0;
 const clientCache = new Map<string, GoogleGenAI>();
 const pairCooldownUntil = new Map<string, number>();
+const modelNotFoundUntil = new Map<string, number>();
 const keyInvalidUntil = new Map<number, number>();
 const responseCache = new Map<string, { value: string; expiresAt: number }>();
 
@@ -165,7 +167,7 @@ function recordFailure(keyIdx: number, modelId: string, kind: ErrorKind): void {
   } else if (kind === 'quota') {
     pairCooldownUntil.set(pairKey, now + 65 * 1000);
   } else if (kind === 'not_found') {
-    pairCooldownUntil.set(pairKey, now + 10 * 60 * 1000);
+    modelNotFoundUntil.set(modelId, now + 20 * 60 * 1000);
   } else if (kind === 'transient') {
     pairCooldownUntil.set(pairKey, now + 15 * 1000);
   }
@@ -175,7 +177,7 @@ function recordFailure(keyIdx: number, modelId: string, kind: ErrorKind): void {
  * Builds an ordered list of (keyIdx, apiKey, model) attempts:
  * - Rotates starting key via round-robin so traffic spreads evenly across all keys.
  * - Tries all active keys on the fastest model first, then falls back through secondary models.
- * - Skips cooled-down pairs first; if everything is cooled down, still tries freshest pairs as a last resort.
+ * - Skips globally unsupported (404) models and cooled-down pairs first.
  */
 function buildAttemptPlan(keys: string[]): { keyIdx: number; apiKey: string; model: ModelCandidate }[] {
   const now = Date.now();
@@ -186,6 +188,8 @@ function buildAttemptPlan(keys: string[]): { keyIdx: number; apiKey: string; mod
   const cooledFallback: { keyIdx: number; apiKey: string; model: ModelCandidate; until: number }[] = [];
 
   for (const model of MODEL_CANDIDATES) {
+    if ((modelNotFoundUntil.get(model.id) || 0) > now) continue;
+
     for (let step = 0; step < keys.length; step++) {
       const keyIdx = (startOffset + step) % keys.length;
       const invalidUntil = keyInvalidUntil.get(keyIdx) || 0;
@@ -213,7 +217,7 @@ function buildAttemptPlan(keys: string[]): { keyIdx: number; apiKey: string; mod
 function buildConfig(systemInstruction: string, model: ModelCandidate) {
   return model.thinkingLevel
     ? {
-        thinkingConfig: { thinkingLevel: model.thinkingLevel },
+        thinkingConfig: { thinkingLevel: model.thinkingLevel as never },
         systemInstruction,
       }
     : { systemInstruction };
@@ -235,9 +239,17 @@ export async function generateTextWithFailover(params: {
   }
 
   const plan = buildAttemptPlan(keys);
+  const startedAt = Date.now();
+  const skippedModels = new Set<string>();
+  const skippedKeys = new Set<number>();
+  let attempts = 0;
   let lastError: unknown = null;
 
   for (const attempt of plan) {
+    if (skippedModels.has(attempt.model.id) || skippedKeys.has(attempt.keyIdx)) continue;
+    if (attempts >= 12 || Date.now() - startedAt > 8500) break;
+    attempts += 1;
+
     try {
       const ai = getClientForKey(attempt.apiKey);
       const response = await ai.models.generateContent({
@@ -254,10 +266,8 @@ export async function generateTextWithFailover(params: {
       lastError = err;
       const { kind } = classifyGeminiError(err);
       recordFailure(attempt.keyIdx, attempt.model.id, kind);
-      // Only stop early if error is definitely a bad user payload (not key/quota/model/network)
-      if (kind === 'other') {
-        continue;
-      }
+      if (kind === 'not_found') skippedModels.add(attempt.model.id);
+      if (kind === 'invalid_key') skippedKeys.add(attempt.keyIdx);
     }
   }
 
@@ -295,9 +305,17 @@ export async function streamTextWithFailover(params: {
   }
 
   const plan = buildAttemptPlan(keys);
+  const startedAt = Date.now();
+  const skippedModels = new Set<string>();
+  const skippedKeys = new Set<number>();
+  let attempts = 0;
   let lastError: unknown = null;
 
   for (const attempt of plan) {
+    if (skippedModels.has(attempt.model.id) || skippedKeys.has(attempt.keyIdx)) continue;
+    if (attempts >= 12 || Date.now() - startedAt > 8500) break;
+    attempts += 1;
+
     let started = false;
     let accumulated = '';
     try {
@@ -330,6 +348,8 @@ export async function streamTextWithFailover(params: {
       lastError = err;
       const { kind } = classifyGeminiError(err);
       recordFailure(attempt.keyIdx, attempt.model.id, kind);
+      if (kind === 'not_found') skippedModels.add(attempt.model.id);
+      if (kind === 'invalid_key') skippedKeys.add(attempt.keyIdx);
       // If we already streamed partial text to the client, cannot seamlessly switch mid-stream
       if (started) {
         return;

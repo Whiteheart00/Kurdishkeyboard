@@ -454,9 +454,21 @@ public class KurdiKeyboardImeService extends InputMethodService {
         }
 
         @JavascriptInterface
+        public int getScreenHeightDp() {
+            try {
+                android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
+                if (dm != null && dm.density > 0f) {
+                    return Math.round(dm.heightPixels / dm.density);
+                }
+            } catch (Exception ignored) {
+            }
+            return 840;
+        }
+
+        @JavascriptInterface
         public void setKeyboardHeightDp(final int dp) {
             mainHandler.post(() -> {
-                if (webView != null && dp >= 220 && dp <= 640 && dp != keyboardHeightDp) {
+                if (webView != null && dp >= 210 && dp <= 720 && dp != keyboardHeightDp) {
                     keyboardHeightDp = dp;
                     ViewGroup.LayoutParams lp = webView.getLayoutParams();
                     if (lp != null) {

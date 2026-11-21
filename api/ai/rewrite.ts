@@ -3,7 +3,7 @@ import {
   collectGeminiApiKeys,
   generateTextWithFailover,
   streamTextWithFailover,
-} from '../_geminiPool';
+} from '../_geminiPool.js';
 
 interface VercelRequest extends IncomingMessage {
   body?: unknown;

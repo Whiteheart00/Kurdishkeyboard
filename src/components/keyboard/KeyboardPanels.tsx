@@ -1396,13 +1396,13 @@ export const ResizePanel: React.FC<ResizePanelProps> = ({
       <div className="space-y-4 my-auto">
         <div>
           <div className="flex justify-between text-xs mb-1.5">
-            <span className={isLight ? 'text-slate-700' : 'text-zinc-300'}>بەرزی تەختەکلیل</span>
+            <span className={isLight ? 'text-slate-700' : 'text-zinc-300'}>بەرزی تەختەکلیل (تا نیوەی شاشە)</span>
             <span className="font-mono text-sky-400 tabular-nums">{settings.keyboardHeightPx}px</span>
           </div>
           <input
             type="range"
-            min={215}
-            max={350}
+            min={210}
+            max={480}
             value={settings.keyboardHeightPx}
             onChange={(e) => onUpdate({ keyboardHeightPx: Number(e.target.value) })}
             className="w-full accent-sky-500"

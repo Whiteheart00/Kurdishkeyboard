@@ -65,6 +65,7 @@ interface AndroidImeBridge {
   hideKeyboard: () => void;
   openSettings: () => void;
   setKeyboardHeightDp: (dp: number) => void;
+  getScreenHeightDp?: () => number;
   getEditorText?: (preferSelection: boolean) => string;
   replaceAllText?: (text: string, preferSelection: boolean) => void;
   moveCursorEx?: (dx: number, dy: number, select: boolean) => void;
@@ -1037,7 +1038,7 @@ export default function App() {
         const el = imeDeckRef.current;
         if (!el) return;
         const measured = Math.ceil(el.getBoundingClientRect().height);
-        if (measured >= 220 && measured <= 640 && measured !== lastSentHeight) {
+        if (measured >= 210 && measured <= 720 && measured !== lastSentHeight) {
           lastSentHeight = measured;
           window.AndroidIME?.setKeyboardHeightDp(measured);
         }
