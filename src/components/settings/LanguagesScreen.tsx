@@ -47,16 +47,107 @@ interface FontMetaItem {
 
 const KURDI_REAL_FONTS = fontsMetaRaw as FontMetaItem[];
 
-const FONT_STYLES: { id: KeyboardFontStyle; label: string; sample: string }[] = [
-  ...KURDI_REAL_FONTS.map((f) => ({
-    id: f.id,
-    label: f.labelKu,
-    sample: 'سڵاو کوردستان — بەخێربێن ١٢٣',
-  })),
-  { id: 'system', label: 'فۆنتی سیستەم (Vazirmatn)', sample: 'سڵاو کوردستان — بەخێربێن 123' },
-  { id: 'naskh', label: 'فۆنتی نەسخ (Noto Naskh)', sample: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ' },
-  { id: 'kufi', label: 'فۆنتی کوفی (Noto Kufi)', sample: 'تەختەکلیلی کوردی' },
-];
+const KURDI_NUMERALS = ['١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩', '١٠'];
+
+interface FontStyleScreenProps {
+  settings: KeyboardSettings;
+  onUpdate: (patch: Partial<KeyboardSettings>) => void;
+  onBack: () => void;
+  isLightApp: boolean;
+}
+
+export const FontStyleScreen: React.FC<FontStyleScreenProps> = ({
+  settings,
+  onUpdate,
+  onBack,
+  isLightApp,
+}) => {
+  const isSystemActive = settings.fontStyle === 'system';
+
+  return (
+    <div
+      className={`min-h-full flex flex-col pb-24 ${isLightApp ? 'bg-slate-50' : 'bg-black'}`}
+      dir="rtl"
+    >
+      <SubPageHeader title="شێوەی فۆنت" onBack={onBack} isLightApp={isLightApp} />
+
+      <div className="px-4 pt-6 space-y-5">
+        {/* Centered Top Featured Card: فۆنتی سیستەم */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => onUpdate({ fontStyle: 'system' })}
+            className={`w-[70%] max-w-[272px] h-[54px] rounded-[18px] px-4 flex items-center justify-center gap-2.5 transition-all active:scale-[0.97] ${
+              isSystemActive
+                ? isLightApp
+                  ? 'bg-emerald-50 border-[1.5px] border-emerald-600 text-emerald-950'
+                  : 'bg-[#061C09] border-[1.5px] border-[#227A2B] text-white'
+                : isLightApp
+                ? 'bg-white border border-slate-200 text-slate-900 hover:bg-slate-50'
+                : 'bg-[#212224] border border-transparent text-white hover:bg-[#2A2B2F]'
+            }`}
+          >
+            <span
+              className={`w-[22px] h-[22px] rounded-[5px] flex items-center justify-center text-[13px] font-black leading-none shrink-0 ${
+                isSystemActive
+                  ? 'bg-[#227A2B] text-[#051407]'
+                  : isLightApp
+                  ? 'bg-slate-200 text-slate-700'
+                  : 'bg-[#353639] text-zinc-200'
+              }`}
+            >
+              A
+            </span>
+            <span className="text-[15.5px] font-bold font-style-system tracking-tight">
+              فۆنتی سیستەم
+            </span>
+          </button>
+        </div>
+
+        {/* 2-Column Grid of Official Kurdish Fonts (١ .. ١٠) */}
+        <div className="grid grid-cols-2 gap-3">
+          {KURDI_REAL_FONTS.map((f, idx) => {
+            const active = settings.fontStyle === f.id;
+            const numeral = KURDI_NUMERALS[idx] || String(idx + 1);
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => onUpdate({ fontStyle: f.id })}
+                className={`h-[52px] rounded-[16px] px-3 flex items-center gap-2 transition-all active:scale-[0.97] ${
+                  active
+                    ? isLightApp
+                      ? 'bg-emerald-50 border-[1.5px] border-emerald-600 text-emerald-950'
+                      : 'bg-[#061C09] border-[1.5px] border-[#227A2B] text-white'
+                    : isLightApp
+                    ? 'bg-white border border-slate-200 text-slate-900 hover:bg-slate-50'
+                    : 'bg-[#212224] border border-transparent text-white hover:bg-[#2B2C30]'
+                }`}
+              >
+                <span
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ${
+                    active
+                      ? 'bg-[#227A2B] text-white'
+                      : isLightApp
+                      ? 'bg-slate-200 text-slate-700'
+                      : 'bg-[#353639] text-zinc-200'
+                  }`}
+                >
+                  {numeral}
+                </span>
+                <span
+                  className={`flex-1 text-center text-[13.5px] leading-snug whitespace-nowrap truncate font-style-${f.id}`}
+                >
+                  تەختەکلیلی کوردی
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface LanguagesScreenProps {
   settings: KeyboardSettings;
@@ -74,7 +165,7 @@ export const LanguagesScreen: React.FC<LanguagesScreenProps> = ({
   isLightApp,
 }) => {
   const [sheet, setSheet] = useState<
-    'none' | 'translation' | 'font' | 'app_lang' | 'add_lang' | 'layout_picker'
+    'none' | 'translation' | 'app_lang' | 'add_lang' | 'layout_picker'
   >('none');
   const [layoutPickerLangCode, setLayoutPickerLangCode] = useState<string>('ckb');
 
@@ -83,7 +174,12 @@ export const LanguagesScreen: React.FC<LanguagesScreenProps> = ({
     : 'bg-[#17181B] border-white/[0.06] text-white';
 
   const currentFontLabel =
-    FONT_STYLES.find((f) => f.id === settings.fontStyle)?.label || 'فۆنتی KurdiKebord';
+    settings.fontStyle === 'system'
+      ? 'فۆنتی سیستەم'
+      : (() => {
+          const idx = KURDI_REAL_FONTS.findIndex((f) => f.id === settings.fontStyle);
+          return idx >= 0 ? `فۆنتی ${KURDI_NUMERALS[idx] || idx + 1}` : 'فۆنتی سیستەم';
+        })();
 
   const toggleLangNumberRow = (code: string, enabled: boolean) => {
     const next = settings.enabledLanguages.map((l) =>
@@ -141,11 +237,11 @@ export const LanguagesScreen: React.FC<LanguagesScreenProps> = ({
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => setSheet('font')}
+            onClick={() => onNavigate('font_style')}
             className={`rounded-3xl p-4 border text-right space-y-2 transition-colors hover:border-sky-500/40 ${cardBg}`}
           >
             <Type className="w-6 h-6 text-[#8EC2FF]" />
-            <div className="text-sm font-bold">شێوازی فۆنت</div>
+            <div className="text-sm font-bold">شێوەی فۆنت</div>
             <div className="text-xs text-zinc-400 truncate">{currentFontLabel}</div>
           </button>
 
@@ -324,49 +420,6 @@ export const LanguagesScreen: React.FC<LanguagesScreenProps> = ({
                         >
                           {active && <span className="w-2.5 h-2.5 rounded-full bg-[#9AC5FF]" />}
                         </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {sheet === 'font' && (
-              <>
-                <div className="flex items-center justify-between shrink-0">
-                  <h3 className="text-lg font-extrabold">شێوازی فۆنتی تەختەکلیل ({FONT_STYLES.length})</h3>
-                  <button
-                    type="button"
-                    onClick={() => setSheet('none')}
-                    className="p-1 text-zinc-400 hover:text-white"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="space-y-2 overflow-y-auto custom-scroll pr-0.5">
-                  {FONT_STYLES.map((f) => {
-                    const active = settings.fontStyle === f.id;
-                    return (
-                      <button
-                        key={f.id}
-                        type="button"
-                        onClick={() => {
-                          onUpdate({ fontStyle: f.id });
-                          setSheet('none');
-                        }}
-                        className={`w-full px-4 py-3 rounded-2xl flex items-center justify-between border transition-colors ${
-                          active
-                            ? 'bg-[#17202D] border-sky-400/40'
-                            : 'border-white/5 hover:bg-white/5'
-                        }`}
-                      >
-                        <div className="text-right space-y-0.5">
-                          <div className="text-xs font-bold text-zinc-400">{f.label}</div>
-                          <div className={`text-base font-semibold font-style-${f.id}`}>
-                            {f.sample}
-                          </div>
-                        </div>
-                        {active && <Check className="w-4 h-4 text-sky-400 shrink-0" />}
                       </button>
                     );
                   })}

@@ -111,6 +111,8 @@ export async function testAiServerConnection(baseUrl: string): Promise<AiHealthT
       ok?: boolean;
       aiConfigured?: boolean;
       platform?: string;
+      keyCount?: number;
+      modelCount?: number;
     };
 
     if (!data?.ok) {
@@ -121,10 +123,14 @@ export async function testAiServerConnection(baseUrl: string): Promise<AiHealthT
     }
 
     if (data.aiConfigured) {
+      const multiKeyNote =
+        data.keyCount && data.keyCount > 1
+          ? ` (${data.keyCount} کلیل × ${data.modelCount || 4} مۆدێل بە گۆڕینی خۆکار)`
+          : '';
       return {
         status: 'ready',
         platform: data.platform,
-        message: 'پەیوەندی سەرکەوتووە! سێرڤەر و ژیری دەسکردی Gemini بە تەواوی ئامادەن.',
+        message: `پەیوەندی سەرکەوتووە! سێرڤەر و ژیری دەسکردی Gemini بە تەواوی ئامادەن${multiKeyNote}.`,
       };
     }
 

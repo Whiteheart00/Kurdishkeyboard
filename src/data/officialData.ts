@@ -173,15 +173,28 @@ export function getKeyShapeStyleProps(
       };
 
     case 'default':
-    default:
+    default: {
+      const tactileShadow =
+        baseShadow ||
+        (isPressed
+          ? isLight
+            ? 'inset 0 1px 2px rgba(15,23,42,0.18)'
+            : 'inset 0 1px 2px rgba(0,0,0,0.65)'
+          : isEnter
+          ? '0 1.5px 0 rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.24)'
+          : isLight
+          ? '0 1.5px 0 rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.75)'
+          : '0 1.5px 0 rgba(0,0,0,0.72), inset 0 1px 0 rgba(255,255,255,0.045)');
+
       return {
         className: '',
         style: {
           backgroundColor: bg,
-          borderRadius: `${radius}px`,
+          borderRadius: `${Math.max(radius, 9)}px`,
           border: baseBorder,
-          boxShadow: baseShadow,
+          boxShadow: tactileShadow,
         },
       };
+    }
   }
 }

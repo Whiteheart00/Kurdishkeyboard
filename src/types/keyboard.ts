@@ -51,6 +51,7 @@ export type KeyShapeStyle =
 export type SettingsRoute =
   | 'home'
   | 'languages'
+  | 'font_style'
   | 'ai_settings'
   | 'themes'
   | 'theme_store'

@@ -5,28 +5,18 @@ import path from 'path';
 import zlib from 'zlib';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import {
+  collectGeminiApiKeys,
+  generateTextWithFailover,
+  MODEL_CANDIDATES,
+  streamTextWithFailover,
+} from './api/_geminiPool';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT) || 3000;
 const isProd = process.env.NODE_ENV === 'production';
-
-function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
-    return null;
-  }
-  return new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      },
-    },
-  });
-}
 
 async function startServer() {
   const app = express();
@@ -45,7 +35,13 @@ async function startServer() {
   });
 
   app.get('/api/health', (_req, res) => {
-    res.json({ ok: true, aiConfigured: Boolean(getGeminiClient()) });
+    const keys = collectGeminiApiKeys();
+    res.json({
+      ok: true,
+      aiConfigured: keys.length > 0,
+      keyCount: keys.length,
+      modelCount: MODEL_CANDIDATES.length,
+    });
   });
 
   app.get('/api/download-github-zip', (_req, res) => {
@@ -211,8 +207,7 @@ async function startServer() {
         return;
       }
 
-      const ai = getGeminiClient();
-      if (!ai) {
+      if (collectGeminiApiKeys().length === 0) {
         res.status(503).json({
           error: 'کلیلی GEMINI_API_KEY لە ڕێکخستنی سێرڤەردا دیاری نەکراوە.',
         });
@@ -232,36 +227,33 @@ async function startServer() {
       const tgt = langLabels[targetLang || 'en'] || targetLang || 'English';
       const styleNote = engine === 'ai_fluent' ? 'Natural, fluent phrasing.' : 'Direct, accurate translation.';
       const systemInstruction = `Translate from ${src} to ${tgt}. ${styleNote} Output ONLY the translation.`;
+      const cleanText = text.trim();
+      const cacheKey = `tr::${src}::${tgt}::${engine || 'google_fast'}::${cleanText}`;
 
       if (stream === true) {
-        res.status(200);
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache');
-        const chunkStream = await ai.models.generateContentStream({
-          model: 'gemini-3.1-flash-lite',
-          contents: text.trim(),
-          config: {
-            thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-            systemInstruction,
+        await streamTextWithFailover({
+          contents: cleanText,
+          systemInstruction,
+          cacheKey,
+          onStart: () => {
+            res.status(200);
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-cache');
+          },
+          onChunk: (chunkText) => {
+            res.write(chunkText);
           },
         });
-        for await (const chunk of chunkStream) {
-          if (chunk.text) res.write(chunk.text);
-        }
         res.end();
         return;
       }
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
-        contents: text.trim(),
-        config: {
-          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-          systemInstruction,
-        },
+      const translated = await generateTextWithFailover({
+        contents: cleanText,
+        systemInstruction,
+        cacheKey,
       });
 
-      const translated = (response.text ?? '').trim();
       res.json({ translated });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'هەڵە لە کاتی وەرگێڕاندا ڕوویدا.';
@@ -288,8 +280,7 @@ async function startServer() {
         return;
       }
 
-      const ai = getGeminiClient();
-      if (!ai) {
+      if (collectGeminiApiKeys().length === 0) {
         res.status(503).json({
           error: 'کلیلی GEMINI_API_KEY لە ڕێکخستنی سێرڤەردا دیاری نەکراوە.',
         });
@@ -333,40 +324,35 @@ async function startServer() {
           : 'Improve clarity and natural flow in the exact same language.',
       };
 
-      const model = 'gemini-3.1-flash-lite';
-      const thinkingLevel = ThinkingLevel.MINIMAL;
       const instruction = modeInstructions[cleanMode] || modeInstructions.fix;
       const systemInstruction = `${instruction} Output ONLY the final text with no markdown fences, no quotation marks, and no commentary.`;
+      const cleanText = text.trim();
+      const cacheKey = `rw::${cleanMode}::${cleanCustom}::${JSON.stringify(tone || {})}::${cleanText}`;
 
       if (stream === true) {
-        res.status(200);
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache');
-        const chunkStream = await ai.models.generateContentStream({
-          model,
-          contents: text.trim(),
-          config: {
-            thinkingConfig: { thinkingLevel },
-            systemInstruction,
+        await streamTextWithFailover({
+          contents: cleanText,
+          systemInstruction,
+          cacheKey,
+          onStart: () => {
+            res.status(200);
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-cache');
+          },
+          onChunk: (chunkText) => {
+            res.write(chunkText);
           },
         });
-        for await (const chunk of chunkStream) {
-          if (chunk.text) res.write(chunk.text);
-        }
         res.end();
         return;
       }
 
-      const response = await ai.models.generateContent({
-        model,
-        contents: text.trim(),
-        config: {
-          thinkingConfig: { thinkingLevel },
-          systemInstruction,
-        },
+      const result = await generateTextWithFailover({
+        contents: cleanText,
+        systemInstruction,
+        cacheKey,
       });
 
-      const result = (response.text ?? '').trim();
       res.json({ result });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'هەڵە لە کاتی پەیوەندی بە ژیری دەسکرددا ڕوویدا.';

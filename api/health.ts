@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { collectGeminiApiKeys, MODEL_CANDIDATES } from './_geminiPool';
 
 function setCors(res: ServerResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,8 +17,8 @@ export default function handler(req: IncomingMessage, res: ServerResponse) {
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  const aiConfigured = Boolean(apiKey && apiKey !== 'MY_GEMINI_API_KEY');
+  const keys = collectGeminiApiKeys();
+  const aiConfigured = keys.length > 0;
 
   res.statusCode = 200;
   res.end(
@@ -25,6 +26,8 @@ export default function handler(req: IncomingMessage, res: ServerResponse) {
       ok: true,
       platform: 'vercel',
       aiConfigured,
+      keyCount: keys.length,
+      modelCount: MODEL_CANDIDATES.length,
     })
   );
 }

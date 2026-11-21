@@ -1,5 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import {
+  collectGeminiApiKeys,
+  generateTextWithFailover,
+  streamTextWithFailover,
+} from '../_geminiPool';
 
 interface VercelRequest extends IncomingMessage {
   body?: unknown;
@@ -60,22 +64,12 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
       return;
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+    if (collectGeminiApiKeys().length === 0) {
       sendJson(res, 503, {
         error: 'کلیلی GEMINI_API_KEY لە ڕێکخستنی سێرڤەر (Vercel Environment Variables) دیاری نەکراوە.',
       });
       return;
     }
-
-    const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
 
     const langLabels: Record<string, string> = {
       auto: 'Auto',
@@ -90,38 +84,33 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
     const tgt = langLabels[targetLang] || targetLang || 'English';
     const styleNote = engine === 'ai_fluent' ? 'Natural, fluent phrasing.' : 'Direct, accurate translation.';
     const systemInstruction = `Translate from ${src} to ${tgt}. ${styleNote} Output ONLY the translation.`;
+    const cleanText = text.trim();
+    const cacheKey = `tr::${src}::${tgt}::${engine}::${cleanText}`;
 
     if (wantStream) {
-      res.statusCode = 200;
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache');
-      const stream = await ai.models.generateContentStream({
-        model: 'gemini-3.1-flash-lite',
-        contents: text.trim(),
-        config: {
-          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-          systemInstruction,
+      await streamTextWithFailover({
+        contents: cleanText,
+        systemInstruction,
+        cacheKey,
+        onStart: () => {
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache');
+        },
+        onChunk: (chunkText) => {
+          res.write(chunkText);
         },
       });
-      for await (const chunk of stream) {
-        if (chunk.text) {
-          res.write(chunk.text);
-        }
-      }
       res.end();
       return;
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite',
-      contents: text.trim(),
-      config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-        systemInstruction,
-      },
+    const translated = await generateTextWithFailover({
+      contents: cleanText,
+      systemInstruction,
+      cacheKey,
     });
 
-    const translated = (response.text ?? '').trim();
     sendJson(res, 200, { translated });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'هەڵە لە کاتی وەرگێڕاندا ڕوویدا.';

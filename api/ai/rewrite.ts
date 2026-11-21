@@ -1,5 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import {
+  collectGeminiApiKeys,
+  generateTextWithFailover,
+  streamTextWithFailover,
+} from '../_geminiPool';
 
 interface VercelRequest extends IncomingMessage {
   body?: unknown;
@@ -33,11 +37,11 @@ async function readJsonBody(req: VercelRequest): Promise<Record<string, unknown>
   return JSON.parse(raw) as Record<string, unknown>;
 }
 
-function buildRewritePrompt(
+function buildRewriteSystemInstruction(
   mode: string,
   customPrompt: string,
   tone?: { style?: string; intent?: string; length?: string }
-): { model: string; systemInstruction: string } {
+): string {
   const modeInstructions: Record<string, string> = {
     fix: 'Fix spelling, grammar, Kurdish/Arabic Unicode orthography (ی، ک، ە), and punctuation in the exact same language without changing meaning.',
     formal: 'Rewrite in a polite, respectful, formal tone in the exact same language.',
@@ -73,10 +77,8 @@ function buildRewritePrompt(
       : 'Improve clarity and natural flow in the exact same language.',
   };
 
-  const model = 'gemini-3.1-flash-lite';
   const instruction = modeInstructions[mode] || modeInstructions.fix;
-  const systemInstruction = `${instruction} Output ONLY the final text with no markdown fences, no quotation marks, and no commentary.`;
-  return { model, systemInstruction };
+  return `${instruction} Output ONLY the final text with no markdown fences, no quotation marks, and no commentary.`;
 }
 
 export default async function handler(req: VercelRequest, res: ServerResponse) {
@@ -109,57 +111,41 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
       return;
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+    if (collectGeminiApiKeys().length === 0) {
       sendJson(res, 503, {
         error: 'کلیلی GEMINI_API_KEY لە ڕێکخستنی سێرڤەر (Vercel Environment Variables) دیاری نەکراوە.',
       });
       return;
     }
 
-    const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
-
-    const { model, systemInstruction } = buildRewritePrompt(mode, customPrompt, tone);
-    const thinkingLevel = ThinkingLevel.MINIMAL;
+    const systemInstruction = buildRewriteSystemInstruction(mode, customPrompt, tone);
+    const cleanText = text.trim();
+    const cacheKey = `rw::${mode}::${customPrompt}::${JSON.stringify(tone || {})}::${cleanText}`;
 
     if (wantStream) {
-      res.statusCode = 200;
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache');
-      const stream = await ai.models.generateContentStream({
-        model,
-        contents: text.trim(),
-        config: {
-          thinkingConfig: { thinkingLevel },
-          systemInstruction,
+      await streamTextWithFailover({
+        contents: cleanText,
+        systemInstruction,
+        cacheKey,
+        onStart: () => {
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache');
+        },
+        onChunk: (chunkText) => {
+          res.write(chunkText);
         },
       });
-      for await (const chunk of stream) {
-        if (chunk.text) {
-          res.write(chunk.text);
-        }
-      }
       res.end();
       return;
     }
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: text.trim(),
-      config: {
-        thinkingConfig: { thinkingLevel },
-        systemInstruction,
-      },
+    const result = await generateTextWithFailover({
+      contents: cleanText,
+      systemInstruction,
+      cacheKey,
     });
 
-    const result = (response.text ?? '').trim();
     sendJson(res, 200, { result });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'هەڵە لە کاتی پەیوەندی بە ژیری دەسکرددا ڕوویدا.';

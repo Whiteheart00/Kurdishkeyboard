@@ -20,7 +20,11 @@ import { idbGet, idbSet, requestPersistentStorage } from './utils/persistentStor
 import { KurdiIcon, KurdiLogo } from './components/icons/KurdiIcons';
 import { KeyboardView } from './components/keyboard/KeyboardView';
 import { HomeScreen } from './components/settings/HomeScreen';
-import { AISettingsScreen, LanguagesScreen } from './components/settings/LanguagesScreen';
+import {
+  AISettingsScreen,
+  FontStyleScreen,
+  LanguagesScreen,
+} from './components/settings/LanguagesScreen';
 import {
   CustomThemeScreen,
   ThemesScreen,
@@ -92,6 +96,16 @@ function hydrateSettings(partial: Partial<KeyboardSettings>): KeyboardSettings {
   }
   if (!merged.keyShapeStyle) {
     merged.keyShapeStyle = 'default';
+  }
+  if (typeof window !== 'undefined' && merged.keyboardHeightPx === 292) {
+    try {
+      if (!window.localStorage.getItem('kurdikebord_compact_ui_v1')) {
+        merged.keyboardHeightPx = DEFAULT_SETTINGS.keyboardHeightPx;
+        window.localStorage.setItem('kurdikebord_compact_ui_v1', '1');
+      }
+    } catch {
+      // ignore storage errors
+    }
   }
   if (typeof merged.textShortcutsEnabled !== 'boolean') {
     merged.textShortcutsEnabled = DEFAULT_SETTINGS.textShortcutsEnabled;
@@ -834,6 +848,15 @@ export default function App() {
             isLightApp={isLightApp}
           />
         );
+      case 'font_style':
+        return (
+          <FontStyleScreen
+            settings={settings}
+            onUpdate={updateSettings}
+            onBack={goBack}
+            isLightApp={isLightApp}
+          />
+        );
       case 'ai_settings':
         return (
           <AISettingsScreen
@@ -1038,7 +1061,9 @@ export default function App() {
 
   if (isNativeImeMode) {
     return (
-      <div className="w-screen min-h-screen bg-black overflow-hidden flex flex-col justify-end select-none">
+      <div
+        className={`w-screen min-h-screen bg-black overflow-hidden flex flex-col justify-end select-none font-style-${settings.fontStyle}`}
+      >
         <div ref={imeDeckRef} className="w-full">
           <KeyboardView
             settings={settings}
@@ -1089,7 +1114,7 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen w-full flex flex-col ${appSurfaceClass}`}>
+    <div className={`min-h-screen w-full flex flex-col ${appSurfaceClass} font-style-${settings.fontStyle}`}>
       {/* Mobile Quick Mode Switcher Bar (hidden on desktop where both columns are always visible side-by-side) */}
       <div
         className={`lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-12 border-b backdrop-blur-md ${

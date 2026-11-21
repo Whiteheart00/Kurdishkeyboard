@@ -1289,7 +1289,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     settings.customLayouts,
   ]);
 
-  const gapPx = Math.max(3, Math.round((settings.keySpacingPercent / 100) * 5));
+  const hGapPx = Math.max(2.5, Math.round((settings.keySpacingPercent / 100) * 3.6 * 2) / 2);
+  const vGapPx = Math.max(4, Math.round((settings.keySpacingPercent / 100) * 6));
   const letterFontSize = Math.round(16 * (settings.fontSizePercent / 100));
   const iconSize = Math.round(17 * (settings.iconSizePercent / 100));
   const spaceLabel =
@@ -1352,9 +1353,19 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     onUpdateSettings,
   };
 
+  const hasDedicatedNumRow =
+    viewMode === 'characters' && Boolean(activeLangConfig?.numberRow) && resolvedLayout.rows.length >= 6;
+  const computedDeckHeight = hasDedicatedNumRow
+    ? settings.keyboardHeightPx + 30
+    : settings.keyboardHeightPx;
+
   const memoizedKeyRows = useMemo(() => {
+    const cleanPunctuationFaces = new Set(['؟', '،', ':', ',', '.']);
+    const stripArabicMarks = (s: string) => s.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '');
+
     return resolvedLayout.rows.map((row, rIdx) => {
       const isLastRow = rIdx === resolvedLayout.rows.length - 1;
+      const isNumTopRow = hasDedicatedNumRow && rIdx === 0;
       const isCompactMidRow =
         viewMode === 'characters' &&
         !isLastRow &&
@@ -1365,8 +1376,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       return (
         <div
           key={`row_${rIdx}`}
-          className={`flex-1 flex items-stretch ${isCompactMidRow ? 'px-3.5' : ''}`}
-          style={{ gap: `${gapPx}px` }}
+          className={`${isNumTopRow ? 'flex-[0.76]' : 'flex-1'} flex items-stretch ${isCompactMidRow ? 'px-3.5' : ''}`}
+          style={{ gap: `${hGapPx}px` }}
         >
           {row.map((key) => {
             const isPhysicalHighlight = Boolean(
@@ -1374,7 +1385,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 key.type === 'char' &&
                 highlightedPhysicalKey.toLowerCase() === key.primary.toLowerCase()
             );
-            const isSpecial = Boolean(key.type && key.type !== 'char');
+            const isTatweelKey = key.code === 1600;
+            const isPunctuationKey = key.type === 'comma' || key.type === 'period';
+            const isSpecial =
+              isTatweelKey || Boolean(key.type && key.type !== 'char' && !isPunctuationKey);
             const displayLabel =
               key.type === 'space'
                 ? spaceLabel
@@ -1399,7 +1413,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 shiftState !== 'off'
                   ? theme.enterText
                   : theme.shiftText || theme.specialKeyText;
-            } else if (key.type === 'backspace') {
+            } else if (key.type === 'backspace' || isTatweelKey) {
               bg = theme.backspaceBg || theme.specialKeyBg;
               textCol = theme.backspaceText || theme.specialKeyText;
             } else if (
@@ -1419,6 +1433,34 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
               bg = theme.specialKeyBg;
               textCol = theme.specialKeyText;
             }
+
+            const rawSecondary = key.secondary?.trim() || '';
+            const hideClutterHint =
+              isTatweelKey ||
+              isPunctuationKey ||
+              key.type === 'space' ||
+              key.type === 'enter' ||
+              key.type === 'backspace' ||
+              key.type === 'shift' ||
+              key.type === 'emoji' ||
+              key.type === 'globe' ||
+              cleanPunctuationFaces.has(displayLabel.trim());
+            const visibleSecondary =
+              settings.showSecondaryHints && rawSecondary && !hideClutterHint ? rawSecondary : '';
+            const visualSecondaryLen = visibleSecondary
+              ? stripArabicMarks(visibleSecondary).length
+              : 0;
+            const isPhraseHint = visualSecondaryLen > 2;
+            const phraseHintFontPx =
+              visualSecondaryLen <= 4
+                ? 9.4
+                : visualSecondaryLen <= 7
+                ? 8.7
+                : visualSecondaryLen <= 10
+                ? 8.0
+                : visualSecondaryLen <= 12
+                ? 7.4
+                : 6.7;
 
             const shapeStyleProps = getKeyShapeStyleProps(
               settings.keyShapeStyle || 'default',
@@ -1752,29 +1794,38 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                     }
                     keyActionRef.current.clearPointerState();
                   }}
-                  className={`w-full h-full relative flex items-center justify-center px-0.5 overflow-hidden touch-none select-none ${
+                  className={`w-full h-full relative flex items-center justify-center px-[1px] overflow-hidden touch-none select-none ${
                     shapeStyleProps.className
                   } ${
-                    settings.keyAnimation ? 'active:scale-[0.93]' : ''
-                  } ${isPhysicalHighlight && settings.keyAnimation ? 'scale-[0.93]' : ''}`}
+                    settings.keyAnimation ? 'active:scale-[0.94] active:brightness-110' : ''
+                  } ${isPhysicalHighlight && settings.keyAnimation ? 'scale-[0.94]' : ''}`}
                   style={{
                     ...shapeStyleProps.style,
                     color: textCol,
                     touchAction: 'none',
                   }}
                 >
-                  {/* Top-right Secondary Hint Character / Zikr */}
-                  {settings.showSecondaryHints &&
-                    key.secondary &&
-                    key.type !== 'space' &&
-                    key.type !== 'enter' && (
+                  {/* Secondary Hint Character or Full Unclipped Zikr Phrase */}
+                  {visibleSecondary &&
+                    (isPhraseHint ? (
                       <span
-                        className="absolute top-[2px] right-[3px] text-[8.5px] leading-none font-medium max-w-[92%] truncate pointer-events-none opacity-85"
+                        className="absolute top-[2px] inset-x-[0.5px] text-center whitespace-nowrap leading-none font-semibold pointer-events-none"
+                        style={{
+                          color: theme.secondaryText,
+                          fontSize: `${phraseHintFontPx}px`,
+                          letterSpacing: visualSecondaryLen > 12 ? '-0.025em' : '0px',
+                        }}
+                      >
+                        {visibleSecondary}
+                      </span>
+                    ) : (
+                      <span
+                        className="absolute top-[2.5px] right-[4px] text-[10px] leading-none font-semibold pointer-events-none"
                         style={{ color: theme.secondaryText }}
                       >
-                        {key.secondary}
+                        {visibleSecondary}
                       </span>
-                    )}
+                    ))}
 
                   {/* Main Key Icon / Label using official KurdiKeyboard VectorDrawables */}
                   {key.type === 'shift' ? (
@@ -1785,27 +1836,27 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                   ) : key.code === 1600 ? (
                     <KurdiIcon
                       name="ic_drezh"
-                      style={{ width: iconSize + 5, height: iconSize + 5 }}
+                      style={{ width: iconSize + 6, height: iconSize + 6 }}
                     />
                   ) : key.type === 'backspace' ? (
                     <KurdiIcon
                       name="ic_delete"
-                      style={{ width: iconSize + 2, height: iconSize + 2 }}
+                      style={{ width: iconSize + 3, height: iconSize + 3 }}
                     />
                   ) : key.type === 'enter' ? (
                     <KurdiIcon
                       name="ic_enter"
-                      style={{ width: iconSize + 2, height: iconSize + 2 }}
+                      style={{ width: iconSize + 3, height: iconSize + 3 }}
                     />
                   ) : key.type === 'emoji' ? (
                     <KurdiIcon
                       name="ic_smile"
-                      style={{ width: iconSize + 1, height: iconSize + 1 }}
+                      style={{ width: iconSize + 2, height: iconSize + 2 }}
                     />
                   ) : key.type === 'globe' ? (
                     <KurdiIcon
                       name="ic_global"
-                      style={{ width: iconSize + 1, height: iconSize + 1 }}
+                      style={{ width: iconSize + 2, height: iconSize + 2 }}
                     />
                   ) : key.type === 'settings' ? (
                     <KurdiIcon
@@ -1824,12 +1875,12 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       style={{ width: iconSize, height: iconSize }}
                     />
                   ) : key.type === 'space' ? (
-                    <span className="text-xs font-semibold truncate px-2 opacity-90 flex items-center gap-1.5 pointer-events-none">
+                    <span className="text-[13px] font-semibold truncate px-2 flex items-center gap-3 pointer-events-none">
                       {spaceLabel ? (
                         <>
-                          <span className="opacity-55 text-[10px]">‹</span>
+                          <span className="opacity-65 text-[12px]">‹</span>
                           <span>{spaceLabel}</span>
-                          <span className="opacity-55 text-[10px]">›</span>
+                          <span className="opacity-65 text-[12px]">›</span>
                         </>
                       ) : null}
                     </span>
@@ -1840,7 +1891,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                     />
                   ) : (
                     <span
-                      className="font-semibold leading-none truncate pointer-events-none"
+                      className={`font-semibold leading-[1.15] pointer-events-none ${
+                        displayLabel.length > 2 ? 'truncate max-w-[94%]' : ''
+                      }`}
                       style={{
                         fontSize: `${
                           key.type === 'symbols' ||
@@ -1848,13 +1901,22 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                           key.type === 'characters' ||
                           key.type === 'numeric_advanced' ||
                           key.type === 'kana_toggle'
-                            ? Math.max(11, letterFontSize - 4)
+                            ? Math.max(12, letterFontSize - 4)
+                            : key.type === 'period'
+                            ? Math.max(22, letterFontSize + 2)
+                            : isNumTopRow
+                            ? Math.max(15, letterFontSize - 3)
                             : displayLabel.length > 2
                             ? Math.max(12, letterFontSize - 4)
                             : letterFontSize
                         }px`,
-                        marginTop:
-                          settings.showSecondaryHints && key.secondary ? '5px' : '0px',
+                        marginTop: visibleSecondary
+                          ? isPhraseHint
+                            ? '8px'
+                            : '6px'
+                          : key.type === 'period'
+                          ? '-2px'
+                          : '0px',
                       }}
                     >
                       {displayLabel}
@@ -1870,7 +1932,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   }, [
     resolvedLayout,
     viewMode,
-    gapPx,
+    hGapPx,
+    hasDedicatedNumRow,
     highlightedPhysicalKey,
     spaceLabel,
     shiftState,
@@ -2518,10 +2581,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             {/* Key Rows Container (Main + Modifier Bottom Row rendered authentically from FlorisBoard JSON) */}
             <div
               ref={deckContainerRef}
-              className="flex-1 flex flex-col px-1.5 pb-2 relative touch-none select-none"
+              className="flex-1 flex flex-col px-[3px] pt-1 pb-1.5 relative touch-none select-none"
               style={{
-                gap: `${gapPx}px`,
-                height: `${settings.keyboardHeightPx}px`,
+                gap: `${vGapPx}px`,
+                height: `${computedDeckHeight}px`,
                 touchAction: 'none',
               }}
               onPointerDown={(e) => {

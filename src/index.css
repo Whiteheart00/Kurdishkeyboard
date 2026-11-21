@@ -55,10 +55,10 @@
 
 @layer base {
   :root {
-    --font-kurdish: 'KurdiFont2', 'Vazirmatn', 'Plus Jakarta Sans', system-ui, sans-serif;
-    --font-latin: 'Plus Jakarta Sans', 'Vazirmatn', system-ui, sans-serif;
+    --font-kurdish: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-latin: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     --font-naskh: 'Noto Naskh Arabic', 'Amiri', serif;
-    --font-kufi: 'Noto Kufi Arabic', 'Vazirmatn', sans-serif;
+    --font-kufi: 'Noto Kufi Arabic', system-ui, sans-serif;
     --font-amiri: 'Amiri', 'Noto Naskh Arabic', serif;
   }
 
@@ -71,40 +71,40 @@
 }
 
 .font-style-system {
-  font-family: 'Vazirmatn', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 .font-style-kurdifont1 {
-  font-family: 'KurdiFont1', 'Vazirmatn', sans-serif;
+  font-family: 'KurdiFont1', system-ui, sans-serif;
 }
 .font-style-kurdifont2 {
-  font-family: 'KurdiFont2', 'Vazirmatn', sans-serif;
+  font-family: 'KurdiFont2', system-ui, sans-serif;
 }
 .font-style-kurdifont3 {
-  font-family: 'KurdiFont3', 'Vazirmatn', sans-serif;
+  font-family: 'KurdiFont3', system-ui, sans-serif;
 }
 .font-style-kurdifont4 {
-  font-family: 'KurdiFont4', 'Vazirmatn', sans-serif;
+  font-family: 'KurdiFont4', system-ui, sans-serif;
 }
 .font-style-kurdifont5 {
-  font-family: 'KurdiFont5', 'Vazirmatn', sans-serif;
+  font-family: 'KurdiFont5', system-ui, sans-serif;
 }
 .font-style-kurdifont6 {
-  font-family: 'KurdiFont6', 'Vazirmatn', sans-serif;
+  font-family: 'KurdiFont6', system-ui, sans-serif;
 }
 .font-style-kurdifont7 {
-  font-family: 'KurdiFont7', 'Vazirmatn', sans-serif;
+  font-family: 'KurdiFont7', system-ui, sans-serif;
 }
 .font-style-kurdifont8 {
-  font-family: 'KurdiFont8', 'Vazirmatn', sans-serif;
+  font-family: 'KurdiFont8', system-ui, sans-serif;
 }
 .font-style-kurdifont9 {
-  font-family: 'KurdiFont9', 'Vazirmatn', sans-serif;
+  font-family: 'KurdiFont9', system-ui, sans-serif;
 }
 .font-style-kurdifont10 {
-  font-family: 'KurdiFont10', 'Vazirmatn', sans-serif;
+  font-family: 'KurdiFont10', system-ui, sans-serif;
 }
 .font-style-vazir {
-  font-family: 'Vazirmatn', 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Vazirmatn', system-ui, sans-serif;
   letter-spacing: 0.01em;
 }
 .font-style-naskh {

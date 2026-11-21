@@ -464,15 +464,16 @@ function getDefaultKeyWidth(type: KeyType, code: number | undefined, explicitWid
   if (explicitWidth && explicitWidth > 0) return explicitWidth;
   switch (type) {
     case 'space':
-      return 4.4;
+      return 5.0;
     case 'shift':
     case 'backspace':
-      return 1.45;
+      return 1.55;
     case 'enter':
+      return 1.5;
     case 'symbols':
     case 'symbols2':
     case 'characters':
-      return 1.45;
+      return 1.4;
     case 'numeric_advanced':
     case 'phone':
     case 'phone2':
@@ -480,9 +481,12 @@ function getDefaultKeyWidth(type: KeyType, code: number | undefined, explicitWid
       return 1.2;
     case 'globe':
     case 'emoji':
-      return 1.05;
+      return 1.12;
+    case 'comma':
+    case 'period':
+      return 1.0;
     default:
-      if (code === 1600) return 1.15; // Tatweel key
+      if (code === 1600) return 1.55; // Symmetrical Tatweel key matching Backspace
       return 1;
   }
 }

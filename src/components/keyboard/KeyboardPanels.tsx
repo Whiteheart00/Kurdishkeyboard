@@ -1389,8 +1389,8 @@ export const ResizePanel: React.FC<ResizePanelProps> = ({
           </div>
           <input
             type="range"
-            min={240}
-            max={360}
+            min={215}
+            max={350}
             value={settings.keyboardHeightPx}
             onChange={(e) => onUpdate({ keyboardHeightPx: Number(e.target.value) })}
             className="w-full accent-sky-500"
@@ -1447,7 +1447,7 @@ export const ResizePanel: React.FC<ResizePanelProps> = ({
         <button
           type="button"
           onClick={() =>
-            onUpdate({ keyboardHeightPx: 292, fontSizePercent: 130, oneHandedMode: 'off' })
+            onUpdate({ keyboardHeightPx: 248, fontSizePercent: 130, oneHandedMode: 'off' })
           }
           className="text-xs text-zinc-400 hover:text-white underline underline-offset-4"
         >

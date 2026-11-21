@@ -43,11 +43,11 @@ export const DEFAULT_SETTINGS: KeyboardSettings = {
   downloadedThemeIds: [],
   customTheme: DEFAULT_CUSTOM_THEME,
   keyboardThemeMode: 'dark',
-  fontStyle: 'kurdifont2',
+  fontStyle: 'system',
   fontSizePercent: 130,
   iconSizePercent: 130,
   keySpacingPercent: 100,
-  keyboardHeightPx: 292,
+  keyboardHeightPx: 248,
   numberStyle: 'latin',
 
   keyAnimation: true,
