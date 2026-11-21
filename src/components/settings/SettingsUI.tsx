@@ -102,10 +102,10 @@ export const SubPageHeader: React.FC<SubPageHeaderProps> = ({
 }) => {
   return (
     <div
-      className={`sticky top-0 z-20 flex items-center justify-between px-4 h-14 backdrop-blur-md border-b ${
+      className={`sticky top-0 z-20 flex items-center justify-between px-4 h-14 border-b ${
         isLightApp
-          ? 'bg-slate-50/90 border-slate-200 text-slate-900'
-          : 'bg-black/90 border-white/5 text-white'
+          ? 'bg-slate-50 border-slate-200 text-slate-900'
+          : 'bg-black border-white/5 text-white'
       }`}
       dir="rtl"
     >

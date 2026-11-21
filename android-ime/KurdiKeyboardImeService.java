@@ -45,6 +45,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private int keyboardHeightDp = 390;
     private String lastSyncedTail = null;
+    private long lastLocalCommitAt = 0L;
     private final Runnable syncTailRunnable = () -> {
         if (webView == null) return;
         final String tail = readFastFieldTail();
@@ -215,7 +216,9 @@ public class KurdiKeyboardImeService extends InputMethodService {
             int candidatesEnd
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd);
-        scheduleSyncEditorTail(85);
+        long now = android.os.SystemClock.uptimeMillis();
+        long delay = (now - lastLocalCommitAt < 280L) ? 320L : 85L;
+        scheduleSyncEditorTail(delay);
     }
 
     private void syncLatestSystemClipboard() {
@@ -274,6 +277,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
         @JavascriptInterface
         public void commitText(final String text) {
             if (text == null) return;
+            lastLocalCommitAt = android.os.SystemClock.uptimeMillis();
             mainHandler.post(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic != null) {
@@ -284,6 +288,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
 
         @JavascriptInterface
         public void deleteBackward() {
+            lastLocalCommitAt = android.os.SystemClock.uptimeMillis();
             mainHandler.post(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic != null) {
@@ -299,6 +304,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
 
         @JavascriptInterface
         public void deleteWord() {
+            lastLocalCommitAt = android.os.SystemClock.uptimeMillis();
             mainHandler.post(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic == null) return;
@@ -318,6 +324,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
 
         @JavascriptInterface
         public void replaceSurroundingText(final int deleteBefore, final String insertText) {
+            lastLocalCommitAt = android.os.SystemClock.uptimeMillis();
             mainHandler.post(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic == null) return;

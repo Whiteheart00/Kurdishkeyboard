@@ -245,28 +245,47 @@ export default function App() {
   const [mobileView, setMobileView] = useState<'settings' | 'keyboard'>(loadMobileView);
   const [proModalOpen, setProModalOpen] = useState(false);
 
-  // Live Typing Playground State with Undo/Redo History (persisted across restarts)
+  // Live Typing Playground State with ref-backed Undo/Redo History (zero extra state updates per keystroke)
   const [editorText, setEditorText] = useState<string>(loadEditorText);
-  const [undoStack, setUndoStack] = useState<string[]>([]);
-  const [redoStack, setRedoStack] = useState<string[]>([]);
+  const undoStackRef = useRef<string[]>([]);
+  const redoStackRef = useRef<string[]>([]);
   const [copiedToast, setCopiedToast] = useState<string | null>(null);
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
+  const [isDesktop, setIsDesktop] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : false
+  );
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const charCountRef = useRef<HTMLSpanElement>(null);
+  const wordCountRef = useRef<HTMLSpanElement>(null);
+  const apkStatsTimerRef = useRef<number | null>(null);
+  const apkSaveTimerRef = useRef<number | null>(null);
   const imeDeckRef = useRef<HTMLDivElement>(null);
   const idbHydratedRef = useRef(false);
-  const editorTextRef = useRef<string>(editorText);
-  editorTextRef.current = editorText;
-  const lastSettingsJsonRef = useRef<string>('');
-  const lastClipboardJsonRef = useRef<string>('');
-
-  const currentRoute = routeStack[routeStack.length - 1];
-  const isLightApp = settings.appTheme === 'light';
   const isNativeImeMode =
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).get('ime') === '1';
   const isAndroidApk =
     typeof window !== 'undefined' && Boolean(window.AndroidAppSetup);
+
+  const editorTextRef = useRef<string>(editorText);
+  if (!isAndroidApk) {
+    editorTextRef.current = editorText;
+  }
+  const lastSettingsJsonRef = useRef<string>('');
+  const lastClipboardJsonRef = useRef<string>('');
+
+  const currentRoute = routeStack[routeStack.length - 1];
+  const isLightApp = settings.appTheme === 'light';
+
+  useEffect(() => {
+    if (isNativeImeMode || typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => setIsDesktop(mq.matches);
+    onChange();
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, [isNativeImeMode]);
 
   // Request browser persistent storage and recover from IndexedDB if localStorage was cleared after restart
   useEffect(() => {
@@ -357,9 +376,9 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [clipboardItems]);
 
-  // NEVER block native Android IME keystrokes with localStorage/IndexedDB writes; debounce web playground persistence
+  // NEVER block native Android IME or APK test-box keystrokes with synchronous storage/IDB writes
   useEffect(() => {
-    if (isNativeImeMode) return;
+    if (isNativeImeMode || isAndroidApk) return;
     const timer = window.setTimeout(() => {
       try {
         localStorage.setItem(STORAGE_KEY_EDITOR, editorText);
@@ -367,9 +386,52 @@ export default function App() {
         // Ignore storage quota errors
       }
       idbSet(STORAGE_KEY_EDITOR, editorText);
-    }, 700);
+    }, 900);
     return () => window.clearTimeout(timer);
-  }, [editorText, isNativeImeMode]);
+  }, [editorText, isNativeImeMode, isAndroidApk]);
+
+  // Fast DOM-only counter & debounced save for Android APK playground (0 React re-renders per keystroke)
+  const syncApkCountersNow = useCallback((val: string) => {
+    if (charCountRef.current) {
+      charCountRef.current.textContent = `${val.length} پیت`;
+    }
+    if (wordCountRef.current) {
+      const trimmed = val.trim();
+      const words = trimmed ? trimmed.split(/\s+/).length : 0;
+      wordCountRef.current.textContent = `${words} ووشە`;
+    }
+  }, []);
+
+  const handleApkTextareaInput = useCallback(
+    (val: string) => {
+      editorTextRef.current = val;
+      if (apkStatsTimerRef.current === null) {
+        apkStatsTimerRef.current = window.setTimeout(() => {
+          apkStatsTimerRef.current = null;
+          syncApkCountersNow(editorTextRef.current);
+        }, 120);
+      }
+      if (apkSaveTimerRef.current !== null) {
+        window.clearTimeout(apkSaveTimerRef.current);
+      }
+      apkSaveTimerRef.current = window.setTimeout(() => {
+        apkSaveTimerRef.current = null;
+        try {
+          localStorage.setItem(STORAGE_KEY_EDITOR, editorTextRef.current);
+        } catch {
+          // ignore
+        }
+      }, 1500);
+    },
+    [syncApkCountersNow]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (apkStatsTimerRef.current !== null) window.clearTimeout(apkStatsTimerRef.current);
+      if (apkSaveTimerRef.current !== null) window.clearTimeout(apkSaveTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (isNativeImeMode) return;
@@ -402,37 +464,48 @@ export default function App() {
     window.setTimeout(() => setCopiedToast(null), 2000);
   }, []);
 
-  // Editor Text Helpers with cursor preservation & undo history
+  // Editor Text Helpers with cursor preservation & zero-render undo history
   const pushUndo = useCallback((prevVal: string) => {
-    setUndoStack((s) => [...s.slice(-40), prevVal]);
-    setRedoStack([]);
+    const stack = undoStackRef.current;
+    stack.push(prevVal);
+    if (stack.length > 40) stack.shift();
+    redoStackRef.current.length = 0;
   }, []);
 
   const handleInsertText = useCallback(
     (textToInsert: string) => {
       if (isNativeImeMode && window.AndroidIME) {
         window.AndroidIME.commitText(textToInsert);
-        setEditorText((prev) => (prev + textToInsert).slice(-120));
+        setEditorText((prev) => (prev + textToInsert).slice(-160));
         return;
       }
       const el = textareaRef.current;
-      const prev = editorTextRef.current;
+      const prev = isAndroidApk && el ? el.value : editorTextRef.current;
       pushUndo(prev);
       if (!el) {
+        editorTextRef.current = prev + textToInsert;
         setEditorText(prev + textToInsert);
         return;
       }
       const start = el.selectionStart ?? prev.length;
       const end = el.selectionEnd ?? prev.length;
       const next = prev.slice(0, start) + textToInsert + prev.slice(end);
+      if (isAndroidApk) {
+        el.value = next;
+        const pos = start + textToInsert.length;
+        el.setSelectionRange(pos, pos);
+        handleApkTextareaInput(next);
+        syncApkCountersNow(next);
+        return;
+      }
       setEditorText(next);
       requestAnimationFrame(() => {
-        el.focus();
+        if (document.activeElement !== el) el.focus();
         const pos = start + textToInsert.length;
         el.setSelectionRange(pos, pos);
       });
     },
-    [isNativeImeMode, pushUndo]
+    [handleApkTextareaInput, isAndroidApk, isNativeImeMode, pushUndo, syncApkCountersNow]
   );
 
   const handleReplaceText = useCallback(
@@ -459,17 +532,24 @@ export default function App() {
         setEditorText(nextText.slice(-160));
         return;
       }
-      pushUndo(editorTextRef.current);
+      const el = textareaRef.current;
+      pushUndo(isAndroidApk && el ? el.value : editorTextRef.current);
+      if (isAndroidApk && el) {
+        el.value = nextText;
+        el.setSelectionRange(nextText.length, nextText.length);
+        handleApkTextareaInput(nextText);
+        syncApkCountersNow(nextText);
+        return;
+      }
       setEditorText(nextText);
       requestAnimationFrame(() => {
-        const el = textareaRef.current;
         if (el) {
-          el.focus();
+          if (document.activeElement !== el) el.focus();
           el.setSelectionRange(nextText.length, nextText.length);
         }
       });
     },
-    [isNativeImeMode, pushUndo]
+    [handleApkTextareaInput, isAndroidApk, isNativeImeMode, pushUndo, syncApkCountersNow]
   );
 
   const handleReplaceAllText = useCallback(
@@ -805,24 +885,32 @@ export default function App() {
   }, [clipboardItems, handleInsertText, isNativeImeMode]);
 
   const handleUndo = useCallback(() => {
-    setUndoStack((stack) => {
-      if (stack.length === 0) return stack;
-      const previous = stack[stack.length - 1];
-      setRedoStack((r) => [...r, editorTextRef.current]);
-      setEditorText(previous);
-      return stack.slice(0, -1);
-    });
-  }, []);
+    const stack = undoStackRef.current;
+    if (stack.length === 0) return;
+    const previous = stack.pop()!;
+    redoStackRef.current.push(editorTextRef.current);
+    editorTextRef.current = previous;
+    if (isAndroidApk && textareaRef.current) {
+      textareaRef.current.value = previous;
+      syncApkCountersNow(previous);
+      return;
+    }
+    setEditorText(previous);
+  }, [isAndroidApk, syncApkCountersNow]);
 
   const handleRedo = useCallback(() => {
-    setRedoStack((stack) => {
-      if (stack.length === 0) return stack;
-      const next = stack[stack.length - 1];
-      setUndoStack((u) => [...u, editorTextRef.current]);
-      setEditorText(next);
-      return stack.slice(0, -1);
-    });
-  }, []);
+    const stack = redoStackRef.current;
+    if (stack.length === 0) return;
+    const next = stack.pop()!;
+    undoStackRef.current.push(editorTextRef.current);
+    editorTextRef.current = next;
+    if (isAndroidApk && textareaRef.current) {
+      textareaRef.current.value = next;
+      syncApkCountersNow(next);
+      return;
+    }
+    setEditorText(next);
+  }, [isAndroidApk, syncApkCountersNow]);
 
   // Physical Keyboard Sync highlight effect
   useEffect(() => {
@@ -1131,12 +1219,12 @@ export default function App() {
 
   return (
     <div className={`min-h-screen w-full flex flex-col ${appSurfaceClass} font-style-${settings.fontStyle}`}>
-      {/* Mobile Quick Mode Switcher Bar (hidden on desktop where both columns are always visible side-by-side) */}
+      {/* Mobile Quick Mode Switcher Bar (solid opaque surface — no expensive backdrop-blur on Android WebView) */}
       <div
-        className={`lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-12 border-b backdrop-blur-md ${
+        className={`lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-12 border-b ${
           isLightApp
-            ? 'bg-white/90 border-slate-200'
-            : 'bg-black/90 border-white/10'
+            ? 'bg-white border-slate-200'
+            : 'bg-black border-white/10'
         }`}
         dir="rtl"
       >
@@ -1177,32 +1265,35 @@ export default function App() {
         </div>
       </div>
 
-      {/* Main Responsive Two-Column Studio Workspace on Desktop / Seamless Full-Height App on Mobile */}
+      {/* Main Responsive Two-Column Studio Workspace on Desktop / Lightweight Single-Mount View on Mobile & APK */}
       <div className="flex-1 w-full max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 min-h-0">
-        {/* Column 1 (Right in RTL): Complete Companion Settings App */}
-        <aside
-          className={`lg:col-span-5 xl:col-span-4 lg:h-screen lg:overflow-y-auto custom-scroll relative lg:border-l ${
-            isLightApp ? 'border-slate-200' : 'border-white/10'
-          } ${mobileView === 'settings' ? 'block' : 'hidden lg:block'}`}
-        >
-          {settingsScreenElement}
+        {/* Column 1 (Right in RTL): Complete Companion Settings App (unmounted on mobile when testing keyboard for zero DOM overhead) */}
+        {(isDesktop || mobileView === 'settings') && (
+          <aside
+            className={`lg:col-span-5 xl:col-span-4 lg:h-screen lg:overflow-y-auto custom-scroll relative lg:border-l ${
+              isLightApp ? 'border-slate-200' : 'border-white/10'
+            }`}
+          >
+            {settingsScreenElement}
 
-          {/* Floating Bottom-Left Keyboard FAB matching Screenshots 17, 24, 26, 27, 28, 40 */}
-          <div className="fixed lg:sticky bottom-5 left-5 lg:float-left lg:ml-4 lg:mb-4 z-30">
-            <FloatingKeyboardFAB
-              onClick={() => {
-                setMobileView('keyboard');
-                requestAnimationFrame(() => textareaRef.current?.focus());
-              }}
-            />
-          </div>
-        </aside>
+            {/* Floating Bottom-Left Keyboard FAB matching Screenshots 17, 24, 26, 27, 28, 40 */}
+            <div className="fixed lg:sticky bottom-5 left-5 lg:float-left lg:ml-4 lg:mb-4 z-30">
+              <FloatingKeyboardFAB
+                onClick={() => {
+                  setMobileView('keyboard');
+                  requestAnimationFrame(() => textareaRef.current?.focus());
+                }}
+              />
+            </div>
+          </aside>
+        )}
 
         {/* Column 2 (Left in RTL): Live Interactive Testing Stage + Full Tactile Keyboard */}
+        {(isDesktop || mobileView === 'keyboard') && (
         <main
           className={`lg:col-span-7 xl:col-span-8 flex flex-col justify-between lg:h-screen min-h-[calc(100vh-3rem)] lg:min-h-0 ${
             isLightApp ? 'bg-slate-100' : 'bg-[#07080B]'
-          } ${mobileView === 'keyboard' ? 'flex' : 'hidden lg:flex'}`}
+          }`}
         >
           {/* Upper Live Playground Canvas */}
           <div className="flex-1 flex flex-col p-4 sm:p-6 gap-4 overflow-y-auto custom-scroll" dir="rtl">
@@ -1268,32 +1359,47 @@ export default function App() {
 
             {/* Search / Live Text Input Card inspired by Screenshots 2-18 */}
             <div
-              className={`flex-1 min-h-[140px] rounded-3xl p-4 sm:p-5 border flex flex-col justify-between gap-3 transition-colors ${
+              className={`flex-1 min-h-[140px] rounded-3xl p-4 sm:p-5 border flex flex-col justify-between gap-3 ${
                 isLightApp
-                  ? 'bg-white border-slate-200 shadow-sm'
+                  ? 'bg-white border-slate-200'
                   : 'bg-[#12161E] border-white/[0.08]'
               }`}
             >
-              <textarea
-                ref={textareaRef}
-                value={editorText}
-                onChange={(e) => setEditorText(e.target.value)}
-                dir="auto"
-                inputMode={isAndroidApk ? 'text' : 'none'}
-                placeholder={
-                  isAndroidApk
-                    ? 'کلیک لێرە بکە بۆ تاقیکردنەوەی تەختەکلیلی کوردی...'
-                    : 'لێرە بنووسە یان تەختەکلیلی خوارەوە تاقیبکەرەوە...'
-                }
-                className={`w-full flex-1 bg-transparent resize-none outline-none text-base sm:text-lg leading-relaxed placeholder:text-zinc-500 font-style-${settings.fontStyle}`}
-              />
+              {isAndroidApk ? (
+                <textarea
+                  ref={textareaRef}
+                  defaultValue={editorTextRef.current}
+                  onInput={(e) => handleApkTextareaInput((e.target as HTMLTextAreaElement).value)}
+                  dir="auto"
+                  inputMode="text"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  placeholder="کلیک لێرە بکە بۆ تاقیکردنەوەی تەختەکلیلی کوردی..."
+                  className={`w-full flex-1 bg-transparent resize-none outline-none text-base sm:text-lg leading-relaxed placeholder:text-zinc-500 font-style-${settings.fontStyle}`}
+                />
+              ) : (
+                <textarea
+                  ref={textareaRef}
+                  value={editorText}
+                  onChange={(e) => setEditorText(e.target.value)}
+                  dir="auto"
+                  inputMode="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  placeholder="لێرە بنووسە یان تەختەکلیلی خوارەوە تاقیبکەرەوە..."
+                  className={`w-full flex-1 bg-transparent resize-none outline-none text-base sm:text-lg leading-relaxed placeholder:text-zinc-500 font-style-${settings.fontStyle}`}
+                />
+              )}
 
               <div className="flex items-center justify-between pt-3 border-t border-white/5 text-xs text-zinc-400 flex-wrap gap-2">
                 <div className="flex items-center gap-3 tabular-nums">
-                  <span>{editorText.length} پیت</span>
+                  <span ref={charCountRef}>{editorTextRef.current.length} پیت</span>
                   <span aria-hidden="true">·</span>
-                  <span>
-                    {editorText.trim() ? editorText.trim().split(/\s+/).length : 0} ووشە
+                  <span ref={wordCountRef}>
+                    {editorTextRef.current.trim()
+                      ? editorTextRef.current.trim().split(/\s+/).length
+                      : 0}{' '}
+                    ووشە
                   </span>
                 </div>
 
@@ -1390,6 +1496,7 @@ export default function App() {
             </div>
           )}
         </main>
+        )}
       </div>
 
       {/* Pro Upgrade Preview Modal */}
