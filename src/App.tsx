@@ -68,6 +68,7 @@ interface AndroidImeBridge {
   getScreenHeightDp?: () => number;
   getEditorText?: (preferSelection: boolean) => string;
   replaceAllText?: (text: string, preferSelection: boolean) => void;
+  replaceSurroundingText?: (deleteBefore: number, insertText: string) => void;
   moveCursorEx?: (dx: number, dy: number, select: boolean) => void;
   moveLineEdge?: (toEnd: boolean, select: boolean) => void;
 }
@@ -85,6 +86,7 @@ declare global {
     AndroidAppSetup?: AndroidAppSetupBridge;
     __onAndroidClipboardSync?: (text: string) => void;
     __onAndroidImeRefresh?: (initialText?: string) => void;
+    __onAndroidEditorTail?: (tail: string) => void;
     __onAndroidImeStatusChanged?: () => void;
   }
 }
@@ -441,15 +443,20 @@ export default function App() {
         let common = 0;
         const minLen = Math.min(prev.length, nextText.length);
         while (common < minLen && prev[common] === nextText[common]) common++;
-        const deleteCount = [...prev.slice(common)].length;
+        const deleteUtf16Len = prev.length - common;
         const insertPart = nextText.slice(common);
-        for (let i = 0; i < deleteCount; i++) {
-          window.AndroidIME.deleteBackward();
+        if (window.AndroidIME.replaceSurroundingText) {
+          window.AndroidIME.replaceSurroundingText(deleteUtf16Len, insertPart);
+        } else {
+          const deleteCount = [...prev.slice(common)].length;
+          for (let i = 0; i < deleteCount; i++) {
+            window.AndroidIME.deleteBackward();
+          }
+          if (insertPart) {
+            window.AndroidIME.commitText(insertPart);
+          }
         }
-        if (insertPart) {
-          window.AndroidIME.commitText(insertPart);
-        }
-        setEditorText(nextText.slice(-120));
+        setEditorText(nextText.slice(-160));
         return;
       }
       pushUndo(editorTextRef.current);
@@ -1029,6 +1036,12 @@ export default function App() {
       }
     };
 
+    window.__onAndroidEditorTail = (tail: string) => {
+      if (typeof tail === 'string') {
+        setEditorText((prev) => (prev === tail ? prev : tail));
+      }
+    };
+
     let lastSentHeight = 0;
     let heightRaf = 0;
     const syncExactHeight = () => {
@@ -1057,6 +1070,7 @@ export default function App() {
       observer?.disconnect();
       delete window.__onAndroidClipboardSync;
       delete window.__onAndroidImeRefresh;
+      delete window.__onAndroidEditorTail;
     };
   }, [isNativeImeMode, saveToClipboard]);
 
@@ -1087,6 +1101,7 @@ export default function App() {
             onEnter={() => {
               if (window.AndroidIME) {
                 window.AndroidIME.sendEnter();
+                setEditorText((prev) => `${prev}\n`.slice(-160));
               } else {
                 handleInsertText('\n');
               }

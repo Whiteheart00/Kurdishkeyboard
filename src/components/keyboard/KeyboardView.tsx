@@ -32,11 +32,18 @@ import { composeHangul, EMAIL_DOMAIN_POPUP_OPTIONS, resolveLayoutRows } from '..
 import {
   EMOJI_CATEGORIES,
   EMOJI_KEYWORD_MAP,
-  ENGLISH_DICTIONARY,
-  KURDISH_DICTIONARY,
   searchEmojis,
   TEXT_DECORATORS,
 } from '../../data/richContent';
+import {
+  buildIndexedDictionary,
+  getBaseDictionaryForLang,
+  getNextWordPredictions,
+  loadLearnedWords,
+  normalizeForPrediction,
+  queryDictionarySuggestions,
+  saveLearnedWords,
+} from '../../data/dictionaries';
 import { getKeyShapeStyleProps } from '../../data/officialData';
 import { detectInlineMath } from '../../utils/mathAndTime';
 import { playKeyFeedback, preloadSoundPack } from '../../utils/sound';
@@ -376,11 +383,35 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     );
   };
 
-  // Compute current word & live predictions in O(1) using editorTail + memoized dictionary pool
+  const [learnedWordsMap, setLearnedWordsMap] = useState<Record<string, number>>(() =>
+    loadLearnedWords()
+  );
+
+  const recordFinishedWord = (rawWord: string) => {
+    if (!settings.personalDictionaryEnabled) return;
+    const clean = rawWord.trim();
+    if (clean.length < 2 || clean.length > 28) return;
+    if (/^[0-9٠-٩۰-۹]+$/.test(clean)) return;
+    setLearnedWordsMap((prev) => {
+      const next = { ...prev, [clean]: (prev[clean] || 0) + 1 };
+      saveLearnedWords(next);
+      return next;
+    });
+  };
+
+  // Compute current word & previous word in O(1) using editorTail
   const currentWord = useMemo(() => {
-    const match = editorTail.match(/([^\s.,!?؟،:;]+)$/);
+    const match = editorTail.match(/([^\s.,!?؟،:;()[\]{}"'«»]+)$/);
     return match ? match[1] : '';
   }, [editorTail]);
+
+  const previousWord = useMemo(() => {
+    if (currentWord) return '';
+    const trimmed = editorTail.trimEnd();
+    if (!trimmed) return '';
+    const match = trimmed.match(/([^\s.,!?؟،:;()[\]{}"'«»]+)$/);
+    return match ? match[1] : '';
+  }, [editorTail, currentWord]);
 
   useEffect(() => {
     if (suggestionsScrollRef.current) {
@@ -393,13 +424,25 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     activeLangConfig?.characterLayoutId !== 'qwerty_kurdi' &&
     !(activeLangConfig?.characterLayoutId === 'kurdi_hybrid' && kanaMode === 'hira');
 
-  const dictionaryPool = useMemo(() => {
-    const base = isLatinLike ? ENGLISH_DICTIONARY : KURDISH_DICTIONARY;
-    if (settings.personalDictionaryEnabled && settings.personalDictionary.length > 0) {
-      return [...settings.personalDictionary, ...base];
-    }
-    return base;
-  }, [isLatinLike, settings.personalDictionaryEnabled, settings.personalDictionary]);
+  const indexedDictionaryPool = useMemo(() => {
+    const base = getBaseDictionaryForLang(settings.activeLanguage, isLatinLike);
+    const personal =
+      settings.personalDictionaryEnabled && settings.personalDictionary.length > 0
+        ? settings.personalDictionary
+        : [];
+    const learnedSorted = settings.personalDictionaryEnabled
+      ? Object.entries(learnedWordsMap)
+          .sort((a, b) => b[1] - a[1])
+          .map(([word]) => word)
+      : [];
+    return buildIndexedDictionary([...personal, ...learnedSorted, ...base]);
+  }, [
+    settings.activeLanguage,
+    isLatinLike,
+    settings.personalDictionaryEnabled,
+    settings.personalDictionary,
+    learnedWordsMap,
+  ]);
 
   const suggestions = useMemo(() => {
     const shortcutsEnabled = settings.textShortcutsEnabled ?? true;
@@ -428,12 +471,18 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     // 1. Custom Text Shortcuts (Exact match first, then prefix match)
     if (shortcutsEnabled && currentWord && Array.isArray(settings.textShortcuts)) {
       const lower = currentWord.toLowerCase();
-      const exactMatches = settings.textShortcuts.filter(
-        (sc) => sc.shortcut.trim().toLowerCase() === lower
-      );
+      const normCurrent = normalizeForPrediction(currentWord);
+      const exactMatches = settings.textShortcuts.filter((sc) => {
+        const k = sc.shortcut.trim().toLowerCase();
+        return k === lower || normalizeForPrediction(k) === normCurrent;
+      });
       const prefixMatches = settings.textShortcuts.filter((sc) => {
-        const key = sc.shortcut.trim().toLowerCase();
-        return key !== lower && key.startsWith(lower);
+        const k = sc.shortcut.trim().toLowerCase();
+        return (
+          k !== lower &&
+          normalizeForPrediction(k) !== normCurrent &&
+          (k.startsWith(lower) || normalizeForPrediction(k).startsWith(normCurrent))
+        );
       });
 
       for (const sc of [...exactMatches, ...prefixMatches]) {
@@ -456,7 +505,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     // 2. Emoji suggestions for current word
     if (settings.emojiSuggestions && currentWord) {
       const emojiHits =
-        EMOJI_KEYWORD_MAP[currentWord.toLowerCase()] || EMOJI_KEYWORD_MAP[currentWord];
+        EMOJI_KEYWORD_MAP[currentWord.toLowerCase()] ||
+        EMOJI_KEYWORD_MAP[currentWord] ||
+        EMOJI_KEYWORD_MAP[normalizeForPrediction(currentWord)];
       if (emojiHits) {
         for (const em of emojiHits.slice(0, 2)) {
           if (!seen.has(em)) {
@@ -468,35 +519,54 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     }
 
     if (currentWord) {
-      const lower = currentWord.toLowerCase();
-      for (const w of dictionaryPool) {
-        if (w.toLowerCase().startsWith(lower) && w !== currentWord && !seen.has(w)) {
-          seen.add(w);
-          results.push({ value: w });
-          if (results.length >= 5) break;
-        }
+      const matches = queryDictionarySuggestions(indexedDictionaryPool, currentWord, 6, seen);
+      for (const w of matches) {
+        seen.add(w);
+        results.push({ value: w });
+      }
+      // If user typed a brand-new word not in dictionary yet, still offer quick-save/confirm chip so bar never looks dead
+      if (results.length === 0 && currentWord.length >= 2) {
+        results.push({ value: currentWord });
       }
     } else {
-      const defaults = isLatinLike
-        ? ['Hello', 'Thanks', 'Kurdistan', 'Awesome']
-        : ['سڵاو', 'سوپاس', 'کوردستان', 'دەستخۆش'];
-      for (const w of defaults) {
+      // Next-word bi-gram prediction right after a space (e.g. "سڵاو " -> "هاوڕێ", "چۆنیت"...)
+      const nextWords = getNextWordPredictions(previousWord, settings.activeLanguage, isLatinLike);
+      for (const w of nextWords) {
         if (!seen.has(w)) {
+          seen.add(w);
+          results.push({ value: w });
+        }
+      }
+
+      const defaults =
+        settings.activeLanguage === 'ar'
+          ? ['السلام', 'شكرا', 'مرحبا', 'إن شاء الله']
+          : settings.activeLanguage === 'fa'
+          ? ['سلام', 'ممنون', 'خوبی', 'لطفا']
+          : settings.activeLanguage === 'tr'
+          ? ['Merhaba', 'Teşekkürler', 'Nasılsın', 'Tamam']
+          : isLatinLike
+          ? ['Hello', 'Thanks', 'Please', 'Kurdistan', 'Awesome']
+          : ['سڵاو', 'سوپاس', 'چۆنیت', 'دەستخۆش', 'کوردستان'];
+      for (const w of defaults) {
+        if (!seen.has(w) && results.length < 6) {
           seen.add(w);
           results.push({ value: w });
         }
       }
     }
 
-    return results.slice(0, 5);
+    return results.slice(0, 6);
   }, [
     editorTail,
     currentWord,
+    previousWord,
+    settings.activeLanguage,
     settings.wordSuggestions,
     settings.textShortcutsEnabled,
     settings.textShortcuts,
     settings.emojiSuggestions,
-    dictionaryPool,
+    indexedDictionaryPool,
     isLatinLike,
   ]);
 
@@ -751,6 +821,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       onInsertText(` ${word} `);
       return;
     }
+    recordFinishedWord(word);
     const replaced = editorText.slice(0, editorText.length - currentWord.length) + `${word} `;
     onReplaceText(replaced);
   };
@@ -764,6 +835,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     if (liveTranslateMode) {
       setLiveTranslateQuery((prev) => prev + ' ');
       return;
+    }
+    if (currentWord) {
+      recordFinishedWord(currentWord);
     }
     const now = Date.now();
     if (
@@ -836,6 +910,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             setLiveTranslateMode(false);
           }
           return;
+        }
+        if (currentWord) {
+          recordFinishedWord(currentWord);
         }
         onEnter();
         return;

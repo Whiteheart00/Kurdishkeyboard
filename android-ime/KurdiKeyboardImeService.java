@@ -44,6 +44,23 @@ public class KurdiKeyboardImeService extends InputMethodService {
     private WebView webView;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private int keyboardHeightDp = 390;
+    private String lastSyncedTail = null;
+    private final Runnable syncTailRunnable = () -> {
+        if (webView == null) return;
+        final String tail = readFastFieldTail();
+        if (tail.equals(lastSyncedTail)) return;
+        lastSyncedTail = tail;
+        final String escaped = escapeForJsString(tail);
+        webView.evaluateJavascript(
+                "window.__onAndroidEditorTail && window.__onAndroidEditorTail('" + escaped + "');",
+                null
+        );
+    };
+
+    private void scheduleSyncEditorTail(long delayMs) {
+        mainHandler.removeCallbacks(syncTailRunnable);
+        mainHandler.postDelayed(syncTailRunnable, delayMs);
+    }
 
     @Override
     public boolean onEvaluateFullscreenMode() {
@@ -175,7 +192,9 @@ public class KurdiKeyboardImeService extends InputMethodService {
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
         syncLatestSystemClipboard();
-        final String currentFieldTail = escapeForJsString(readFastFieldTail());
+        final String rawTail = readFastFieldTail();
+        lastSyncedTail = rawTail;
+        final String currentFieldTail = escapeForJsString(rawTail);
         mainHandler.post(() -> {
             if (webView != null) {
                 webView.evaluateJavascript(
@@ -184,6 +203,19 @@ public class KurdiKeyboardImeService extends InputMethodService {
                 );
             }
         });
+    }
+
+    @Override
+    public void onUpdateSelection(
+            int oldSelStart,
+            int oldSelEnd,
+            int newSelStart,
+            int newSelEnd,
+            int candidatesStart,
+            int candidatesEnd
+    ) {
+        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd);
+        scheduleSyncEditorTail(85);
     }
 
     private void syncLatestSystemClipboard() {
@@ -285,6 +317,32 @@ public class KurdiKeyboardImeService extends InputMethodService {
         }
 
         @JavascriptInterface
+        public void replaceSurroundingText(final int deleteBefore, final String insertText) {
+            mainHandler.post(() -> {
+                InputConnection ic = getCurrentInputConnection();
+                if (ic == null) return;
+                try {
+                    ic.beginBatchEdit();
+                    if (deleteBefore > 0) {
+                        ic.deleteSurroundingText(deleteBefore, 0);
+                    }
+                    if (insertText != null && !insertText.isEmpty()) {
+                        ic.commitText(insertText, 1);
+                    }
+                    ic.endBatchEdit();
+                } catch (Exception ignored) {
+                    if (deleteBefore > 0) {
+                        ic.deleteSurroundingText(deleteBefore, 0);
+                    }
+                    if (insertText != null && !insertText.isEmpty()) {
+                        ic.commitText(insertText, 1);
+                    }
+                }
+                scheduleSyncEditorTail(120);
+            });
+        }
+
+        @JavascriptInterface
         public void sendEnter() {
             mainHandler.post(() -> {
                 InputConnection ic = getCurrentInputConnection();
@@ -296,11 +354,13 @@ public class KurdiKeyboardImeService extends InputMethodService {
                             && action != EditorInfo.IME_ACTION_UNSPECIFIED
                             && (ei.imeOptions & EditorInfo.IME_FLAG_NO_ENTER_ACTION) == 0) {
                         ic.performEditorAction(action);
+                        scheduleSyncEditorTail(120);
                         return;
                     }
                 }
                 ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
                 ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
+                scheduleSyncEditorTail(120);
             });
         }
 
@@ -312,6 +372,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
                 int keyCode = delta < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT;
                 ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
                 ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyCode));
+                scheduleSyncEditorTail(120);
             });
         }
 
@@ -372,6 +433,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
                 if (ic != null) {
                     ic.performContextMenuAction(android.R.id.cut);
                     mainHandler.postDelayed(KurdiKeyboardImeService.this::syncLatestSystemClipboard, 120);
+                    scheduleSyncEditorTail(140);
                 }
             });
         }
@@ -380,7 +442,10 @@ public class KurdiKeyboardImeService extends InputMethodService {
         public void paste() {
             mainHandler.post(() -> {
                 InputConnection ic = getCurrentInputConnection();
-                if (ic != null) ic.performContextMenuAction(android.R.id.paste);
+                if (ic != null) {
+                    ic.performContextMenuAction(android.R.id.paste);
+                    scheduleSyncEditorTail(140);
+                }
             });
         }
 
