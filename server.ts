@@ -194,10 +194,12 @@ async function startServer() {
 
   app.post('/api/ai/translate', async (req, res) => {
     try {
-      const { text, sourceLang, targetLang, engine, stream } = req.body as {
+      const { text, sourceLang, targetLang, sourceLangName, targetLangName, engine, stream } = req.body as {
         text?: string;
         sourceLang?: string;
         targetLang?: string;
+        sourceLangName?: string;
+        targetLangName?: string;
         engine?: 'google_fast' | 'ai_fluent';
         stream?: boolean;
       };
@@ -215,16 +217,81 @@ async function startServer() {
       }
 
       const langLabels: Record<string, string> = {
-        auto: 'Auto',
+        auto: 'Auto-detect',
         ckb: 'Kurdish Sorani',
+        ku: 'Kurdish Kurmanji',
         en: 'English',
         ar: 'Arabic',
         fa: 'Persian',
         tr: 'Turkish',
+        de: 'German',
+        fr: 'French',
+        es: 'Spanish',
+        it: 'Italian',
+        ru: 'Russian',
+        sv: 'Swedish',
+        nl: 'Dutch',
+        no: 'Norwegian',
+        da: 'Danish',
+        fi: 'Finnish',
+        pt: 'Portuguese',
+        pl: 'Polish',
+        el: 'Greek',
+        uk: 'Ukrainian',
+        'zh-CN': 'Chinese (Simplified)',
+        ja: 'Japanese',
+        ko: 'Korean',
+        hi: 'Hindi',
+        ur: 'Urdu',
+        az: 'Azerbaijani',
+        hy: 'Armenian',
+        ka: 'Georgian',
+        he: 'Hebrew',
+        id: 'Indonesian',
+        ms: 'Malay',
+        th: 'Thai',
+        vi: 'Vietnamese',
+        tl: 'Filipino',
+        bn: 'Bengali',
+        ps: 'Pashto',
+        cs: 'Czech',
+        ro: 'Romanian',
+        hu: 'Hungarian',
+        bg: 'Bulgarian',
+        sr: 'Serbian',
+        hr: 'Croatian',
+        bs: 'Bosnian',
+        sq: 'Albanian',
+        sk: 'Slovak',
+        sl: 'Slovenian',
+        lt: 'Lithuanian',
+        lv: 'Latvian',
+        et: 'Estonian',
+        ca: 'Catalan',
+        sw: 'Swahili',
+        am: 'Amharic',
+        so: 'Somali',
+        uz: 'Uzbek',
+        kk: 'Kazakh',
+        tg: 'Tajik',
+        tk: 'Turkmen',
+        pa: 'Punjabi',
+        ta: 'Tamil',
+        is: 'Icelandic',
+        ga: 'Irish',
+        af: 'Afrikaans',
       };
 
-      const src = langLabels[sourceLang || 'auto'] || sourceLang || 'Auto';
-      const tgt = langLabels[targetLang || 'en'] || targetLang || 'English';
+      const src =
+        (typeof sourceLangName === 'string' && sourceLangName.trim()) ||
+        langLabels[sourceLang || 'auto'] ||
+        sourceLang ||
+        'Auto-detect';
+      const tgt =
+        (typeof targetLangName === 'string' && targetLangName.trim()) ||
+        langLabels[targetLang || 'en'] ||
+        targetLang ||
+        'English';
       const styleNote = engine === 'ai_fluent' ? 'Natural, fluent phrasing.' : 'Direct, accurate translation.';
       const systemInstruction = `Translate from ${src} to ${tgt}. ${styleNote} Output ONLY the translation.`;
       const cleanText = text.trim();

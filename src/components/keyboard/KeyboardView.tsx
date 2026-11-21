@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Calculator,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -53,16 +54,16 @@ import {
   TranslatePanel,
 } from './KeyboardPanels';
 import { CursorControlPanel, SnippetsCalcPanel } from './PowerPanels';
+import { getTranslationLang } from '../../data/translationLanguages';
+import { TranslationLanguagePicker } from './TranslationLanguagePicker';
 
-const LIVE_TRANSLATE_LANGS = [
-  { code: 'ckb', label: 'کوردی' },
-  { code: 'en', label: 'EN' },
-  { code: 'ar', label: 'عربي' },
-  { code: 'fa', label: 'فارسی' },
-  { code: 'tr', label: 'TR' },
-  { code: 'de', label: 'DE' },
-  { code: 'fr', label: 'FR' },
-];
+const readSavedTranslateLang = (key: string, fallback: string) => {
+  try {
+    return localStorage.getItem(key) || fallback;
+  } catch {
+    return fallback;
+  }
+};
 
 interface KeyboardViewProps {
   settings: KeyboardSettings;
@@ -132,8 +133,31 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const [liveTranslateQuery, setLiveTranslateQuery] = useState<string>('');
   const [liveTranslateOutput, setLiveTranslateOutput] = useState<string>('');
   const [liveTranslateLoading, setLiveTranslateLoading] = useState<boolean>(false);
-  const [liveTranslateSrc, setLiveTranslateSrc] = useState<string>('ckb');
-  const [liveTranslateTgt, setLiveTranslateTgt] = useState<string>('en');
+  const [liveTranslateSrc, setLiveTranslateSrc] = useState<string>(() =>
+    readSavedTranslateLang('kurdi_tr_src', 'ckb')
+  );
+  const [liveTranslateTgt, setLiveTranslateTgt] = useState<string>(() =>
+    readSavedTranslateLang('kurdi_tr_tgt', 'en')
+  );
+  const [liveTranslatePickingLang, setLiveTranslatePickingLang] = useState<'src' | 'tgt' | null>(
+    null
+  );
+  const updateLiveSrc = (code: string) => {
+    setLiveTranslateSrc(code);
+    try {
+      localStorage.setItem('kurdi_tr_src', code);
+    } catch {
+      // ignore storage errors
+    }
+  };
+  const updateLiveTgt = (code: string) => {
+    setLiveTranslateTgt(code);
+    try {
+      localStorage.setItem('kurdi_tr_tgt', code);
+    } catch {
+      // ignore storage errors
+    }
+  };
   const [translateInitialText, setTranslateInitialText] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<KeyboardViewMode>('characters');
   const [kanaMode, setKanaMode] = useState<'hira' | 'kata'>('hira');
@@ -153,6 +177,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     }
     if (activePanel !== 'keys' && liveTranslateMode) {
       setLiveTranslateMode(false);
+      setLiveTranslatePickingLang(null);
     }
     if (activePanel !== 'keys' && inlineResizeMode) {
       setInlineResizeMode(false);
@@ -2284,6 +2309,33 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           onUpdateSnippets={(quickSnippets) => onUpdateSettings({ quickSnippets })}
           onClose={() => setActivePanel('keys')}
         />
+      ) : liveTranslateMode && liveTranslatePickingLang ? (
+        <div
+          className="w-full"
+          style={{ height: `${Math.max(settings.keyboardHeightPx + 64, 315)}px` }}
+        >
+          <TranslationLanguagePicker
+            title={
+              liveTranslatePickingLang === 'src'
+                ? 'هەڵبژاردنی زمانی سەرچاوە'
+                : 'هەڵبژاردنی زمانی مەبەست'
+            }
+            selectedCode={
+              liveTranslatePickingLang === 'src' ? liveTranslateSrc : liveTranslateTgt
+            }
+            includeAuto={liveTranslatePickingLang === 'src'}
+            isLight={isLight}
+            bgColor={theme.bg}
+            onSelect={(code) => {
+              if (liveTranslatePickingLang === 'src') {
+                updateLiveSrc(code);
+              } else {
+                updateLiveTgt(code);
+              }
+            }}
+            onClose={() => setLiveTranslatePickingLang(null)}
+          />
+        </div>
       ) : (
         <div className="flex flex-col w-full kb-noselect">
           {/* Inline Gboard-style Live Translate Bar OR Emoji Search Bar (types directly with the keyboard below!) */}
@@ -2295,6 +2347,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                     type="button"
                     onClick={() => {
                       triggerSound('special');
+                      setLiveTranslatePickingLang(null);
                       setLiveTranslateMode(false);
                     }}
                     className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors ${
@@ -2304,52 +2357,60 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
-                  <select
-                    value={liveTranslateSrc}
-                    onChange={(e) => setLiveTranslateSrc(e.target.value)}
-                    className={`h-7 px-1.5 rounded-lg text-[11px] font-bold outline-none border ${
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerSound('special');
+                      setLiveTranslatePickingLang('src');
+                    }}
+                    className={`h-7 px-2 rounded-lg text-[11px] font-bold border flex items-center gap-1 max-w-[105px] active:scale-95 transition-transform ${
                       isLight
                         ? 'bg-white border-slate-300 text-slate-900'
                         : 'bg-[#171920] border-white/10 text-white'
                     }`}
+                    title="گۆڕینی زمانی سەرچاوە"
                   >
-                    <option value="auto">خۆکار</option>
-                    {LIVE_TRANSLATE_LANGS.map((l) => (
-                      <option key={`src_${l.code}`} value={l.code}>
-                        {l.label}
-                      </option>
-                    ))}
-                  </select>
+                    <span className="truncate">{getTranslationLang(liveTranslateSrc).shortLabel}</span>
+                    <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
-                      if (liveTranslateSrc === 'auto') return;
+                      triggerSound('special');
+                      if (liveTranslateSrc === 'auto') {
+                        const nextSrc = liveTranslateTgt;
+                        const nextTgt = liveTranslateTgt === 'ckb' ? 'en' : 'ckb';
+                        updateLiveSrc(nextSrc);
+                        updateLiveTgt(nextTgt);
+                        return;
+                      }
                       const prevSrc = liveTranslateSrc;
-                      setLiveTranslateSrc(liveTranslateTgt);
-                      setLiveTranslateTgt(prevSrc);
+                      updateLiveSrc(liveTranslateTgt);
+                      updateLiveTgt(prevSrc);
                     }}
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 active:scale-95 transition-transform ${
                       isLight ? 'bg-slate-200 text-slate-700' : 'bg-white/10 text-sky-400'
                     }`}
                     title="ئاڵوگۆڕی زمان"
                   >
                     <ArrowLeftRight className="w-3.5 h-3.5" />
                   </button>
-                  <select
-                    value={liveTranslateTgt}
-                    onChange={(e) => setLiveTranslateTgt(e.target.value)}
-                    className={`h-7 px-1.5 rounded-lg text-[11px] font-bold outline-none border ${
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerSound('special');
+                      setLiveTranslatePickingLang('tgt');
+                    }}
+                    className={`h-7 px-2 rounded-lg text-[11px] font-bold border flex items-center gap-1 max-w-[105px] active:scale-95 transition-transform ${
                       isLight
                         ? 'bg-white border-slate-300 text-slate-900'
                         : 'bg-[#171920] border-white/10 text-white'
                     }`}
+                    title="گۆڕینی زمانی مەبەست"
                   >
-                    {LIVE_TRANSLATE_LANGS.map((l) => (
-                      <option key={`tgt_${l.code}`} value={l.code}>
-                        {l.label}
-                      </option>
-                    ))}
-                  </select>
+                    <span className="truncate">{getTranslationLang(liveTranslateTgt).shortLabel}</span>
+                    <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0" />
+                  </button>
                 </div>
 
                 <button

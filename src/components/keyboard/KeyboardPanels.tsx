@@ -4,6 +4,7 @@ import {
   ArrowRight,
   ArrowUpDown,
   Check,
+  ChevronDown,
   LayoutList,
   Loader2,
   Pencil,
@@ -33,6 +34,8 @@ import { ALL_THEMES } from '../../data/themes';
 import { KurdiIcon, KurdiIconName } from '../icons/KurdiIcons';
 import { runOfflineSmartRewrite, ToneOptions } from '../../utils/kurdishSmartHelper';
 import { resolveAiServer } from '../../utils/aiServer';
+import { getTranslationLang } from '../../data/translationLanguages';
+import { TranslationLanguagePicker } from './TranslationLanguagePicker';
 
 export type ActiveKeyboardPanel =
   | 'keys'
@@ -1547,13 +1550,13 @@ interface TranslatePanelProps {
   onClose: () => void;
 }
 
-const LANG_OPTIONS = [
-  { code: 'ckb', label: 'کوردی (سۆرانی)' },
-  { code: 'en', label: 'English' },
-  { code: 'ar', label: 'العربية' },
-  { code: 'fa', label: 'فارسی' },
-  { code: 'tr', label: 'Türkçe' },
-];
+const readSavedLang = (key: string, fallback: string) => {
+  try {
+    return localStorage.getItem(key) || fallback;
+  } catch {
+    return fallback;
+  }
+};
 
 export const TranslatePanel: React.FC<TranslatePanelProps> = ({
   theme,
@@ -1567,8 +1570,9 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
 }) => {
   const isLight = Boolean(theme.isLight);
   const preferSelection = settings.aiTextSource === 'selected_or_all';
-  const [sourceLang, setSourceLang] = useState('ckb');
-  const [targetLang, setTargetLang] = useState('en');
+  const [sourceLang, setSourceLang] = useState(() => readSavedLang('kurdi_tr_src', 'ckb'));
+  const [targetLang, setTargetLang] = useState(() => readSavedLang('kurdi_tr_tgt', 'en'));
+  const [pickingLang, setPickingLang] = useState<'source' | 'target' | null>(null);
   const [input, setInput] = useState(() =>
     initialText !== null && initialText !== undefined
       ? initialText
@@ -1578,6 +1582,24 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const updateSourceLang = (code: string) => {
+    setSourceLang(code);
+    try {
+      localStorage.setItem('kurdi_tr_src', code);
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const updateTargetLang = (code: string) => {
+    setTargetLang(code);
+    try {
+      localStorage.setItem('kurdi_tr_tgt', code);
+    } catch {
+      // ignore storage errors
+    }
+  };
 
   useEffect(() => {
     if (initialText !== null && initialText !== undefined) {
@@ -1652,6 +1674,8 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
           text: textToTranslate,
           sourceLang,
           targetLang,
+          sourceLangName: getTranslationLang(sourceLang).english,
+          targetLangName: getTranslationLang(targetLang).english,
           engine,
           stream: true,
         }),
@@ -1713,12 +1737,36 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
     }
   };
 
+  const panelHeight = Math.max(settings.keyboardHeightPx + 36, 315);
+
+  if (pickingLang) {
+    return (
+      <div className="w-full" style={{ height: `${panelHeight}px` }}>
+        <TranslationLanguagePicker
+          title={pickingLang === 'source' ? 'هەڵبژاردنی زمانی سەرچاوە' : 'هەڵبژاردنی زمانی مەبەست'}
+          selectedCode={pickingLang === 'source' ? sourceLang : targetLang}
+          includeAuto={pickingLang === 'source'}
+          isLight={isLight}
+          bgColor={theme.bg}
+          onSelect={(code) => {
+            if (pickingLang === 'source') {
+              updateSourceLang(code);
+            } else {
+              updateTargetLang(code);
+            }
+          }}
+          onClose={() => setPickingLang(null)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex flex-col w-full px-3 py-2.5 gap-2"
       style={{
         backgroundColor: theme.bg,
-        height: `${Math.max(settings.keyboardHeightPx + 36, 315)}px`,
+        height: `${panelHeight}px`,
       }}
       dir="rtl"
     >
@@ -1776,49 +1824,51 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        <select
-          value={sourceLang}
-          onChange={(e) => setSourceLang(e.target.value)}
-          className={`flex-1 h-9 rounded-xl px-2.5 text-xs font-semibold outline-none border ${
+        <button
+          type="button"
+          onClick={() => setPickingLang('source')}
+          className={`flex-1 h-9 rounded-xl px-2.5 text-xs font-bold border flex items-center justify-between gap-1.5 min-w-0 active:scale-[0.98] transition-transform ${
             isLight
               ? 'bg-white border-slate-200 text-slate-900'
               : 'bg-[#16181D] border-white/10 text-white'
           }`}
         >
-          {LANG_OPTIONS.map((l) => (
-            <option key={l.code} value={l.code}>
-              {l.label}
-            </option>
-          ))}
-        </select>
+          <span className="truncate">{getTranslationLang(sourceLang).label}</span>
+          <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+        </button>
 
         <button
           type="button"
           onClick={() => {
-            setSourceLang(targetLang);
-            setTargetLang(sourceLang);
+            if (sourceLang === 'auto') {
+              const nextSrc = targetLang;
+              const nextTgt = targetLang === 'ckb' ? 'en' : 'ckb';
+              updateSourceLang(nextSrc);
+              updateTargetLang(nextTgt);
+              return;
+            }
+            const prevSrc = sourceLang;
+            updateSourceLang(targetLang);
+            updateTargetLang(prevSrc);
           }}
-          className="w-9 h-9 rounded-xl bg-sky-600/20 text-sky-400 flex items-center justify-center shrink-0 hover:bg-sky-600/30"
+          className="w-9 h-9 rounded-xl bg-sky-600/20 text-sky-400 flex items-center justify-center shrink-0 hover:bg-sky-600/30 active:scale-95 transition-transform"
           title="گۆڕینەوە"
         >
           <ArrowLeftRight className="w-4 h-4" />
         </button>
 
-        <select
-          value={targetLang}
-          onChange={(e) => setTargetLang(e.target.value)}
-          className={`flex-1 h-9 rounded-xl px-2.5 text-xs font-semibold outline-none border ${
+        <button
+          type="button"
+          onClick={() => setPickingLang('target')}
+          className={`flex-1 h-9 rounded-xl px-2.5 text-xs font-bold border flex items-center justify-between gap-1.5 min-w-0 active:scale-[0.98] transition-transform ${
             isLight
               ? 'bg-white border-slate-200 text-slate-900'
               : 'bg-[#16181D] border-white/10 text-white'
           }`}
         >
-          {LANG_OPTIONS.map((l) => (
-            <option key={l.code} value={l.code}>
-              {l.label}
-            </option>
-          ))}
-        </select>
+          <span className="truncate">{getTranslationLang(targetLang).label}</span>
+          <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+        </button>
       </div>
 
       <div className="flex gap-2 shrink-0">
