@@ -257,9 +257,21 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   longPressMenuRef.current = longPressMenu;
   const longPressActiveIdxRef = useRef<number>(0);
   longPressActiveIdxRef.current = longPressActiveIdx;
-  const keyTouchStartRef = useRef<{ keyId: string; startX: number; startY: number } | null>(null);
+  const activePointersRef = useRef<
+    Map<
+      number,
+      {
+        keyId: string;
+        startX: number;
+        startY: number;
+        time: number;
+        slidAway: boolean;
+        keyRect: { left: number; right: number; top: number; bottom: number };
+      }
+    >
+  >(new Map());
   const emailSlidRef = useRef<boolean>(false);
-  const popupWasJustOpenRef = useRef<boolean>(false);
+  const deckGapSwipeRef = useRef<{ pointerId: number; startX: number; startY: number; time: number } | null>(null);
   const lastSpaceTapRef = useRef<number>(0);
   const lastShiftTapRef = useRef<number>(0);
   const longPressTimerRef = useRef<number | null>(null);
@@ -275,7 +287,6 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const spaceLongPressedRef = useRef<boolean>(false);
   const bkspDragStartXRef = useRef<{ startX: number; lastX: number } | null>(null);
   const bkspDraggedRef = useRef<boolean>(false);
-  const deckTouchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const speechRecRef = useRef<{ stop: () => void } | null>(null);
 
   const theme = useMemo(
@@ -993,7 +1004,6 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 deckWidth: 360,
                 deckHeight: 280,
               };
-        popupWasJustOpenRef.current = true;
         emailSlidRef.current = false;
         longPressActiveIdxRef.current = isEmailPopup ? -1 : 0;
         setLongPressActiveIdx(isEmailPopup ? -1 : 0);
@@ -1083,6 +1093,36 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       window.clearInterval(backspaceRepeatRef.current);
       backspaceRepeatRef.current = null;
     }
+  };
+
+  // FlorisBoard-authentic global swipe detector: mutually exclusive with key taps so swipes NEVER type a character
+  const tryExecuteGlobalSwipe = (
+    dx: number,
+    dy: number,
+    elapsedSec: number
+  ): boolean => {
+    const distThreshold = Math.max(40, (settings.swipeDistanceThreshold || 48) * 1.15);
+    const velThreshold = Math.max(70, (settings.swipeVelocityThreshold || 200) * 0.4);
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+    const dist = Math.hypot(dx, dy);
+    const velocity = dist / Math.max(0.03, elapsedSec);
+
+    if (dist < distThreshold) return false;
+    if (velocity < velThreshold && dist < distThreshold * 1.55) return false;
+
+    let action: SwipeAction | undefined;
+    if (absY > absX * 1.25) {
+      action = dy > 0 ? settings.swipeDownAction : settings.swipeUpAction;
+    } else if (absX > absY * 1.25) {
+      action = dx < 0 ? settings.swipeLeftAction : settings.swipeRightAction;
+    }
+    if (!action) return false;
+
+    if (action !== 'no_action') {
+      executeSwipeAction(action);
+    }
+    return true;
   };
 
   const toggleVoiceTyping = () => {
@@ -1279,6 +1319,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     showLangPicker,
     handleKeyPointerDown,
     updateLongPressHover,
+    tryExecuteGlobalSwipe,
+    hideKeyPreviewBubble,
     handleKeyTap,
     clearPointerState,
     executeSwipeAction,
@@ -1296,6 +1338,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     showLangPicker,
     handleKeyPointerDown,
     updateLongPressHover,
+    tryExecuteGlobalSwipe,
+    hideKeyPreviewBubble,
     handleKeyTap,
     clearPointerState,
     executeSwipeAction,
@@ -1444,22 +1488,15 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                     }
                   }}
                   onPointerDown={(e) => {
-                    const hasLongPressPopup =
-                      (key.alts && key.alts.length > 0) || Boolean(key.secondary);
+                    try {
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                    } catch {
+                      // ignore unsupported capture
+                    }
                     if (key.type === 'backspace') {
-                      try {
-                        e.currentTarget.setPointerCapture(e.pointerId);
-                      } catch {
-                        // ignore unsupported capture
-                      }
                       bkspDragStartXRef.current = { startX: e.clientX, lastX: e.clientX };
                       bkspDraggedRef.current = false;
                     } else if (key.type === 'space') {
-                      try {
-                        e.currentTarget.setPointerCapture(e.pointerId);
-                      } catch {
-                        // ignore unsupported capture
-                      }
                       spaceDragStartRef.current = {
                         startX: e.clientX,
                         startY: e.clientY,
@@ -1469,18 +1506,21 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       };
                       spaceDraggedRef.current = false;
                       spaceLongPressedRef.current = false;
-                    } else if (hasLongPressPopup) {
-                      try {
-                        e.currentTarget.setPointerCapture(e.pointerId);
-                      } catch {
-                        // ignore unsupported capture
-                      }
-                      keyTouchStartRef.current = {
+                    } else {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      activePointersRef.current.set(e.pointerId, {
                         keyId: key.id,
                         startX: e.clientX,
                         startY: e.clientY,
-                      };
-                      popupWasJustOpenRef.current = false;
+                        time: Date.now(),
+                        slidAway: false,
+                        keyRect: {
+                          left: rect.left,
+                          right: rect.right,
+                          top: rect.top,
+                          bottom: rect.bottom,
+                        },
+                      });
                     }
                     keyActionRef.current.handleKeyPointerDown(key, e.currentTarget);
                   }}
@@ -1491,18 +1531,19 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       act.updateLongPressHover(e.clientX, e.clientY);
                       return;
                     }
-                    // Cancel pending long-press timer if user slides quickly before popup opens
-                    if (
-                      keyTouchStartRef.current?.keyId === key.id &&
-                      longPressTimerRef.current
-                    ) {
-                      const moved = Math.hypot(
-                        e.clientX - keyTouchStartRef.current.startX,
-                        e.clientY - keyTouchStartRef.current.startY
-                      );
-                      if (moved > 20) {
-                        window.clearTimeout(longPressTimerRef.current);
-                        longPressTimerRef.current = null;
+                    // Track drag/swipe movement on regular keys so swiping cancels long-press & key preview
+                    const ptr = activePointersRef.current.get(e.pointerId);
+                    if (ptr && ptr.keyId === key.id) {
+                      const moved = Math.hypot(e.clientX - ptr.startX, e.clientY - ptr.startY);
+                      if (moved > 18) {
+                        if (longPressTimerRef.current) {
+                          window.clearTimeout(longPressTimerRef.current);
+                          longPressTimerRef.current = null;
+                        }
+                        act.hideKeyPreviewBubble();
+                      }
+                      if (moved > 28) {
+                        ptr.slidAway = true;
                       }
                     }
                     // Spacebar continuous cursor glide & swipe detection
@@ -1570,11 +1611,13 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       // ignore
                     }
 
-                    // Commit selected Long-Press Extended Popup option immediately on finger release!
+                    const ptr = activePointersRef.current.get(e.pointerId);
+                    activePointersRef.current.delete(e.pointerId);
+
+                    // 1. Commit selected Long-Press Extended Popup option immediately on finger release!
                     if (longPressMenuRef.current?.keyId === key.id) {
                       const menu = longPressMenuRef.current;
                       const selIdx = longPressActiveIdxRef.current;
-                      keyTouchStartRef.current = null;
                       act.clearPointerState();
                       if (menu.isEmailPopup) {
                         if (emailSlidRef.current && selIdx >= 0 && menu.options[selIdx]) {
@@ -1592,9 +1635,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       setLongPressMenu(null);
                       return;
                     }
-                    keyTouchStartRef.current = null;
 
-                    // Backspace swipe-left gesture
+                    // 2. Backspace swipe-left gesture
                     if (key.type === 'backspace' && bkspDragStartXRef.current !== null) {
                       const totalDx = bkspDragStartXRef.current.startX - e.clientX;
                       bkspDragStartXRef.current = null;
@@ -1617,7 +1659,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                     bkspDragStartXRef.current = null;
                     bkspDraggedRef.current = false;
 
-                    // Spacebar 4-way gestures (Up, Left, Right, Long Press)
+                    // 3. Spacebar 4-way gestures (Up, Left, Right, Long Press)
                     if (key.type === 'space' && spaceDragStartRef.current !== null) {
                       const totalDx = e.clientX - spaceDragStartRef.current.startX;
                       const totalDy = e.clientY - spaceDragStartRef.current.startY;
@@ -1652,6 +1694,32 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       }
                     }
 
+                    // 4. Global swipe gesture check (mutually exclusive with typing — NEVER types the starting key!)
+                    if (ptr && ptr.keyId === key.id) {
+                      const dx = e.clientX - ptr.startX;
+                      const dy = e.clientY - ptr.startY;
+                      const dist = Math.hypot(dx, dy);
+                      const elapsedSec = (Date.now() - ptr.time) / 1000;
+
+                      if (act.tryExecuteGlobalSwipe(dx, dy, elapsedSec)) {
+                        act.clearPointerState();
+                        return;
+                      }
+
+                      // If finger dragged clearly outside the key bounds without triggering a swipe, cancel tap cleanly
+                      const tol = 16;
+                      const outsideKey =
+                        e.clientX < ptr.keyRect.left - tol ||
+                        e.clientX > ptr.keyRect.right + tol ||
+                        e.clientY < ptr.keyRect.top - tol ||
+                        e.clientY > ptr.keyRect.bottom + tol;
+                      if (ptr.slidAway && outsideKey && dist > 30) {
+                        act.clearPointerState();
+                        return;
+                      }
+                    }
+
+                    // 5. Genuine key tap
                     const wasMenuOpen =
                       act.longPressMenu?.keyId === key.id ||
                       (key.type === 'globe' && act.showLangPicker);
@@ -1660,25 +1728,25 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       act.handleKeyTap(key);
                     }
                   }}
-                  onPointerLeave={() => {
-                    // Never cancel active pointer-captured Spacebar, Backspace, or Long-Press Popup gestures
+                  onPointerLeave={(e) => {
+                    // Pointer capture manages full swipe/long-press lifecycle cleanly
                     if (key.type === 'space' && spaceDragStartRef.current !== null) return;
                     if (key.type === 'backspace' && bkspDragStartXRef.current !== null) return;
                     if (
-                      keyTouchStartRef.current?.keyId === key.id ||
+                      activePointersRef.current.has(e.pointerId) ||
                       longPressMenuRef.current?.keyId === key.id
                     ) {
                       return;
                     }
                     keyActionRef.current.clearPointerState();
                   }}
-                  onPointerCancel={() => {
+                  onPointerCancel={(e) => {
                     spaceDragStartRef.current = null;
                     spaceDraggedRef.current = false;
                     spaceLongPressedRef.current = false;
                     bkspDragStartXRef.current = null;
                     bkspDraggedRef.current = false;
-                    keyTouchStartRef.current = null;
+                    activePointersRef.current.delete(e.pointerId);
                     if (longPressMenuRef.current?.keyId === key.id) {
                       setLongPressMenu(null);
                     }
@@ -2456,53 +2524,32 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 height: `${settings.keyboardHeightPx}px`,
                 touchAction: 'none',
               }}
-              onTouchStart={(e) => {
-                // Never interfere with dedicated Spacebar or Backspace swipe gestures
+              onPointerDown={(e) => {
+                // Only handle swipes that begin in the background gaps between keys (key buttons handle their own swipes exclusively)
                 const target = e.target as HTMLElement | null;
-                if (target?.closest('[data-key-type="space"], [data-key-type="backspace"]')) {
-                  deckTouchStartRef.current = null;
+                if (target?.closest('button[data-key-type]')) {
+                  deckGapSwipeRef.current = null;
                   return;
                 }
-                if (e.touches.length === 1) {
-                  deckTouchStartRef.current = {
-                    x: e.touches[0].clientX,
-                    y: e.touches[0].clientY,
-                    time: Date.now(),
-                  };
-                }
+                deckGapSwipeRef.current = {
+                  pointerId: e.pointerId,
+                  startX: e.clientX,
+                  startY: e.clientY,
+                  time: Date.now(),
+                };
               }}
-              onTouchEnd={(e) => {
-                if (!deckTouchStartRef.current || e.changedTouches.length !== 1) return;
-                const dx = e.changedTouches[0].clientX - deckTouchStartRef.current.x;
-                const dy = e.changedTouches[0].clientY - deckTouchStartRef.current.y;
-                const elapsedSec = Math.max(0.05, (Date.now() - deckTouchStartRef.current.time) / 1000);
-                deckTouchStartRef.current = null;
-                if (
-                  spaceDraggedRef.current ||
-                  bkspDraggedRef.current ||
-                  longPressMenuRef.current !== null ||
-                  popupWasJustOpenRef.current
-                ) {
-                  popupWasJustOpenRef.current = false;
-                  return;
-                }
-
-                const distThreshold = Math.max(44, (settings.swipeDistanceThreshold || 48) * 1.45);
-                const velThreshold = Math.max(80, (settings.swipeVelocityThreshold || 200) * 0.45);
-                const absX = Math.abs(dx);
-                const absY = Math.abs(dy);
-                const dist = Math.hypot(dx, dy);
-                const velocity = dist / elapsedSec;
-
-                if (dist >= distThreshold && velocity >= velThreshold) {
-                  if (absY > absX * 1.5) {
-                    if (dy > 0) executeSwipeAction(settings.swipeDownAction);
-                    else executeSwipeAction(settings.swipeUpAction);
-                  } else if (absX > absY * 1.5 && absX >= distThreshold * 1.1) {
-                    if (dx < 0) executeSwipeAction(settings.swipeLeftAction);
-                    else executeSwipeAction(settings.swipeRightAction);
-                  }
-                }
+              onPointerUp={(e) => {
+                const gap = deckGapSwipeRef.current;
+                if (!gap || gap.pointerId !== e.pointerId) return;
+                deckGapSwipeRef.current = null;
+                if (longPressMenuRef.current !== null) return;
+                const dx = e.clientX - gap.startX;
+                const dy = e.clientY - gap.startY;
+                const elapsedSec = (Date.now() - gap.time) / 1000;
+                tryExecuteGlobalSwipe(dx, dy, elapsedSec);
+              }}
+              onPointerCancel={() => {
+                deckGapSwipeRef.current = null;
               }}
               onClick={() => {
                 if (longPressMenu) setLongPressMenu(null);
