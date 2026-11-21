@@ -9,7 +9,6 @@ import {
   Loader2,
   Maximize2,
   MicOff,
-  Move,
   Search,
   Send,
   X,
@@ -143,6 +142,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const liveTranslateModeRef = useRef(false);
   liveTranslateModeRef.current = liveTranslateMode;
   const liveTranslateCacheRef = useRef<Map<string, string>>(new Map());
+  const suggestionsScrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (activePanel !== 'keys' && emojiSearchMode) {
@@ -211,7 +211,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     };
   }, [liveTranslateMode, liveTranslateQuery, liveTranslateSrc, liveTranslateTgt]);
 
-  const inlineMath = useMemo(() => detectInlineMath(editorText), [editorText]);
+  // O(1) tail slice so typing in long documents never slows down regex matching
+  const editorTail = editorText.length > 80 ? editorText.slice(-80) : editorText;
+  const inlineMath = useMemo(() => detectInlineMath(editorTail), [editorTail]);
 
   const emojiSearchResults = useMemo(() => {
     if (!emojiSearchMode) return [];
@@ -225,12 +227,21 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     ];
     return Array.from(new Set(base)).slice(0, 36);
   }, [emojiSearchMode, emojiSearchQuery, settings.recentEmojis]);
-  const [pressedKeyId, setPressedKeyId] = useState<string | null>(null);
-  const [popupKey, setPopupKey] = useState<{ id: string; label: string } | null>(null);
   const [longPressMenu, setLongPressMenu] = useState<{
     keyId: string;
     options: PopupOption[];
+    anchorRect: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+      deckWidth: number;
+      deckHeight: number;
+    };
+    isPhrasePopup: boolean;
+    isEmailPopup: boolean;
   } | null>(null);
+  const [longPressActiveIdx, setLongPressActiveIdx] = useState<number>(0);
   const [gesturePopup, setGesturePopup] = useState<{
     title: string;
     options: PopupOption[];
@@ -239,14 +250,30 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const [isListeningVoice, setIsListeningVoice] = useState(false);
   const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
 
+  const deckContainerRef = useRef<HTMLDivElement | null>(null);
+  const keyPreviewRef = useRef<HTMLDivElement | null>(null);
+  const extendedPopupRef = useRef<HTMLDivElement | null>(null);
+  const longPressMenuRef = useRef<typeof longPressMenu>(null);
+  longPressMenuRef.current = longPressMenu;
+  const longPressActiveIdxRef = useRef<number>(0);
+  longPressActiveIdxRef.current = longPressActiveIdx;
+  const keyTouchStartRef = useRef<{ keyId: string; startX: number; startY: number } | null>(null);
+  const emailSlidRef = useRef<boolean>(false);
+  const popupWasJustOpenRef = useRef<boolean>(false);
   const lastSpaceTapRef = useRef<number>(0);
   const lastShiftTapRef = useRef<number>(0);
   const longPressTimerRef = useRef<number | null>(null);
   const backspaceRepeatRef = useRef<number | null>(null);
-  const spaceDragStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const spaceDragStartRef = useRef<{
+    startX: number;
+    startY: number;
+    lastX: number;
+    lastY: number;
+    time: number;
+  } | null>(null);
   const spaceDraggedRef = useRef<boolean>(false);
   const spaceLongPressedRef = useRef<boolean>(false);
-  const bkspDragStartXRef = useRef<number | null>(null);
+  const bkspDragStartXRef = useRef<{ startX: number; lastX: number } | null>(null);
   const bkspDraggedRef = useRef<boolean>(false);
   const deckTouchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const speechRecRef = useRef<{ stop: () => void } | null>(null);
@@ -291,11 +318,30 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     );
   };
 
-  // Compute current word & live predictions
+  // Compute current word & live predictions in O(1) using editorTail + memoized dictionary pool
   const currentWord = useMemo(() => {
-    const match = editorText.match(/([^\s.,!?؟،:;]+)$/);
+    const match = editorTail.match(/([^\s.,!?؟،:;]+)$/);
     return match ? match[1] : '';
-  }, [editorText]);
+  }, [editorTail]);
+
+  useEffect(() => {
+    if (suggestionsScrollRef.current) {
+      suggestionsScrollRef.current.scrollLeft = 0;
+    }
+  }, [currentWord]);
+
+  const isLatinLike =
+    activeLangConfig?.dir === 'ltr' &&
+    activeLangConfig?.characterLayoutId !== 'qwerty_kurdi' &&
+    !(activeLangConfig?.characterLayoutId === 'kurdi_hybrid' && kanaMode === 'hira');
+
+  const dictionaryPool = useMemo(() => {
+    const base = isLatinLike ? ENGLISH_DICTIONARY : KURDISH_DICTIONARY;
+    if (settings.personalDictionaryEnabled && settings.personalDictionary.length > 0) {
+      return [...settings.personalDictionary, ...base];
+    }
+    return base;
+  }, [isLatinLike, settings.personalDictionaryEnabled, settings.personalDictionary]);
 
   const suggestions = useMemo(() => {
     const shortcutsEnabled = settings.textShortcutsEnabled ?? true;
@@ -305,7 +351,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     const seen = new Set<string>();
 
     // 0. Live Email Domain Suggestions when typing after "@" (e.g. "name@" or "name@g")
-    const emailMatch = editorText.match(/([^\s]*@)([a-zA-Z0-9.-]*)$/);
+    const emailMatch = editorTail.match(/([^\s]*@)([a-zA-Z0-9.-]*)$/);
     if (emailMatch) {
       const partialDomain = (emailMatch[2] || '').toLowerCase();
       for (const opt of EMAIL_DOMAIN_POPUP_OPTIONS) {
@@ -363,19 +409,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       }
     }
 
-    const isLatinLike =
-      activeLangConfig?.dir === 'ltr' &&
-      activeLangConfig?.characterLayoutId !== 'qwerty_kurdi' &&
-      !(activeLangConfig?.characterLayoutId === 'kurdi_hybrid' && kanaMode === 'hira');
-
-    const pool = [
-      ...(settings.personalDictionaryEnabled ? settings.personalDictionary : []),
-      ...(isLatinLike ? ENGLISH_DICTIONARY : KURDISH_DICTIONARY),
-    ];
-
     if (currentWord) {
       const lower = currentWord.toLowerCase();
-      for (const w of pool) {
+      for (const w of dictionaryPool) {
         if (w.toLowerCase().startsWith(lower) && w !== currentWord && !seen.has(w)) {
           seen.add(w);
           results.push({ value: w });
@@ -396,17 +432,14 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 
     return results.slice(0, 5);
   }, [
-    editorText,
+    editorTail,
     currentWord,
     settings.wordSuggestions,
     settings.textShortcutsEnabled,
     settings.textShortcuts,
     settings.emojiSuggestions,
-    settings.personalDictionaryEnabled,
-    settings.personalDictionary,
-    activeLangConfig?.dir,
-    activeLangConfig?.characterLayoutId,
-    kanaMode,
+    dictionaryPool,
+    isLatinLike,
   ]);
 
   const latestClipboardSuggestion = useMemo(() => {
@@ -690,6 +723,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   };
 
   const handleKeyTap = (key: KeySpec) => {
+    if (longPressMenu) setLongPressMenu(null);
+    if (gesturePopup) setGesturePopup(null);
+    if (showLangPicker && key.type !== 'globe') setShowLangPicker(false);
     switch (key.type) {
       case 'shift': {
         triggerSound('special');
@@ -826,12 +862,30 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     }
   };
 
-  const handleKeyPointerDown = (key: KeySpec) => {
-    setPressedKeyId(key.id);
+  const showKeyPreviewBubble = (label: string, targetEl: HTMLElement | null) => {
+    const bubble = keyPreviewRef.current;
+    const deck = deckContainerRef.current;
+    if (!bubble || !deck || !targetEl) return;
+    const deckRect = deck.getBoundingClientRect();
+    const keyRect = targetEl.getBoundingClientRect();
+    bubble.textContent = label;
+    bubble.style.left = `${keyRect.left - deckRect.left + keyRect.width / 2}px`;
+    bubble.style.top = `${keyRect.top - deckRect.top - 48}px`;
+    bubble.style.opacity = '1';
+  };
+
+  const hideKeyPreviewBubble = () => {
+    const bubble = keyPreviewRef.current;
+    if (bubble && bubble.style.opacity !== '0') {
+      bubble.style.opacity = '0';
+    }
+  };
+
+  const handleKeyPointerDown = (key: KeySpec, targetEl: HTMLElement | null) => {
     const isPrintable = !key.type || key.type === 'char' || key.type === 'comma' || key.type === 'period';
     if (settings.keyPopupPreview && isPrintable) {
       const label = shiftState !== 'off' && key.shiftPrimary ? key.shiftPrimary : key.primary;
-      setPopupKey({ id: key.id, label });
+      showKeyPreviewBubble(label, targetEl);
     }
 
     if (key.type === 'backspace') {
@@ -839,6 +893,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       if (longAction === 'no_action') return;
       if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = window.setTimeout(() => {
+        if (bkspDraggedRef.current) return;
         const deleteByWord =
           longAction === 'delete_word' || longAction === 'delete_words_precisely';
         backspaceRepeatRef.current = window.setInterval(() => {
@@ -869,7 +924,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       if (spaceLong && spaceLong !== 'no_action') {
         if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = window.setTimeout(() => {
-          if (!spaceDraggedRef.current) {
+          if (!spaceDraggedRef.current && spaceDragStartRef.current) {
             spaceLongPressedRef.current = true;
             executeSwipeAction(spaceLong);
           }
@@ -903,17 +958,123 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 
     if (normalized.length > 0) {
       if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
+      const isEmailPopup = normalized.some(
+        (o) => o.value.startsWith('@') && o.value.includes('.')
+      );
+      const isPhrasePopup =
+        !isEmailPopup &&
+        normalized.some(
+          (o) =>
+            o.code === -255 ||
+            o.code === -1001 ||
+            o.label.trim().length > 2 ||
+            o.value.trim().length > 2
+        );
       longPressTimerRef.current = window.setTimeout(() => {
-        setLongPressMenu({ keyId: key.id, options: normalized });
-        setPopupKey(null);
+        hideKeyPreviewBubble();
+        const deck = deckContainerRef.current;
+        const deckRect = deck?.getBoundingClientRect();
+        const keyRect = targetEl?.getBoundingClientRect();
+        const anchorRect =
+          deckRect && keyRect
+            ? {
+                left: keyRect.left - deckRect.left,
+                top: keyRect.top - deckRect.top,
+                width: keyRect.width,
+                height: keyRect.height,
+                deckWidth: deckRect.width,
+                deckHeight: deckRect.height,
+              }
+            : {
+                left: 120,
+                top: 120,
+                width: 36,
+                height: 44,
+                deckWidth: 360,
+                deckHeight: 280,
+              };
+        popupWasJustOpenRef.current = true;
+        emailSlidRef.current = false;
+        longPressActiveIdxRef.current = isEmailPopup ? -1 : 0;
+        setLongPressActiveIdx(isEmailPopup ? -1 : 0);
+        setLongPressMenu({
+          keyId: key.id,
+          options: normalized,
+          anchorRect,
+          isPhrasePopup,
+          isEmailPopup,
+        });
         triggerSound('special');
-      }, 400);
+      }, 270);
+    }
+  };
+
+  const updateLongPressHover = (clientX: number, clientY: number) => {
+    const menu = longPressMenuRef.current;
+    const container = extendedPopupRef.current;
+    if (!menu || !container) return;
+
+    const buttons = container.querySelectorAll<HTMLElement>('[data-popup-opt-idx]');
+    let hitIdx = -1;
+    let nearestIdx = -1;
+    let nearestDist = Infinity;
+
+    buttons.forEach((btn) => {
+      const idx = Number(btn.dataset.popupOptIdx);
+      const rect = btn.getBoundingClientRect();
+      // Direct hit with 6px finger tolerance
+      if (
+        clientX >= rect.left - 6 &&
+        clientX <= rect.right + 6 &&
+        clientY >= rect.top - 6 &&
+        clientY <= rect.bottom + 6
+      ) {
+        hitIdx = idx;
+      }
+      const cx = Math.max(rect.left, Math.min(clientX, rect.right));
+      const cy = Math.max(rect.top, Math.min(clientY, rect.bottom));
+      const d = Math.hypot(clientX - cx, clientY - cy);
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearestIdx = idx;
+      }
+    });
+
+    let nextIdx = -1;
+    if (hitIdx >= 0) {
+      nextIdx = hitIdx;
+      if (menu.isEmailPopup) emailSlidRef.current = true;
+    } else if (!menu.isEmailPopup && nearestIdx >= 0 && nearestDist <= 68) {
+      nextIdx = nearestIdx;
+    } else if (!menu.isEmailPopup) {
+      // Keep main option (0) selected while thumb stays on or right over the held key
+      const deckRect = deckContainerRef.current?.getBoundingClientRect();
+      if (deckRect) {
+        const keyLeft = deckRect.left + menu.anchorRect.left;
+        const keyTop = deckRect.top + menu.anchorRect.top;
+        const kx = Math.max(keyLeft, Math.min(clientX, keyLeft + menu.anchorRect.width));
+        const ky = Math.max(keyTop, Math.min(clientY, keyTop + menu.anchorRect.height));
+        if (Math.hypot(clientX - kx, clientY - ky) <= 44) {
+          nextIdx = 0;
+        }
+      }
+    }
+
+    if (nextIdx !== longPressActiveIdxRef.current) {
+      longPressActiveIdxRef.current = nextIdx;
+      setLongPressActiveIdx(nextIdx);
+      if (nextIdx >= 0 && settings.vibrationEnabled && navigator.vibrate) {
+        try {
+          navigator.vibrate(6);
+        } catch {
+          // ignore
+        }
+      }
     }
   };
 
   const clearPointerState = () => {
-    setPressedKeyId(null);
-    setPopupKey(null);
+    hideKeyPreviewBubble();
     if (longPressTimerRef.current) {
       window.clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -1073,7 +1234,20 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   // Resolve ALL rows (numeric + characters/symbols/numpad + modifier bottom row) directly from authentic JSON layouts!
   const resolvedLayout = useMemo(() => {
     return resolveLayoutRows(activeLangConfig, viewMode, shiftState, kanaMode, settings);
-  }, [activeLangConfig, viewMode, shiftState, kanaMode, settings]);
+  }, [
+    activeLangConfig,
+    viewMode,
+    shiftState,
+    kanaMode,
+    settings.numberStyle,
+    settings.showBottomKeys,
+    settings.bottomRowPreset,
+    settings.showGlobeKey,
+    settings.showEmojiKey,
+    settings.showCommaKey,
+    settings.swapGlobeAndEmoji,
+    settings.customLayouts,
+  ]);
 
   const gapPx = Math.max(3, Math.round((settings.keySpacingPercent / 100) * 5));
   const letterFontSize = Math.round(16 * (settings.fontSizePercent / 100));
@@ -1096,14 +1270,558 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const borderWidth = theme.keyBorderWidth ?? (theme.hasKeyBorder ? 1 : 0);
   const keyBorderCss = borderWidth > 0 ? `${borderWidth}px solid ${theme.keyBorder}` : 'none';
   const keyShadowCss = theme.keyShadow || undefined;
-  const isEmailLongPress = Boolean(
-    longPressMenu &&
-      longPressMenu.options.some((o) => o.value.startsWith('@') && o.value.includes('.'))
-  );
+  const isEmailLongPress = Boolean(longPressMenu?.isEmailPopup);
+
+  // Keep latest handlers in a ref so memoized key rows NEVER re-render when editorText/suggestions update!
+  const keyActionRef = useRef({
+    settings,
+    longPressMenu,
+    showLangPicker,
+    handleKeyPointerDown,
+    updateLongPressHover,
+    handleKeyTap,
+    clearPointerState,
+    executeSwipeAction,
+    triggerSound,
+    commitCharacter,
+    onMoveCursor,
+    onMoveCursorEx,
+    onDeleteWord,
+    onBackspace,
+    onUpdateSettings,
+  });
+  keyActionRef.current = {
+    settings,
+    longPressMenu,
+    showLangPicker,
+    handleKeyPointerDown,
+    updateLongPressHover,
+    handleKeyTap,
+    clearPointerState,
+    executeSwipeAction,
+    triggerSound,
+    commitCharacter,
+    onMoveCursor,
+    onMoveCursorEx,
+    onDeleteWord,
+    onBackspace,
+    onUpdateSettings,
+  };
+
+  const memoizedKeyRows = useMemo(() => {
+    return resolvedLayout.rows.map((row, rIdx) => {
+      const isLastRow = rIdx === resolvedLayout.rows.length - 1;
+      const isCompactMidRow =
+        viewMode === 'characters' &&
+        !isLastRow &&
+        resolvedLayout.direction === 'ltr' &&
+        row.length === 9 &&
+        row.every((k) => !k.type || k.type === 'char');
+
+      return (
+        <div
+          key={`row_${rIdx}`}
+          className={`flex-1 flex items-stretch ${isCompactMidRow ? 'px-3.5' : ''}`}
+          style={{ gap: `${gapPx}px` }}
+        >
+          {row.map((key) => {
+            const isPhysicalHighlight = Boolean(
+              highlightedPhysicalKey &&
+                key.type === 'char' &&
+                highlightedPhysicalKey.toLowerCase() === key.primary.toLowerCase()
+            );
+            const isSpecial = Boolean(key.type && key.type !== 'char');
+            const displayLabel =
+              key.type === 'space'
+                ? spaceLabel
+                : shiftState !== 'off' && key.shiftPrimary
+                ? key.shiftPrimary
+                : key.primary;
+
+            let bg = theme.keyBg;
+            let textCol = theme.keyText;
+            let btnBorder = keyBorderCss;
+
+            if (key.type === 'enter') {
+              bg = theme.enterBg;
+              textCol = theme.enterText;
+              btnBorder = theme.enterBorder ? `1px solid ${theme.enterBorder}` : 'none';
+            } else if (key.type === 'space') {
+              bg = theme.spaceBg;
+              textCol = theme.spaceText || theme.secondaryText;
+            } else if (key.type === 'shift') {
+              bg = shiftState !== 'off' ? theme.accent : theme.shiftBg || theme.specialKeyBg;
+              textCol =
+                shiftState !== 'off'
+                  ? theme.enterText
+                  : theme.shiftText || theme.specialKeyText;
+            } else if (key.type === 'backspace') {
+              bg = theme.backspaceBg || theme.specialKeyBg;
+              textCol = theme.backspaceText || theme.specialKeyText;
+            } else if (
+              key.type === 'symbols' ||
+              key.type === 'symbols2' ||
+              key.type === 'characters' ||
+              key.type === 'numeric_advanced' ||
+              key.type === 'phone' ||
+              key.type === 'phone2'
+            ) {
+              bg = theme.symbolsBg || theme.specialKeyBg;
+              textCol = theme.symbolsText || theme.specialKeyText;
+            } else if (key.type === 'kana_toggle') {
+              bg = theme.accent;
+              textCol = theme.enterText;
+            } else if (isSpecial) {
+              bg = theme.specialKeyBg;
+              textCol = theme.specialKeyText;
+            }
+
+            const shapeStyleProps = getKeyShapeStyleProps(
+              settings.keyShapeStyle || 'default',
+              theme,
+              bg,
+              btnBorder,
+              keyShadowCss,
+              key.type === 'enter',
+              isPhysicalHighlight
+            );
+
+            return (
+              <div
+                key={key.id}
+                className="relative flex-1 flex min-w-0"
+                style={{ flex: key.width || 1 }}
+              >
+                {/* Language Picker Popup on Globe Long-Press / ContextMenu */}
+                {key.type === 'globe' && showLangPicker && (
+                  <div
+                    className="absolute bottom-12 left-0 z-50 min-w-[165px] max-h-56 overflow-y-auto custom-scroll rounded-xl shadow-2xl p-1.5 flex flex-col gap-1"
+                    style={{
+                      backgroundColor: theme.popupBg || '#15181F',
+                      border: `1px solid ${theme.popupBorder || 'rgba(255,255,255,0.12)'}`,
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    dir="rtl"
+                  >
+                    {settings.enabledLanguages.map((lang) => (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => {
+                          keyActionRef.current.onUpdateSettings({
+                            activeLanguage: lang.code as LanguageCode,
+                          });
+                          setViewMode('characters');
+                          setShiftState('off');
+                          setShowLangPicker(false);
+                        }}
+                        className={`px-3 py-2 rounded-lg text-xs font-semibold text-right flex items-center justify-between ${
+                          settings.activeLanguage === lang.code
+                            ? 'bg-sky-600 text-white'
+                            : 'text-zinc-200 hover:bg-white/10'
+                        }`}
+                      >
+                        <span>{lang.nativeName}</span>
+                        {settings.activeLanguage === lang.code && (
+                          <Check className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  data-key-type={key.type || 'char'}
+                  onClick={(e) => e.stopPropagation()}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    if (
+                      key.type === 'globe' &&
+                      keyActionRef.current.settings.showLanguagePickerOnLongPress
+                    ) {
+                      setShowLangPicker((v) => !v);
+                    }
+                  }}
+                  onPointerDown={(e) => {
+                    const hasLongPressPopup =
+                      (key.alts && key.alts.length > 0) || Boolean(key.secondary);
+                    if (key.type === 'backspace') {
+                      try {
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                      } catch {
+                        // ignore unsupported capture
+                      }
+                      bkspDragStartXRef.current = { startX: e.clientX, lastX: e.clientX };
+                      bkspDraggedRef.current = false;
+                    } else if (key.type === 'space') {
+                      try {
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                      } catch {
+                        // ignore unsupported capture
+                      }
+                      spaceDragStartRef.current = {
+                        startX: e.clientX,
+                        startY: e.clientY,
+                        lastX: e.clientX,
+                        lastY: e.clientY,
+                        time: Date.now(),
+                      };
+                      spaceDraggedRef.current = false;
+                      spaceLongPressedRef.current = false;
+                    } else if (hasLongPressPopup) {
+                      try {
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                      } catch {
+                        // ignore unsupported capture
+                      }
+                      keyTouchStartRef.current = {
+                        keyId: key.id,
+                        startX: e.clientX,
+                        startY: e.clientY,
+                      };
+                      popupWasJustOpenRef.current = false;
+                    }
+                    keyActionRef.current.handleKeyPointerDown(key, e.currentTarget);
+                  }}
+                  onPointerMove={(e) => {
+                    const act = keyActionRef.current;
+                    // Active Extended Key Popup: slide finger to highlight any phrase/char without lifting!
+                    if (longPressMenuRef.current?.keyId === key.id) {
+                      act.updateLongPressHover(e.clientX, e.clientY);
+                      return;
+                    }
+                    // Cancel pending long-press timer if user slides quickly before popup opens
+                    if (
+                      keyTouchStartRef.current?.keyId === key.id &&
+                      longPressTimerRef.current
+                    ) {
+                      const moved = Math.hypot(
+                        e.clientX - keyTouchStartRef.current.startX,
+                        e.clientY - keyTouchStartRef.current.startY
+                      );
+                      if (moved > 20) {
+                        window.clearTimeout(longPressTimerRef.current);
+                        longPressTimerRef.current = null;
+                      }
+                    }
+                    // Spacebar continuous cursor glide & swipe detection
+                    if (key.type === 'space' && spaceDragStartRef.current !== null) {
+                      const totalDx = e.clientX - spaceDragStartRef.current.startX;
+                      const totalDy = e.clientY - spaceDragStartRef.current.startY;
+                      if (Math.hypot(totalDx, totalDy) > 12 && longPressTimerRef.current) {
+                        window.clearTimeout(longPressTimerRef.current);
+                        longPressTimerRef.current = null;
+                      }
+                      const stepDx = e.clientX - spaceDragStartRef.current.lastX;
+                      if (Math.abs(stepDx) >= 15 && Math.abs(totalDx) > Math.abs(totalDy)) {
+                        const dirAction =
+                          stepDx < 0
+                            ? act.settings.spaceBarSwipeLeftAction
+                            : act.settings.spaceBarSwipeRightAction;
+                        if (
+                          dirAction === 'move_cursor_left' ||
+                          dirAction === 'move_cursor_right'
+                        ) {
+                          const delta = stepDx > 0 ? 1 : -1;
+                          if (act.onMoveCursorEx) act.onMoveCursorEx(delta, 0, false);
+                          else act.onMoveCursor(delta);
+                          spaceDragStartRef.current.lastX = e.clientX;
+                          spaceDragStartRef.current.lastY = e.clientY;
+                          spaceDraggedRef.current = true;
+                        } else if (dirAction === 'select_characters_precisely') {
+                          const delta = stepDx > 0 ? 1 : -1;
+                          if (act.onMoveCursorEx) act.onMoveCursorEx(delta, 0, true);
+                          spaceDragStartRef.current.lastX = e.clientX;
+                          spaceDragStartRef.current.lastY = e.clientY;
+                          spaceDraggedRef.current = true;
+                        }
+                      }
+                    }
+                    // Continuous precise delete while dragging backspace left
+                    if (key.type === 'backspace' && bkspDragStartXRef.current !== null) {
+                      const delAction = act.settings.deleteKeySwipeLeftAction;
+                      const totalDx = bkspDragStartXRef.current.startX - e.clientX;
+                      if (Math.abs(totalDx) > 14 && longPressTimerRef.current) {
+                        window.clearTimeout(longPressTimerRef.current);
+                        longPressTimerRef.current = null;
+                      }
+                      const stepDx = bkspDragStartXRef.current.lastX - e.clientX;
+                      if (
+                        (delAction === 'delete_characters_precisely' ||
+                          delAction === 'delete_words_precisely') &&
+                        stepDx > 20
+                      ) {
+                        bkspDraggedRef.current = true;
+                        bkspDragStartXRef.current.lastX = e.clientX;
+                        act.triggerSound('backspace');
+                        if (delAction === 'delete_words_precisely') act.onDeleteWord();
+                        else act.onBackspace();
+                      }
+                    }
+                  }}
+                  onPointerUp={(e) => {
+                    const act = keyActionRef.current;
+                    try {
+                      if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+                        e.currentTarget.releasePointerCapture(e.pointerId);
+                      }
+                    } catch {
+                      // ignore
+                    }
+
+                    // Commit selected Long-Press Extended Popup option immediately on finger release!
+                    if (longPressMenuRef.current?.keyId === key.id) {
+                      const menu = longPressMenuRef.current;
+                      const selIdx = longPressActiveIdxRef.current;
+                      keyTouchStartRef.current = null;
+                      act.clearPointerState();
+                      if (menu.isEmailPopup) {
+                        if (emailSlidRef.current && selIdx >= 0 && menu.options[selIdx]) {
+                          act.triggerSound('char');
+                          act.commitCharacter(menu.options[selIdx].value);
+                          setLongPressMenu(null);
+                        }
+                        // Otherwise keep Email Accounts Picker open for browsing/tapping
+                        return;
+                      }
+                      if (selIdx >= 0 && menu.options[selIdx]) {
+                        act.triggerSound('char');
+                        act.commitCharacter(menu.options[selIdx].value);
+                      }
+                      setLongPressMenu(null);
+                      return;
+                    }
+                    keyTouchStartRef.current = null;
+
+                    // Backspace swipe-left gesture
+                    if (key.type === 'backspace' && bkspDragStartXRef.current !== null) {
+                      const totalDx = bkspDragStartXRef.current.startX - e.clientX;
+                      bkspDragStartXRef.current = null;
+                      if (bkspDraggedRef.current) {
+                        bkspDraggedRef.current = false;
+                        act.clearPointerState();
+                        return;
+                      }
+                      const delAction = act.settings.deleteKeySwipeLeftAction;
+                      const threshold = Math.max(
+                        24,
+                        Math.min(48, (act.settings.swipeDistanceThreshold || 48) * 0.6)
+                      );
+                      if (delAction && delAction !== 'no_action' && totalDx > threshold) {
+                        act.clearPointerState();
+                        act.executeSwipeAction(delAction);
+                        return;
+                      }
+                    }
+                    bkspDragStartXRef.current = null;
+                    bkspDraggedRef.current = false;
+
+                    // Spacebar 4-way gestures (Up, Left, Right, Long Press)
+                    if (key.type === 'space' && spaceDragStartRef.current !== null) {
+                      const totalDx = e.clientX - spaceDragStartRef.current.startX;
+                      const totalDy = e.clientY - spaceDragStartRef.current.startY;
+                      spaceDragStartRef.current = null;
+                      if (spaceLongPressedRef.current) {
+                        spaceLongPressedRef.current = false;
+                        act.clearPointerState();
+                        return;
+                      }
+                      if (spaceDraggedRef.current) {
+                        spaceDraggedRef.current = false;
+                        act.clearPointerState();
+                        return;
+                      }
+                      const threshold = Math.max(
+                        24,
+                        Math.min(48, (act.settings.swipeDistanceThreshold || 48) * 0.6)
+                      );
+                      if (-totalDy > threshold && Math.abs(totalDy) > Math.abs(totalDx) * 1.1) {
+                        act.clearPointerState();
+                        act.executeSwipeAction(act.settings.spaceBarSwipeUpAction);
+                        return;
+                      }
+                      if (Math.abs(totalDx) > threshold && Math.abs(totalDx) > Math.abs(totalDy)) {
+                        const action =
+                          totalDx < 0
+                            ? act.settings.spaceBarSwipeLeftAction
+                            : act.settings.spaceBarSwipeRightAction;
+                        act.clearPointerState();
+                        act.executeSwipeAction(action);
+                        return;
+                      }
+                    }
+
+                    const wasMenuOpen =
+                      act.longPressMenu?.keyId === key.id ||
+                      (key.type === 'globe' && act.showLangPicker);
+                    act.clearPointerState();
+                    if (!wasMenuOpen) {
+                      act.handleKeyTap(key);
+                    }
+                  }}
+                  onPointerLeave={() => {
+                    // Never cancel active pointer-captured Spacebar, Backspace, or Long-Press Popup gestures
+                    if (key.type === 'space' && spaceDragStartRef.current !== null) return;
+                    if (key.type === 'backspace' && bkspDragStartXRef.current !== null) return;
+                    if (
+                      keyTouchStartRef.current?.keyId === key.id ||
+                      longPressMenuRef.current?.keyId === key.id
+                    ) {
+                      return;
+                    }
+                    keyActionRef.current.clearPointerState();
+                  }}
+                  onPointerCancel={() => {
+                    spaceDragStartRef.current = null;
+                    spaceDraggedRef.current = false;
+                    spaceLongPressedRef.current = false;
+                    bkspDragStartXRef.current = null;
+                    bkspDraggedRef.current = false;
+                    keyTouchStartRef.current = null;
+                    if (longPressMenuRef.current?.keyId === key.id) {
+                      setLongPressMenu(null);
+                    }
+                    keyActionRef.current.clearPointerState();
+                  }}
+                  className={`w-full h-full relative flex items-center justify-center px-0.5 overflow-hidden touch-none select-none ${
+                    shapeStyleProps.className
+                  } ${
+                    settings.keyAnimation ? 'active:scale-[0.93]' : ''
+                  } ${isPhysicalHighlight && settings.keyAnimation ? 'scale-[0.93]' : ''}`}
+                  style={{
+                    ...shapeStyleProps.style,
+                    color: textCol,
+                    touchAction: 'none',
+                  }}
+                >
+                  {/* Top-right Secondary Hint Character / Zikr */}
+                  {settings.showSecondaryHints &&
+                    key.secondary &&
+                    key.type !== 'space' &&
+                    key.type !== 'enter' && (
+                      <span
+                        className="absolute top-[2px] right-[3px] text-[8.5px] leading-none font-medium max-w-[92%] truncate pointer-events-none opacity-85"
+                        style={{ color: theme.secondaryText }}
+                      >
+                        {key.secondary}
+                      </span>
+                    )}
+
+                  {/* Main Key Icon / Label using official KurdiKeyboard VectorDrawables */}
+                  {key.type === 'shift' ? (
+                    <KurdiIcon
+                      name={shiftState === 'caps' ? 'ic_shift_lock' : 'ic_shift'}
+                      style={{ width: iconSize + 2, height: iconSize + 2 }}
+                    />
+                  ) : key.code === 1600 ? (
+                    <KurdiIcon
+                      name="ic_drezh"
+                      style={{ width: iconSize + 5, height: iconSize + 5 }}
+                    />
+                  ) : key.type === 'backspace' ? (
+                    <KurdiIcon
+                      name="ic_delete"
+                      style={{ width: iconSize + 2, height: iconSize + 2 }}
+                    />
+                  ) : key.type === 'enter' ? (
+                    <KurdiIcon
+                      name="ic_enter"
+                      style={{ width: iconSize + 2, height: iconSize + 2 }}
+                    />
+                  ) : key.type === 'emoji' ? (
+                    <KurdiIcon
+                      name="ic_smile"
+                      style={{ width: iconSize + 1, height: iconSize + 1 }}
+                    />
+                  ) : key.type === 'globe' ? (
+                    <KurdiIcon
+                      name="ic_global"
+                      style={{ width: iconSize + 1, height: iconSize + 1 }}
+                    />
+                  ) : key.type === 'settings' ? (
+                    <KurdiIcon
+                      name="ic_settings"
+                      style={{ width: iconSize + 1, height: iconSize + 1 }}
+                    />
+                  ) : key.type === 'copy' ? (
+                    <KurdiIcon name="ic_copy" style={{ width: iconSize, height: iconSize }} />
+                  ) : key.type === 'cut' ? (
+                    <KurdiIcon name="ic_cuts" style={{ width: iconSize, height: iconSize }} />
+                  ) : key.type === 'paste' ? (
+                    <KurdiIcon name="ic_pastes" style={{ width: iconSize, height: iconSize }} />
+                  ) : key.type === 'select_all' ? (
+                    <KurdiIcon
+                      name="ic_select_all"
+                      style={{ width: iconSize, height: iconSize }}
+                    />
+                  ) : key.type === 'space' ? (
+                    <span className="text-xs font-semibold truncate px-2 opacity-90 flex items-center gap-1.5 pointer-events-none">
+                      {spaceLabel ? (
+                        <>
+                          <span className="opacity-55 text-[10px]">‹</span>
+                          <span>{spaceLabel}</span>
+                          <span className="opacity-55 text-[10px]">›</span>
+                        </>
+                      ) : null}
+                    </span>
+                  ) : key.type === 'zwnj' ? (
+                    <KurdiIcon
+                      name="ic_zwnj"
+                      style={{ width: iconSize + 1, height: iconSize + 1 }}
+                    />
+                  ) : (
+                    <span
+                      className="font-semibold leading-none truncate pointer-events-none"
+                      style={{
+                        fontSize: `${
+                          key.type === 'symbols' ||
+                          key.type === 'symbols2' ||
+                          key.type === 'characters' ||
+                          key.type === 'numeric_advanced' ||
+                          key.type === 'kana_toggle'
+                            ? Math.max(11, letterFontSize - 4)
+                            : displayLabel.length > 2
+                            ? Math.max(12, letterFontSize - 4)
+                            : letterFontSize
+                        }px`,
+                        marginTop:
+                          settings.showSecondaryHints && key.secondary ? '5px' : '0px',
+                      }}
+                    >
+                      {displayLabel}
+                    </span>
+                  )}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      );
+    });
+  }, [
+    resolvedLayout,
+    viewMode,
+    gapPx,
+    highlightedPhysicalKey,
+    spaceLabel,
+    shiftState,
+    theme,
+    keyBorderCss,
+    keyShadowCss,
+    settings.keyShapeStyle,
+    settings.keyAnimation,
+    settings.showSecondaryHints,
+    settings.enabledLanguages,
+    settings.activeLanguage,
+    showLangPicker,
+    iconSize,
+    letterFontSize,
+  ]);
 
   return (
     <div
-      className={`w-full overflow-visible transition-colors duration-200 ${fontClass}`}
+      className={`w-full overflow-visible select-none ${fontClass}`}
       style={{
         backgroundColor: theme.bg,
         boxShadow: settings.dynamicBackgroundGlow
@@ -1582,8 +2300,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
               </div>
             </div>
           ) : (
-          /* Second Utility Strip: Left AI, Translate, Snippets/Calc | Center Inline Math & Predictions | Right Cursor Control, Zikr, Tools */
-          <div className="flex items-center justify-between px-1.5 py-1.5 gap-1">
+          /* Second Utility Strip: Left AI, Translate, Snippets/Calc | Suggestions & Inline Math */
+          <div className="flex items-center px-1.5 py-1.5 gap-1.5 overflow-hidden">
             <div className="flex items-center gap-0.5 shrink-0">
               {settings.smartReplyEnabled && (
                 <button
@@ -1624,7 +2342,13 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
               </button>
             </div>
 
-            <div className="flex-1 flex items-center justify-center gap-1.5 overflow-x-auto custom-scroll px-1">
+            <div
+              ref={suggestionsScrollRef}
+              dir={resolvedLayout.direction === 'rtl' ? 'rtl' : 'ltr'}
+              className={`flex-1 min-w-0 flex items-center justify-start gap-1.5 overflow-x-auto custom-scroll px-2 ${
+                isLight ? 'border-l border-slate-200/80' : 'border-l border-white/10'
+              }`}
+            >
               {inlineMath && (
                 <button
                   type="button"
@@ -1655,7 +2379,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 <button
                   type="button"
                   onClick={() => onInsertText(latestClipboardSuggestion.text)}
-                  className={`h-7 px-2.5 rounded-full text-[11px] font-medium max-w-[125px] truncate shrink-0 flex items-center gap-1 ${
+                  className={`h-7 px-2.5 rounded-full text-[11px] font-medium max-w-[160px] truncate shrink-0 flex items-center gap-1 ${
                     isLight
                       ? 'bg-slate-200 text-slate-800'
                       : 'bg-[#191B20] text-zinc-200 border border-white/5'
@@ -1697,47 +2421,6 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 </button>
               ))}
             </div>
-
-            <div className="flex items-center gap-0.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  triggerSound('special');
-                  setActivePanel('cursor_control');
-                }}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${toolbarIconColor}`}
-                title="کۆنترۆڵی دەق و کێرسەر"
-              >
-                <Move className="w-[17px] h-[17px]" />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  triggerSound('special');
-                  setRichInitialTab('zikr');
-                  setActivePanel('emoji');
-                }}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${toolbarIconColor}`}
-                title="زیکر، خەندە و کاومۆجی"
-              >
-                <KurdiIcon name="ic_tasbih1" className="w-[19px] h-[19px]" />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  triggerSound('special');
-                  setActivePanel('tools');
-                }}
-                className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                  isLight
-                    ? 'bg-slate-200/90 text-slate-900 hover:bg-slate-300'
-                    : 'bg-[#1A1B20] text-white hover:bg-[#262830]'
-                }`}
-                title="ئامرازەکان"
-              >
-                <KurdiIcon name="ic_moree" className="w-[18px] h-[18px]" />
-              </button>
-            </div>
           </div>
           )}
 
@@ -1766,12 +2449,20 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 
             {/* Key Rows Container (Main + Modifier Bottom Row rendered authentically from FlorisBoard JSON) */}
             <div
-              className="flex-1 flex flex-col px-1.5 pb-2 relative"
+              ref={deckContainerRef}
+              className="flex-1 flex flex-col px-1.5 pb-2 relative touch-none select-none"
               style={{
                 gap: `${gapPx}px`,
                 height: `${settings.keyboardHeightPx}px`,
+                touchAction: 'none',
               }}
               onTouchStart={(e) => {
+                // Never interfere with dedicated Spacebar or Backspace swipe gestures
+                const target = e.target as HTMLElement | null;
+                if (target?.closest('[data-key-type="space"], [data-key-type="backspace"]')) {
+                  deckTouchStartRef.current = null;
+                  return;
+                }
                 if (e.touches.length === 1) {
                   deckTouchStartRef.current = {
                     x: e.touches[0].clientX,
@@ -1786,7 +2477,15 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 const dy = e.changedTouches[0].clientY - deckTouchStartRef.current.y;
                 const elapsedSec = Math.max(0.05, (Date.now() - deckTouchStartRef.current.time) / 1000);
                 deckTouchStartRef.current = null;
-                if (spaceDraggedRef.current || bkspDraggedRef.current) return;
+                if (
+                  spaceDraggedRef.current ||
+                  bkspDraggedRef.current ||
+                  longPressMenuRef.current !== null ||
+                  popupWasJustOpenRef.current
+                ) {
+                  popupWasJustOpenRef.current = false;
+                  return;
+                }
 
                 const distThreshold = Math.max(44, (settings.swipeDistanceThreshold || 48) * 1.45);
                 const velThreshold = Math.max(80, (settings.swipeVelocityThreshold || 200) * 0.45);
@@ -1811,6 +2510,20 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 if (gesturePopup) setGesturePopup(null);
               }}
             >
+              {/* Zero-rerender Floating Key Press Preview Bubble */}
+              <div
+                ref={keyPreviewRef}
+                className="absolute z-40 min-w-[44px] h-11 px-2.5 rounded-xl flex items-center justify-center text-2xl font-bold shadow-xl pointer-events-none -translate-x-1/2"
+                style={{
+                  opacity: 0,
+                  left: 0,
+                  top: 0,
+                  backgroundColor: theme.popupBg || theme.keyHoverBg,
+                  color: theme.keyText,
+                  border: `1px solid ${theme.popupBorder || `${theme.accent}66`}`,
+                }}
+              />
+
               {/* Floating Gesture Popup Strip (Arabic Harakat / Spacebar Custom Menu) */}
               {gesturePopup && (
                 <div
@@ -1853,9 +2566,118 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 </div>
               )}
 
+              {/* Connected Long-Press Extended Popup (Hold + Slide + Release) */}
+              {!isEmailLongPress && longPressMenu && (() => {
+                const { anchorRect, options, isPhrasePopup } = longPressMenu;
+                const popupBg = theme.popupBg || (isLight ? '#FFFFFF' : '#20222A');
+                const popupBorder = theme.popupBorder || (isLight ? 'rgba(15,23,42,0.14)' : 'rgba(255,255,255,0.12)');
+                const maxTextLen = options.reduce((m, o) => {
+                  const cleanVal = o.value.trim();
+                  const shown =
+                    (o.code === -255 || o.code === -1001) && cleanVal.length > 0 && cleanVal.length <= 28
+                      ? cleanVal
+                      : o.label.trim();
+                  return Math.max(m, shown.length);
+                }, 1);
+                const estWidth = isPhrasePopup
+                  ? Math.min(anchorRect.deckWidth - 12, Math.max(196, Math.min(272, maxTextLen * 9.5 + 48)))
+                  : Math.min(anchorRect.deckWidth - 12, Math.max(54, Math.min(options.length, 6) * 46 + 16));
+                const idealLeft = anchorRect.left + anchorRect.width / 2 - estWidth / 2;
+                const clampedLeft = Math.max(
+                  6,
+                  Math.min(anchorRect.deckWidth - estWidth - 6, idealLeft)
+                );
+                const cardBottom = anchorRect.deckHeight - anchorRect.top - 4;
+
+                return (
+                  <>
+                    {/* Connected Key Stem covering the held key */}
+                    <div
+                      className="absolute z-40 rounded-b-xl pointer-events-none"
+                      style={{
+                        left: `${anchorRect.left}px`,
+                        top: `${anchorRect.top}px`,
+                        width: `${anchorRect.width}px`,
+                        height: `${anchorRect.height}px`,
+                        backgroundColor: popupBg,
+                        borderLeft: `1px solid ${popupBorder}`,
+                        borderRight: `1px solid ${popupBorder}`,
+                        borderBottom: `1px solid ${popupBorder}`,
+                      }}
+                    />
+
+                    {/* Extended Popup Bubble above the held key */}
+                    <div
+                      ref={extendedPopupRef}
+                      className={`absolute z-50 rounded-2xl shadow-2xl p-1.5 ${
+                        isPhrasePopup
+                          ? 'flex flex-col-reverse gap-1.5'
+                          : 'flex flex-wrap items-center justify-center gap-1'
+                      }`}
+                      style={{
+                        left: `${clampedLeft}px`,
+                        bottom: `${cardBottom}px`,
+                        width: isPhrasePopup ? `${estWidth}px` : 'auto',
+                        minWidth: isPhrasePopup ? `${estWidth}px` : '52px',
+                        maxWidth: `${Math.max(120, anchorRect.deckWidth - 12)}px`,
+                        backgroundColor: popupBg,
+                        border: `1px solid ${popupBorder}`,
+                        boxShadow: '0 14px 36px rgba(0,0,0,0.55)',
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      dir="rtl"
+                    >
+                      {options.map((opt, oIdx) => {
+                        const isActive = oIdx === longPressActiveIdx;
+                        const isLtrOpt =
+                          opt.value.startsWith('@') || /^[a-zA-Z0-9.@_+-]+$/.test(opt.label);
+                        const cleanVal = opt.value.trim();
+                        const shownLabel =
+                          (opt.code === -255 || opt.code === -1001) &&
+                          cleanVal.length > 0 &&
+                          cleanVal.length <= 28
+                            ? cleanVal
+                            : opt.label;
+                        return (
+                          <button
+                            key={`${opt.label}_${oIdx}`}
+                            data-popup-opt-idx={oIdx}
+                            type="button"
+                            dir={isLtrOpt ? 'ltr' : 'auto'}
+                            onClick={() => {
+                              triggerSound('char');
+                              commitCharacter(opt.value);
+                              setLongPressMenu(null);
+                            }}
+                            className={`rounded-xl font-bold whitespace-nowrap flex items-center justify-center transition-colors duration-75 select-none ${
+                              isPhrasePopup
+                                ? 'w-full h-12 px-4 text-[15px]'
+                                : 'min-w-[42px] h-11 px-2.5 text-lg'
+                            }`}
+                            style={{
+                              backgroundColor: isActive ? '#FF6D00' : 'transparent',
+                              color: isActive
+                                ? '#111318'
+                                : isLight
+                                ? '#0F172A'
+                                : '#FFFFFF',
+                              boxShadow: isActive ? '0 4px 14px rgba(255,109,0,0.35)' : undefined,
+                              unicodeBidi: isLtrOpt ? 'isolate' : undefined,
+                            }}
+                          >
+                            <span className="truncate">{shownLabel}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
+
               {/* Full-Width LTR Email Accounts Picker on @ Long-Press */}
               {isEmailLongPress && longPressMenu && (
                 <div
+                  ref={extendedPopupRef}
                   className="absolute inset-x-1.5 bottom-2 z-50 rounded-2xl shadow-2xl p-2 flex flex-col gap-2"
                   style={{
                     backgroundColor: theme.popupBg || (isLight ? '#FFFFFF' : '#181C24'),
@@ -1882,477 +2704,37 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                     className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto custom-scroll p-0.5"
                     dir="ltr"
                   >
-                    {longPressMenu.options.map((opt, oIdx) => (
-                      <button
-                        key={`${opt.value}_${oIdx}`}
-                        type="button"
-                        dir="ltr"
-                        onClick={() => {
-                          triggerSound('char');
-                          commitCharacter(opt.value);
-                          setLongPressMenu(null);
-                        }}
-                        className={`h-8 px-2.5 rounded-xl text-[12px] font-semibold whitespace-nowrap transition-colors border ${
-                          isLight
-                            ? 'bg-slate-100 hover:bg-sky-500 hover:text-white text-slate-900 border-slate-200'
-                            : 'bg-white/[0.07] hover:bg-sky-500 hover:text-white text-white border-white/10'
-                        }`}
-                        style={{ unicodeBidi: 'isolate' }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+                    {longPressMenu.options.map((opt, oIdx) => {
+                      const isActive = oIdx === longPressActiveIdx;
+                      return (
+                        <button
+                          key={`${opt.value}_${oIdx}`}
+                          data-popup-opt-idx={oIdx}
+                          type="button"
+                          dir="ltr"
+                          onClick={() => {
+                            triggerSound('char');
+                            commitCharacter(opt.value);
+                            setLongPressMenu(null);
+                          }}
+                          className={`h-8 px-2.5 rounded-xl text-[12px] font-semibold whitespace-nowrap transition-colors border ${
+                            isActive
+                              ? 'bg-[#FF6D00] text-[#111318] border-[#FF6D00]'
+                              : isLight
+                              ? 'bg-slate-100 hover:bg-sky-500 hover:text-white text-slate-900 border-slate-200'
+                              : 'bg-white/[0.07] hover:bg-sky-500 hover:text-white text-white border-white/10'
+                          }`}
+                          style={{ unicodeBidi: 'isolate' }}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {resolvedLayout.rows.map((row, rIdx) => {
-                const isLastRow = rIdx === resolvedLayout.rows.length - 1;
-                const isCompactMidRow =
-                  viewMode === 'characters' &&
-                  !isLastRow &&
-                  resolvedLayout.direction === 'ltr' &&
-                  row.length === 9 &&
-                  row.every((k) => !k.type || k.type === 'char');
-
-                return (
-                  <div
-                    key={`row_${rIdx}`}
-                    className={`flex-1 flex items-stretch ${isCompactMidRow ? 'px-3.5' : ''}`}
-                    style={{ gap: `${gapPx}px` }}
-                  >
-                    {row.map((key, kIdx) => {
-                      const isPressed =
-                        pressedKeyId === key.id ||
-                        Boolean(
-                          highlightedPhysicalKey &&
-                            key.type === 'char' &&
-                            highlightedPhysicalKey.toLowerCase() === key.primary.toLowerCase()
-                        );
-                      const isSpecial = Boolean(key.type && key.type !== 'char');
-                      const displayLabel =
-                        key.type === 'space'
-                          ? spaceLabel
-                          : shiftState !== 'off' && key.shiftPrimary
-                          ? key.shiftPrimary
-                          : key.primary;
-
-                      const popupAlignClass =
-                        kIdx <= 1
-                          ? 'left-0'
-                          : kIdx >= row.length - 2
-                          ? 'right-0'
-                          : 'left-1/2 -translate-x-1/2';
-
-                      let bg = theme.keyBg;
-                      let textCol = theme.keyText;
-                      let btnBorder = keyBorderCss;
-
-                      if (key.type === 'enter') {
-                        bg = theme.enterBg;
-                        textCol = theme.enterText;
-                        btnBorder = theme.enterBorder
-                          ? `1px solid ${theme.enterBorder}`
-                          : 'none';
-                      } else if (key.type === 'space') {
-                        bg = theme.spaceBg;
-                        textCol = theme.spaceText || theme.secondaryText;
-                      } else if (key.type === 'shift') {
-                        bg =
-                          shiftState !== 'off'
-                            ? theme.accent
-                            : theme.shiftBg || theme.specialKeyBg;
-                        textCol =
-                          shiftState !== 'off'
-                            ? theme.enterText
-                            : theme.shiftText || theme.specialKeyText;
-                      } else if (key.type === 'backspace') {
-                        bg = theme.backspaceBg || theme.specialKeyBg;
-                        textCol = theme.backspaceText || theme.specialKeyText;
-                      } else if (
-                        key.type === 'symbols' ||
-                        key.type === 'symbols2' ||
-                        key.type === 'characters' ||
-                        key.type === 'numeric_advanced' ||
-                        key.type === 'phone' ||
-                        key.type === 'phone2'
-                      ) {
-                        bg = theme.symbolsBg || theme.specialKeyBg;
-                        textCol = theme.symbolsText || theme.specialKeyText;
-                      } else if (key.type === 'kana_toggle') {
-                        bg = theme.accent;
-                        textCol = theme.enterText;
-                      } else if (isSpecial) {
-                        bg = theme.specialKeyBg;
-                        textCol = theme.specialKeyText;
-                      }
-
-                      const shapeStyleProps = getKeyShapeStyleProps(
-                        settings.keyShapeStyle || 'default',
-                        theme,
-                        bg,
-                        btnBorder,
-                        keyShadowCss,
-                        key.type === 'enter',
-                        isPressed
-                      );
-
-                      return (
-                        <div
-                          key={key.id}
-                          className="relative flex-1 flex min-w-0"
-                          style={{ flex: key.width || 1 }}
-                        >
-                          {/* Floating Key Press Preview Bubble */}
-                          {popupKey?.id === key.id && (
-                            <div
-                              className="absolute -top-12 left-1/2 -translate-x-1/2 z-40 min-w-[44px] h-11 px-2.5 rounded-xl flex items-center justify-center text-2xl font-bold shadow-xl pointer-events-none"
-                              style={{
-                                backgroundColor: theme.popupBg || theme.keyHoverBg,
-                                color: theme.keyText,
-                                border: `1px solid ${theme.popupBorder || `${theme.accent}66`}`,
-                              }}
-                            >
-                              {popupKey.label}
-                            </div>
-                          )}
-
-                          {/* Long-Press Alternate Picker Popup */}
-                          {!isEmailLongPress && longPressMenu?.keyId === key.id && (
-                            <div
-                              className={`absolute -top-14 ${popupAlignClass} z-50 flex items-center gap-1 p-1.5 rounded-2xl shadow-2xl max-w-[300px] overflow-x-auto custom-scroll`}
-                              style={{
-                                backgroundColor:
-                                  theme.popupBg || (isLight ? '#FFFFFF' : '#1E2128'),
-                                border: `1px solid ${
-                                  theme.popupBorder || 'rgba(255,255,255,0.16)'
-                                }`,
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              dir="rtl"
-                            >
-                              {longPressMenu.options.map((opt, oIdx) => {
-                                const isLtrOpt =
-                                  opt.value.startsWith('@') ||
-                                  /^[a-zA-Z0-9.@_+-]+$/.test(opt.label);
-                                return (
-                                  <button
-                                    key={`${opt.label}_${oIdx}`}
-                                    type="button"
-                                    dir={isLtrOpt ? 'ltr' : 'auto'}
-                                    onClick={() => {
-                                      triggerSound('char');
-                                      commitCharacter(opt.value);
-                                      setLongPressMenu(null);
-                                    }}
-                                    className="min-w-[36px] h-9 px-2.5 rounded-xl text-xs font-bold whitespace-nowrap hover:bg-sky-500 hover:text-white transition-colors shrink-0"
-                                    style={{
-                                      color: isLight ? '#0F172A' : '#FFFFFF',
-                                      unicodeBidi: isLtrOpt ? 'isolate' : undefined,
-                                    }}
-                                  >
-                                    {opt.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          {/* Language Picker Popup on Globe Long-Press / ContextMenu */}
-                          {key.type === 'globe' && showLangPicker && (
-                            <div
-                              className="absolute bottom-12 left-0 z-50 min-w-[165px] max-h-56 overflow-y-auto custom-scroll rounded-xl shadow-2xl p-1.5 flex flex-col gap-1"
-                              style={{
-                                backgroundColor: theme.popupBg || '#15181F',
-                                border: `1px solid ${theme.popupBorder || 'rgba(255,255,255,0.12)'}`,
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              dir="rtl"
-                            >
-                              {settings.enabledLanguages.map((lang) => (
-                                <button
-                                  key={lang.code}
-                                  type="button"
-                                  onClick={() => {
-                                    onUpdateSettings({ activeLanguage: lang.code as LanguageCode });
-                                    setViewMode('characters');
-                                    setShiftState('off');
-                                    setShowLangPicker(false);
-                                  }}
-                                  className={`px-3 py-2 rounded-lg text-xs font-semibold text-right flex items-center justify-between ${
-                                    settings.activeLanguage === lang.code
-                                      ? 'bg-sky-600 text-white'
-                                      : 'text-zinc-200 hover:bg-white/10'
-                                  }`}
-                                >
-                                  <span>{lang.nativeName}</span>
-                                  {settings.activeLanguage === lang.code && (
-                                    <Check className="w-3.5 h-3.5" />
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-
-                          <button
-                            type="button"
-                            onContextMenu={(e) => {
-                              if (key.type === 'globe' && settings.showLanguagePickerOnLongPress) {
-                                e.preventDefault();
-                                setShowLangPicker((v) => !v);
-                              }
-                            }}
-                            onPointerDown={(e) => {
-                              if (key.type === 'backspace') {
-                                bkspDragStartXRef.current = e.clientX;
-                                bkspDraggedRef.current = false;
-                              } else if (key.type === 'space') {
-                                spaceDragStartRef.current = {
-                                  x: e.clientX,
-                                  y: e.clientY,
-                                  time: Date.now(),
-                                };
-                                spaceDraggedRef.current = false;
-                                spaceLongPressedRef.current = false;
-                              }
-                              handleKeyPointerDown(key);
-                            }}
-                            onPointerMove={(e) => {
-                              // Continuous cursor glide on spacebar when assigned to move_cursor_left/right
-                              if (key.type === 'space' && spaceDragStartRef.current !== null) {
-                                const dx = e.clientX - spaceDragStartRef.current.x;
-                                const dy = e.clientY - spaceDragStartRef.current.y;
-                                const isCursorGlide =
-                                  settings.spaceBarSwipeLeftAction === 'move_cursor_left' ||
-                                  settings.spaceBarSwipeRightAction === 'move_cursor_right';
-                                if (isCursorGlide && Math.abs(dx) > 16 && Math.abs(dx) > Math.abs(dy)) {
-                                  if (longPressTimerRef.current) {
-                                    window.clearTimeout(longPressTimerRef.current);
-                                    longPressTimerRef.current = null;
-                                  }
-                                  if (onMoveCursorEx) onMoveCursorEx(dx > 0 ? 1 : -1, 0, false);
-                                  else onMoveCursor(dx > 0 ? 1 : -1);
-                                  spaceDragStartRef.current = {
-                                    ...spaceDragStartRef.current,
-                                    x: e.clientX,
-                                  };
-                                  spaceDraggedRef.current = true;
-                                }
-                              }
-                              // Continuous precise delete while dragging backspace left
-                              if (key.type === 'backspace' && bkspDragStartXRef.current !== null) {
-                                const delAction = settings.deleteKeySwipeLeftAction;
-                                const dx = bkspDragStartXRef.current - e.clientX;
-                                if (
-                                  (delAction === 'delete_characters_precisely' ||
-                                    delAction === 'delete_words_precisely') &&
-                                  dx > 22
-                                ) {
-                                  if (longPressTimerRef.current) {
-                                    window.clearTimeout(longPressTimerRef.current);
-                                    longPressTimerRef.current = null;
-                                  }
-                                  bkspDraggedRef.current = true;
-                                  bkspDragStartXRef.current = e.clientX;
-                                  triggerSound('backspace');
-                                  if (delAction === 'delete_words_precisely') onDeleteWord();
-                                  else onBackspace();
-                                }
-                              }
-                            }}
-                            onPointerUp={(e) => {
-                              // Backspace swipe-left gesture
-                              if (key.type === 'backspace' && bkspDragStartXRef.current !== null) {
-                                const dx = bkspDragStartXRef.current - e.clientX;
-                                bkspDragStartXRef.current = null;
-                                if (bkspDraggedRef.current) {
-                                  bkspDraggedRef.current = false;
-                                  clearPointerState();
-                                  return;
-                                }
-                                const delAction = settings.deleteKeySwipeLeftAction;
-                                const threshold = Math.max(28, (settings.swipeDistanceThreshold || 48) * 0.72);
-                                if (delAction && delAction !== 'no_action' && dx > threshold) {
-                                  clearPointerState();
-                                  executeSwipeAction(delAction);
-                                  return;
-                                }
-                              }
-                              bkspDragStartXRef.current = null;
-                              bkspDraggedRef.current = false;
-
-                              // Spacebar 4-way gestures (Up, Left, Right, Long Press)
-                              if (key.type === 'space' && spaceDragStartRef.current !== null) {
-                                const dx = e.clientX - spaceDragStartRef.current.x;
-                                const dy = e.clientY - spaceDragStartRef.current.y;
-                                spaceDragStartRef.current = null;
-                                if (spaceLongPressedRef.current) {
-                                  spaceLongPressedRef.current = false;
-                                  clearPointerState();
-                                  return;
-                                }
-                                if (spaceDraggedRef.current) {
-                                  spaceDraggedRef.current = false;
-                                  clearPointerState();
-                                  return;
-                                }
-                                const threshold = Math.max(28, (settings.swipeDistanceThreshold || 48) * 0.7);
-                                if (-dy > threshold && Math.abs(dy) > Math.abs(dx) * 1.2) {
-                                  if (executeSwipeAction(settings.spaceBarSwipeUpAction)) {
-                                    clearPointerState();
-                                    return;
-                                  }
-                                } else if (Math.abs(dx) > threshold && Math.abs(dx) > Math.abs(dy)) {
-                                  const action =
-                                    dx < 0
-                                      ? settings.spaceBarSwipeLeftAction
-                                      : settings.spaceBarSwipeRightAction;
-                                  if (executeSwipeAction(action)) {
-                                    clearPointerState();
-                                    return;
-                                  }
-                                }
-                              }
-
-                              const wasMenuOpen =
-                                longPressMenu?.keyId === key.id ||
-                                (key.type === 'globe' && showLangPicker);
-                              clearPointerState();
-                              if (!wasMenuOpen) {
-                                handleKeyTap(key);
-                              }
-                            }}
-                            onPointerLeave={() => {
-                              spaceDragStartRef.current = null;
-                              bkspDragStartXRef.current = null;
-                              clearPointerState();
-                            }}
-                            onPointerCancel={() => {
-                              spaceDragStartRef.current = null;
-                              bkspDragStartXRef.current = null;
-                              clearPointerState();
-                            }}
-                            className={`w-full h-full relative flex items-center justify-center transition-transform px-0.5 overflow-hidden ${
-                              shapeStyleProps.className
-                            } ${isPressed && settings.keyAnimation ? 'scale-[0.93]' : ''}`}
-                            style={{
-                              ...shapeStyleProps.style,
-                              color: textCol,
-                            }}
-                          >
-                            {/* Top-right Secondary Hint Character / Zikr */}
-                            {settings.showSecondaryHints &&
-                              key.secondary &&
-                              key.type !== 'space' &&
-                              key.type !== 'enter' && (
-                                <span
-                                  className="absolute top-[2px] right-[3px] text-[8.5px] leading-none font-medium max-w-[92%] truncate pointer-events-none opacity-85"
-                                  style={{ color: theme.secondaryText }}
-                                >
-                                  {key.secondary}
-                                </span>
-                              )}
-
-                            {/* Main Key Icon / Label using official KurdiKeyboard VectorDrawables */}
-                            {key.type === 'shift' ? (
-                              <KurdiIcon
-                                name={shiftState === 'caps' ? 'ic_shift_lock' : 'ic_shift'}
-                                style={{ width: iconSize + 2, height: iconSize + 2 }}
-                              />
-                            ) : key.code === 1600 ? (
-                              <KurdiIcon
-                                name="ic_drezh"
-                                style={{ width: iconSize + 5, height: iconSize + 5 }}
-                              />
-                            ) : key.type === 'backspace' ? (
-                              <KurdiIcon
-                                name="ic_delete"
-                                style={{ width: iconSize + 2, height: iconSize + 2 }}
-                              />
-                            ) : key.type === 'enter' ? (
-                              <KurdiIcon
-                                name="ic_enter"
-                                style={{ width: iconSize + 2, height: iconSize + 2 }}
-                              />
-                            ) : key.type === 'emoji' ? (
-                              <KurdiIcon
-                                name="ic_smile"
-                                style={{ width: iconSize + 1, height: iconSize + 1 }}
-                              />
-                            ) : key.type === 'globe' ? (
-                              <KurdiIcon
-                                name="ic_global"
-                                style={{ width: iconSize + 1, height: iconSize + 1 }}
-                              />
-                            ) : key.type === 'settings' ? (
-                              <KurdiIcon
-                                name="ic_settings"
-                                style={{ width: iconSize + 1, height: iconSize + 1 }}
-                              />
-                            ) : key.type === 'copy' ? (
-                              <KurdiIcon
-                                name="ic_copy"
-                                style={{ width: iconSize, height: iconSize }}
-                              />
-                            ) : key.type === 'cut' ? (
-                              <KurdiIcon
-                                name="ic_cuts"
-                                style={{ width: iconSize, height: iconSize }}
-                              />
-                            ) : key.type === 'paste' ? (
-                              <KurdiIcon
-                                name="ic_pastes"
-                                style={{ width: iconSize, height: iconSize }}
-                              />
-                            ) : key.type === 'select_all' ? (
-                              <KurdiIcon
-                                name="ic_select_all"
-                                style={{ width: iconSize, height: iconSize }}
-                              />
-                            ) : key.type === 'space' ? (
-                              <span className="text-xs font-semibold truncate px-2 opacity-90 flex items-center gap-1.5">
-                                {spaceLabel ? (
-                                  <>
-                                    <span className="opacity-55 text-[10px]">‹</span>
-                                    <span>{spaceLabel}</span>
-                                    <span className="opacity-55 text-[10px]">›</span>
-                                  </>
-                                ) : null}
-                              </span>
-                            ) : key.type === 'zwnj' ? (
-                              <KurdiIcon
-                                name="ic_zwnj"
-                                style={{ width: iconSize + 1, height: iconSize + 1 }}
-                              />
-                            ) : (
-                              <span
-                                className="font-semibold leading-none truncate"
-                                style={{
-                                  fontSize: `${
-                                    key.type === 'symbols' ||
-                                    key.type === 'symbols2' ||
-                                    key.type === 'characters' ||
-                                    key.type === 'numeric_advanced' ||
-                                    key.type === 'kana_toggle'
-                                      ? Math.max(11, letterFontSize - 4)
-                                      : displayLabel.length > 2
-                                      ? Math.max(12, letterFontSize - 4)
-                                      : letterFontSize
-                                  }px`,
-                                  marginTop:
-                                    settings.showSecondaryHints && key.secondary ? '5px' : '0px',
-                                }}
-                              >
-                                {displayLabel}
-                              </span>
-                            )}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+              {memoizedKeyRows}
             </div>
 
             {settings.oneHandedMode === 'left' && (

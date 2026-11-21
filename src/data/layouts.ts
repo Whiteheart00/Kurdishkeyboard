@@ -417,6 +417,7 @@ function mapKeyCodeToType(code: number | undefined, label: string): KeyType {
     case -11:
       return 'shift';
     case 32:
+    case 12288:
       return 'space';
     case 10:
       return 'enter';
@@ -587,6 +588,9 @@ function convertRawKeyToSpec(
   else if (keyType === 'numeric_advanced') displayPrimary = ctx.dir === 'rtl' ? '١٢٣' : '1234';
   else if (keyType === 'phone2') displayPrimary = '*#';
   else if (keyType === 'phone') displayPrimary = '123';
+  else if (node.code === -9701) displayPrimary = '全/半';
+  else if (node.code === -9702) displayPrimary = '全';
+  else if (node.code === -9703) displayPrimary = '半';
 
   return {
     id: `k_${ctx.viewMode}_${rowIdx}_${colIdx}_${node.code ?? label}`,
@@ -715,14 +719,20 @@ export function resolveLayoutRows(
     const symBase =
       bundle.layouts.symbols[langConfig.symbolsLayoutId] ||
       bundle.layouts.symbols.sym_alt;
-    const symMod = bundle.layouts.symbolsMod.default;
+    const symMod =
+      langConfig.symbolsLayoutId === 'cjk'
+        ? bundle.layouts.symbolsMod.cjk || bundle.layouts.symbolsMod.default
+        : bundle.layouts.symbolsMod.default;
     const numNodes = getNumericRowNodes(settings.numberStyle, langConfig.numericRowId);
     rawRows = [numNodes, ...mergeModifierRows(symBase, symMod)];
   } else if (viewMode === 'symbols2') {
     const sym2Base =
       bundle.layouts.symbols2[langConfig.symbols2LayoutId] ||
       bundle.layouts.symbols2.sym_alt;
-    const sym2Mod = bundle.layouts.symbols2Mod.default;
+    const sym2Mod =
+      langConfig.symbols2LayoutId === 'cjk'
+        ? bundle.layouts.symbols2Mod.cjk || bundle.layouts.symbols2Mod.default
+        : bundle.layouts.symbols2Mod.default;
     const numNodes = getNumericRowNodes(settings.numberStyle, langConfig.numericRowId);
     rawRows = [numNodes, ...mergeModifierRows(sym2Base, sym2Mod)];
   } else if (viewMode === 'numeric_advanced') {

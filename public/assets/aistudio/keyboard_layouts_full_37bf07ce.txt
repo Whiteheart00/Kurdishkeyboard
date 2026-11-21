@@ -1,0 +1,5274 @@
+================================================================================
+KurdiKeBord - Full Keyboard Layouts Design
+Source: assets/ime/keyboard/com.kurdikeyboard.layouts/
+All layout JSON files combined into one text file
+================================================================================
+
+
+################################################################################
+# 1. extension.json  (Main registry of all layouts)
+################################################################################
+
+{
+  "$": "ime.extension.keyboard",
+  "meta": {
+    "id": "com.kurdikeyboard.layouts",
+    "version": "1.0.0",
+    "title": "Default layouts",
+    "description": "Default layouts which are always available.",
+    "maintainers": [ "GoRaN" ],
+    "license": "apache-2.0"
+  },
+  "layouts": {
+    "characters": [
+
+      {
+        "id": "kurdi_qvfgh",
+        "label": 	"شێوازی (١)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdish"
+      },
+      {
+        "id": "kurdi_chpqv",
+        "label": 	"شێوازی (٢)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdish"
+      },
+
+      {
+        "id": "kurdi_qwerty_nwe",
+        "label": "شێوازی (٣)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdish"
+      },
+
+      {
+        "id": "kurdi_qwerty",
+        "label": "شێوازی (٤)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdish"
+      },
+
+      {
+        "id": "kurdi_qvfp",
+        "label": "شێوازی (٥)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdish"
+      },
+
+      {
+        "id": "kurdi_qfghh",
+        "label": "شێوازی (٦)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdish"
+      },
+
+      {
+        "id": "kurdi_vaeq",
+        "label": "شێوازی (٧)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdish"
+      },
+
+      {
+        "id": "kurdi_alfbe",
+        "label": "شێوازی (ئەلفبێ)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdi_alfbe"
+      },
+
+      {
+        "id": "horami",
+        "label": "هۉرامی",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdish"
+      },
+
+      {
+        "id": "xwarg",
+        "label": "خوارین",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdish"
+      },
+
+      {
+        "id": "kurdi_hybrid",
+        "label": "کوردی (Kurdî)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdish_hybrid"
+      },
+
+      {
+        "id": "qwerty_kurdi",
+        "label": "(Kwrdy) لاتینی",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:kurdish"
+      },
+
+      {
+        "id": "kurmanci",
+        "label": "Kurdî",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+
+      {
+        "id": "qwerty",
+        "label": "QWERTY",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+
+      {
+        "id": "arabic1",
+        "label": "العربية ١",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:arabic1"
+      },
+
+      {
+        "id": "arabic2",
+        "label": "العربية ٢",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:arabic2"
+      },
+
+      {
+        "id": "amazigh",
+        "label": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:amazigh"
+      },
+
+      {
+        "id": "azerty",
+        "label": "AZERTY",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+      {
+        "id": "hindi",
+        "label": "हिंदी",
+        "authors": [ "npnpatidar" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+      {
+        "id": "danish",
+        "label": "Danish (QWERTY)",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+      {
+        "id": "dvorak",
+        "label": "Dvorak",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:dvorak"
+      },
+      {
+        "id": "german",
+        "label": "German (QWERTZ)",
+        "authors": [ "mahmoudk1000" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+      {
+        "id": "greek",
+        "label": "Ελληνικά",
+        "authors": [ "tsiflimagas" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+      {
+        "id": "russian",
+        "label": "ЙЦУКЕН",
+        "authors": [ "williamtheaker" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+      {
+        "id": "japani",
+        "label": "日本語",
+        "authors": [ "waelwindows" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:japani"
+      },
+      {
+        "id": "korean",
+        "label": "한국인",
+        "authors": [ "Hayleia" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+
+      {
+        "id": "norwegian",
+        "label": "Norwegian (QWERTY)",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+      {
+        "id": "persian1",
+        "label": "فارسی ١",
+        "authors": [ "PHELAT" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:persian1"
+      },
+      {
+        "id": "persian2",
+        "label": "فارسی ٢",
+        "authors": [ "M-Koushan" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:persian2"
+      },
+      {
+        "id": "qwertz",
+        "label": "QWERTZ",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+      {
+        "id": "spanish",
+        "label": "Spanish (QWERTY)",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+      {
+        "id": "swedish_finnish",
+        "label": "Swedish/Finnish (QWERTY)",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:default"
+      },
+      { "id": "fancy_1", "label": "Fancy Style 1", "authors": ["GoRaN"], "direction": "ltr", "modifier": "com.kurdikeyboard.layouts:default" },
+      { "id": "fancy_2", "label": "Fancy Style 2", "authors": ["GoRaN"], "direction": "ltr", "modifier": "com.kurdikeyboard.layouts:default" },
+      { "id": "fancy_3", "label": "Fancy Style 3", "authors": ["GoRaN"], "direction": "ltr", "modifier": "com.kurdikeyboard.layouts:default" },
+      { "id": "fancy_4", "label": "Fancy Style 4", "authors": ["GoRaN"], "direction": "ltr", "modifier": "com.kurdikeyboard.layouts:default" },
+      { "id": "fancy_5", "label": "Fancy Style 5", "authors": ["GoRaN"], "direction": "ltr", "modifier": "com.kurdikeyboard.layouts:default" },
+      { "id": "fancy_6", "label": "Fancy Style 6", "authors": ["GoRaN"], "direction": "ltr", "modifier": "com.kurdikeyboard.layouts:default" },
+      { "id": "fancy_7", "label": "Fancy Style 7", "authors": ["GoRaN"], "direction": "ltr", "modifier": "com.kurdikeyboard.layouts:default" },
+      { "id": "fancy_8", "label": "Fancy Style 8", "authors": ["GoRaN"], "direction": "ltr", "modifier": "com.kurdikeyboard.layouts:default" },
+      { "id": "fancy_9", "label": "Fancy Style 9", "authors": ["GoRaN"], "direction": "ltr", "modifier": "com.kurdikeyboard.layouts:default" },
+      { "id": "fancy_10", "label": "Fancy Style 10", "authors": ["GoRaN"], "direction": "ltr", "modifier": "com.kurdikeyboard.layouts:default" }
+    ],
+
+
+    "charactersMod": [
+      {
+        "id": "default",
+        "label": "Default character modifier layout",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "bottom_row_compact",
+        "label": "Compact bottom row layout",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "bottom_row_simple",
+        "label": "Simple bottom row layout",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "bottom_row_anysoft_classic",
+        "label": "AnySoft Classic bottom row layout",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "bottom_row_full",
+        "label": "Full Utility bottom row layout",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "bottom_row_left_handed",
+        "label": "Left Handed bottom row layout",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "bottom_row_right_handed",
+        "label": "Right Handed bottom row layout",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "amazigh",
+        "label": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "arabic1",
+        "label": "العربي ١",
+        "authors": [ "HeiWiper" ],
+        "direction": "rtl"
+      },
+      {
+        "id": "arabic2",
+        "label": "العربي ٢",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl"
+      },
+      {
+        "id": "dvorak",
+        "label": "Dvorak",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "japani",
+        "label": "日本語",
+        "authors": [ "waelwindows" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "kurdish",
+        "label": "کوردی",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl"
+      },
+      {
+        "id": "kurdish_hybrid",
+        "label": "Kurdî (کوردی)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl"
+      },
+      {
+        "id": "kurdi_alfbe",
+        "label": "شێوازی (ئەلفبێ)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl",
+        "modifier": "com.kurdikeyboard.layouts:kurdi_alfbe"
+
+      },
+      {
+        "id": "persian1",
+        "label": "فارسی ١",
+        "authors": [ "PHELAT" ],
+        "direction": "rtl"
+      },
+      {
+        "id": "persian2",
+        "label": "فارسی ٢",
+        "authors": [ "M-Koushan" ],
+        "direction": "rtl"
+      }
+    ],
+
+    "extension": [
+      {
+        "id": "clipboard_cursor_row",
+        "label": "Clipboard Cursor Row",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      }
+    ],
+
+    "numeric": [
+      {
+        "id": "latin",
+        "label": "Latin",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      }
+    ],
+
+    "numericAdvanced": [
+      {
+        "id": "latin",
+        "label": "Latin (123)",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "kurdi_arabi",
+        "label": "کوردی/عەرەبی (٤٥٦)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl"
+      },
+
+      {
+        "id": "urdu_farsi",
+        "label": "فارسی/اُردُو (۴۵۶)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl"
+      }
+    ],
+
+    "numericRow": [
+      {
+        "id": "arabi_kurdi",
+        "label": "کوردی - عربي",
+        "authors": [ "patrickgold" ],
+        "direction": "ltr"
+      },
+
+      {
+        "id": "hindi",
+        "label": "हिन्दी - هیندی",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+
+      {
+        "id": "urdu_farsi",
+        "label": "فارسی - اُردُو",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+
+      {
+        "id": "latin",
+        "label": "Latin",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+
+      {
+        "id": "cjk",
+        "label": "CJK",
+        "authors": [ "waelwindows" ],
+        "direction": "ltr"
+      },
+
+      {
+        "id": "kurdi_hybrid",
+        "label": "کوردی (Hybrid)",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl"
+      }
+    ],
+
+    "phone": [
+      {
+        "id": "telpad",
+        "label": "Simple telpad input",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      }
+    ],
+
+    "phone2": [
+      {
+        "id": "telpad",
+        "label": "Simple telpad input (advanced controls)",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      }
+    ],
+
+    "symbols": [
+      {
+        "id": "kurdi_arabi_farsi",
+        "label": "هێما زیادەکان",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+
+      {
+        "id": "sym_alt",
+        "label": "Alternative symbols",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+
+      {
+        "id": "cjk",
+        "label": "CJK",
+        "authors": [ "waelwindows" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:cjk"
+      }
+    ],
+
+    "symbolsMod": [
+      {
+        "id": "default",
+        "label": "Default",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "cjk",
+        "label": "CJK",
+        "authors": [ "waelwindows" ],
+        "direction": "ltr"
+      }
+    ],
+
+    "symbols2": [
+      {
+        "id": "sym_alt",
+        "label": "هێما زیادەکان",
+        "authors": [ "GoRaN" ],
+        "direction": "rtl"
+      },
+
+      {
+        "id": "cjk",
+        "label": "CJK",
+        "authors": [ "waelwindows" ],
+        "direction": "ltr",
+        "modifier": "com.kurdikeyboard.layouts:cjk"
+      }
+    ],
+
+    "symbols2Mod": [
+      {
+        "id": "default",
+        "label": "Default",
+        "authors": [ "GoRaN" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "cjk",
+        "label": "CJK",
+        "authors": [ "waelwindows" ],
+        "direction": "ltr"
+      }
+    ]
+  }
+}
+
+
+
+################################################################################
+# 2. characters/  (Main character layouts - Kurdish, Arabic, etc.)
+################################################################################
+
+--------------------------------------------------------------------------------
+FILE: amazigh.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code": 11568, "label": "ⴰ" },
+    { "code": 11619, "label": "ⵣ", "popup": { "main": { "code": 11621, "label": "ⵥ" }, "relevant": [ { "code": 11620, "label": "ⵤ" } ] } },
+    { "code": 11579, "label": "ⴻ", "popup": { "main": { "code": 11622, "label": "ⵦ" } } },
+    { "code": 11604, "label": "ⵔ", "popup": { "main": { "code": 11605, "label": "ⵕ" } } },
+    { "code": 11612, "label": "ⵜ", "popup": { "main": { "code": 11615, "label": "ⵟ" }, "relevant": [ { "code": 11613, "label": "ⵝ" } ] } },
+    { "code": 11618, "label": "ⵢ" },
+    { "code": 11603, "label": "ⵓ", "popup": { "main": { "code": 11623, "label": "ⵧ" } } },
+    { "code": 11593, "label": "ⵉ" },
+    { "code": 11588, "label": "ⵄ" },
+    { "code": 11587, "label": "ⵃ" }
+  ],
+  [
+    { "code": 11591, "label": "ⵇ", "popup": { "main": { "code": 11592, "label": "ⵈ" } } },
+    { "code": 11609, "label": "ⵙ", "popup": { "main": { "code": 11610, "label": "ⵚ" } } },
+    { "code": 11575, "label": "ⴷ", "popup": { "main": { "code": 11576, "label": "ⴹ" }, "relevant": [ { "code": 11577, "label": "ⴸ" }, { "code": 11578, "label": "ⴺ" } ] } },
+    { "code": 11580, "label": "ⴼ", "popup": { "main": { "code": 11616, "label": "ⵠ" } } },
+    { "code": 11571, "label": "ⴳ", "popup": { "main": { "code": 11572, "label": "ⴴ" }, "relevant": [ { "code": 11573, "label": "ⴵ" }, { "code": 11574, "label": "ⴶ" } ] } },
+    { "code": 11584, "label": "ⵀ", "popup": { "main": { "code": 11586, "label": "ⵂ" }, "relevant": [ { "code": 11585, "label": "ⵁ" } ] } },
+    { "code": 11598, "label": "ⵊ", "popup": { "main": { "code": 11600, "label": "ⵌ" }, "relevant": [ { "code": 11599, "label": "ⵋ" } ] } },
+    { "code": 11581, "label": "ⴽ", "popup": { "main": { "code": 11582, "label": "ⴾ" }, "relevant": [ { "code": 11583, "label": "ⴿ" } ] } },
+    { "code": 11596, "label": "ⵍ", "popup": { "main": { "code": 11632, "label": "⵰" } } }
+  ],
+  [
+    { "code": 11597, "label": "ⵎ", "popup": { "main": { "code": 11647, "label": "⵿" } } },
+    { "code": 11617, "label": "ⵡ" },
+    { "code": 11589, "label": "ⵅ", "popup": { "main": { "code": 11590, "label": "ⵆ" } } },
+    { "code": 11611, "label": "ⵛ", "popup": { "main": { "code": 11614, "label": "ⵞ" } } },
+    { "code": 11606, "label": "ⵖ", "popup": { "main": { "code": 11607, "label": "ⵗ" }, "relevant": [ { "code": 11608, "label": "ⵘ" } ] } },
+    { "code": 11569, "label": "ⴱ", "popup": { "main": { "code": 11570, "label": "ⴲ" }, "relevant": [ { "code": 11602, "label": "ⵒ" } ] } },
+    { "code": 11595, "label": "ⵏ", "popup": { "main": { "code": 11600, "label": "ⵐ" }, "relevant": [ { "code": 11601, "label": "ⵑ" } ] } }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: arabic1.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":  1590, "label": "ض" },
+    { "code":  1589, "label": "ص" },
+    { "code":  1579, "label": "ث" },
+    { "code":  1602, "label": "ق" },
+    { "code":  1601, "label": "ف" },
+    { "code":  1594, "label": "غ" },
+    { "code":  1593, "label": "ع" },
+    { "code":  1607, "label": "ه" },
+    { "code":  1582, "label": "خ" },
+    { "code":  1581, "label": "ح" },
+    { "code":  1580, "label": "ج" }
+  ],
+  [
+    { "code":  1588, "label": "ش" },
+    { "code":  1587, "label": "س" },
+    { "code":  1610, "label": "ي" },
+    { "code":  1576, "label": "ب" },
+    { "code":  1604, "label": "ل" },
+    { "code":  1575, "label": "ا" },
+    { "code":  1578, "label": "ت" },
+    { "code":  1606, "label": "ن" },
+    { "code":  1605, "label": "م" },
+    { "code":  1603, "label": "ك" },
+    { "code":  1591, "label": "ط" }
+  ],
+  [
+    { "code":  1584, "label": "ذ" },
+    { "code":  1569, "label": "ء" },
+    { "code":  1572, "label": "ؤ" },
+    { "code":  1585, "label": "ر" },
+    { "code":  1609, "label": "ى" },
+    { "code":  1577, "label": "ة" },
+    { "code":  1608, "label": "و" },
+    { "code":  1586, "label": "ز" },
+    { "code":  1592, "label": "ظ" },
+    { "code":  1583, "label": "د" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: arabic2.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":  1590, "label": "ض" },
+    { "code":  1589, "label": "ص" },
+    { "code":  1602, "label": "ق" },
+    { "code":  1601, "label": "ف" },
+    { "code":  1594, "label": "غ" },
+    { "code":  1593, "label": "ع" },
+    { "code":  1607, "label": "ه" },
+    { "code":  1582, "label": "خ" },
+    { "code":  1581, "label": "ح" },
+    { "code":  1580, "label": "ج" }
+  ],
+  [
+    { "code":  1588, "label": "ش" },
+    { "code":  1587, "label": "س" },
+    { "code":  1610, "label": "ي" },
+    { "code":  1576, "label": "ب" },
+    { "code":  1604, "label": "ل" },
+    { "code":  1575, "label": "ا" },
+    { "code":  1578, "label": "ت" },
+    { "code":  1606, "label": "ن" },
+    { "code":  1605, "label": "م" },
+    { "code":  1603, "label": "ك" }
+  ],
+  [
+    { "code":  1592, "label": "ظ" },
+    { "code":  1591, "label": "ط" },
+    { "code":  1584, "label": "ذ" },
+    { "code":  1583, "label": "د" },
+    { "code":  1586, "label": "ز" },
+    { "code":  1585, "label": "ر" },
+    { "code":  1608, "label": "و" },
+    { "code":  1577, "label": "ة" },
+    { "code":  1579, "label": "ث" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: azerty.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":   97, "label": "a" },
+    { "$": "auto_text_key", "code":  122, "label": "z" },
+    { "$": "auto_text_key", "code":  101, "label": "e" },
+    { "$": "auto_text_key", "code":  114, "label": "r" },
+    { "$": "auto_text_key", "code":  116, "label": "t" },
+    { "$": "auto_text_key", "code":  121, "label": "y" },
+    { "$": "auto_text_key", "code":  117, "label": "u" },
+    { "$": "auto_text_key", "code":  105, "label": "i" },
+    { "$": "auto_text_key", "code":  111, "label": "o" },
+    { "$": "auto_text_key", "code":  112, "label": "p" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  113, "label": "q" },
+    { "$": "auto_text_key", "code":  115, "label": "s" },
+    { "$": "auto_text_key", "code":  100, "label": "d" },
+    { "$": "auto_text_key", "code":  102, "label": "f" },
+    { "$": "auto_text_key", "code":  103, "label": "g" },
+    { "$": "auto_text_key", "code":  104, "label": "h" },
+    { "$": "auto_text_key", "code":  106, "label": "j" },
+    { "$": "auto_text_key", "code":  107, "label": "k" },
+    { "$": "auto_text_key", "code":  108, "label": "l" },
+    { "$": "auto_text_key", "code":  109, "label": "m" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  119, "label": "w" },
+    { "$": "auto_text_key", "code":  120, "label": "x" },
+    { "$": "auto_text_key", "code":   99, "label": "c" },
+    { "$": "auto_text_key", "code":  118, "label": "v" },
+    { "$": "auto_text_key", "code":   98, "label": "b" },
+    { "$": "auto_text_key", "code":  110, "label": "n" },
+    { "code":   39, "label": "'", "popup": {
+      "relevant": [
+        { "code": 8218, "label": "‚" },
+        { "code": 8216, "label": "‘" },
+        { "code": 8217, "label": "’" },
+        { "code": 8249, "label": "‹" },
+        { "code": 8250, "label": "›" }
+      ]
+    } }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: danish.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":  113, "label": "q" },
+    { "$": "auto_text_key", "code":  119, "label": "w" },
+    { "$": "auto_text_key", "code":  101, "label": "e" },
+    { "$": "auto_text_key", "code":  114, "label": "r" },
+    { "$": "auto_text_key", "code":  116, "label": "t" },
+    { "$": "auto_text_key", "code":  121, "label": "y" },
+    { "$": "auto_text_key", "code":  117, "label": "u" },
+    { "$": "auto_text_key", "code":  105, "label": "i" },
+    { "$": "auto_text_key", "code":  111, "label": "o" },
+    { "$": "auto_text_key", "code":  112, "label": "p" },
+    { "$": "auto_text_key", "code":  229, "label": "å" }
+  ],
+  [
+    { "$": "auto_text_key", "code":   97, "label": "a" },
+    { "$": "auto_text_key", "code":  115, "label": "s" },
+    { "$": "auto_text_key", "code":  100, "label": "d" },
+    { "$": "auto_text_key", "code":  102, "label": "f" },
+    { "$": "auto_text_key", "code":  103, "label": "g" },
+    { "$": "auto_text_key", "code":  104, "label": "h" },
+    { "$": "auto_text_key", "code":  106, "label": "j" },
+    { "$": "auto_text_key", "code":  107, "label": "k" },
+    { "$": "auto_text_key", "code":  108, "label": "l" },
+    { "$": "auto_text_key", "code":  230, "label": "æ" },
+    { "$": "auto_text_key", "code":  248, "label": "ø" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  122, "label": "z" },
+    { "$": "auto_text_key", "code":  120, "label": "x" },
+    { "$": "auto_text_key", "code":   99, "label": "c" },
+    { "$": "auto_text_key", "code":  118, "label": "v" },
+    { "$": "auto_text_key", "code":   98, "label": "b" },
+    { "$": "auto_text_key", "code":  110, "label": "n" },
+    { "$": "auto_text_key", "code":  109, "label": "m" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: dvorak.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "shift_state_selector",
+      "shiftedManual": { "code":   34, "label": "\"", "popup": {
+        "relevant": [
+          { "code":   33, "label": "!" },
+          { "code":   39, "label": "'"}
+        ]
+      } },
+      "default": { "$": "variation_selector",
+        "email":   { "code":   64, "label": "@" },
+        "uri":     { "code":   47, "label": "/" },
+        "default": { "code":   39, "label": "'", "popup": {
+          "relevant": [
+            { "code":   33, "label": "!" },
+            { "code":   34, "label": "\"" }
+          ]
+        } }
+      }
+    },
+    { "$": "shift_state_selector",
+      "shiftedManual": { "code":   60, "label": "<", "popup": {
+        "relevant": [
+          { "code":   44, "label": "," },
+          { "code":   63, "label": "?" }
+        ]
+      } },
+      "default": { "code":   44, "label": ",", "popup": {
+        "relevant": [
+          { "code":   60, "label": "<" },
+          { "code":   63, "label": "?" }
+        ]
+      } }
+    },
+    { "$": "shift_state_selector",
+      "shiftedManual": { "code":   62, "label": ">", "popup": {
+        "relevant": [
+          { "code":   46, "label": "." }
+        ]
+      } },
+      "default": { "code":   46, "label": ".", "popup": {
+        "relevant": [
+          { "code":   62, "label": ">" }
+        ]
+      } }
+    },
+    { "$": "auto_text_key", "code":  112, "label": "p" },
+    { "$": "auto_text_key", "code":  121, "label": "y" },
+    { "$": "auto_text_key", "code":  102, "label": "f" },
+    { "$": "auto_text_key", "code":  103, "label": "g" },
+    { "$": "auto_text_key", "code":   99, "label": "c" },
+    { "$": "auto_text_key", "code":  114, "label": "r" },
+    { "$": "auto_text_key", "code":  108, "label": "l" }
+  ],
+  [
+    { "$": "auto_text_key", "code":   97, "label": "a" },
+    { "$": "auto_text_key", "code":  111, "label": "o" },
+    { "$": "auto_text_key", "code":  101, "label": "e" },
+    { "$": "auto_text_key", "code":  117, "label": "u" },
+    { "$": "auto_text_key", "code":  105, "label": "i" },
+    { "$": "auto_text_key", "code":  100, "label": "d" },
+    { "$": "auto_text_key", "code":  104, "label": "h" },
+    { "$": "auto_text_key", "code":  116, "label": "t" },
+    { "$": "auto_text_key", "code":  110, "label": "n" },
+    { "$": "auto_text_key", "code":  115, "label": "s" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  106, "label": "j" },
+    { "$": "auto_text_key", "code":  107, "label": "k" },
+    { "$": "auto_text_key", "code":  120, "label": "x" },
+    { "$": "auto_text_key", "code":   98, "label": "b" },
+    { "$": "auto_text_key", "code":  109, "label": "m" },
+    { "$": "auto_text_key", "code":  119, "label": "w" },
+    { "$": "auto_text_key", "code":  118, "label": "v" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: fancy_1.json
+--------------------------------------------------------------------------------
+[
+  [
+    {"$":"auto_text_key","label":"ǫ"},{"$":"auto_text_key","label":"ᴡ"},{"$":"auto_text_key","label":"ᴇ"},{"$":"auto_text_key","label":"ʀ"},{"$":"auto_text_key","label":"ᴛ"},{"$":"auto_text_key","label":"ʏ"},{"$":"auto_text_key","label":"ᴜ"},{"$":"auto_text_key","label":"ɪ"},{"$":"auto_text_key","label":"ᴏ"},{"$":"auto_text_key","label":"ᴘ"}
+  ],
+  [
+    {"$":"auto_text_key","label":"ᴀ"},{"$":"auto_text_key","label":"s"},{"$":"auto_text_key","label":"ᴅ"},{"$":"auto_text_key","label":"ғ"},{"$":"auto_text_key","label":"ɢ"},{"$":"auto_text_key","label":"ʜ"},{"$":"auto_text_key","label":"ᴊ"},{"$":"auto_text_key","label":"ᴋ"},{"$":"auto_text_key","label":"ʟ"}
+  ],
+  [
+    {"$":"auto_text_key","label":"ᴢ"},{"$":"auto_text_key","label":"x"},{"$":"auto_text_key","label":"ᴄ"},{"$":"auto_text_key","label":"ᴠ"},{"$":"auto_text_key","label":"ʙ"},{"$":"auto_text_key","label":"ɴ"},{"$":"auto_text_key","label":"ᴍ"}
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: fancy_10.json
+--------------------------------------------------------------------------------
+[
+  [
+    {"$":"auto_text_key","label":"🅠"},{"$":"auto_text_key","label":"🅦"},{"$":"auto_text_key","label":"🅔"},{"$":"auto_text_key","label":"🅡"},{"$":"auto_text_key","label":"🅣"},{"$":"auto_text_key","label":"🅨"},{"$":"auto_text_key","label":"🅤"},{"$":"auto_text_key","label":"🅘"},{"$":"auto_text_key","label":"🅞"},{"$":"auto_text_key","label":"🅟"}
+  ],
+  [
+    {"$":"auto_text_key","label":"🅐"},{"$":"auto_text_key","label":"🅢"},{"$":"auto_text_key","label":"🅓"},{"$":"auto_text_key","label":"🅕"},{"$":"auto_text_key","label":"🅖"},{"$":"auto_text_key","label":"🅗"},{"$":"auto_text_key","label":"🅙"},{"$":"auto_text_key","label":"🅚"},{"$":"auto_text_key","label":"🅛"}
+  ],
+  [
+    {"$":"auto_text_key","label":"🅩"},{"$":"auto_text_key","label":"🅧"},{"$":"auto_text_key","label":"🅒"},{"$":"auto_text_key","label":"🅥"},{"$":"auto_text_key","label":"🅑"},{"$":"auto_text_key","label":"🅝"},{"$":"auto_text_key","label":"🅜"}
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: fancy_2.json
+--------------------------------------------------------------------------------
+[
+  [
+    {"$":"auto_text_key","label":"ⓠ"},{"$":"auto_text_key","label":"ⓦ"},{"$":"auto_text_key","label":"ⓔ"},{"$":"auto_text_key","label":"ⓡ"},{"$":"auto_text_key","label":"ⓣ"},{"$":"auto_text_key","label":"ⓨ"},{"$":"auto_text_key","label":"ⓤ"},{"$":"auto_text_key","label":"ⓘ"},{"$":"auto_text_key","label":"ⓞ"},{"$":"auto_text_key","label":"ⓟ"}
+  ],
+  [
+    {"$":"auto_text_key","label":"ⓐ"},{"$":"auto_text_key","label":"ⓢ"},{"$":"auto_text_key","label":"ⓓ"},{"$":"auto_text_key","label":"ⓕ"},{"$":"auto_text_key","label":"ⓖ"},{"$":"auto_text_key","label":"ⓗ"},{"$":"auto_text_key","label":"ⓙ"},{"$":"auto_text_key","label":"ⓚ"},{"$":"auto_text_key","label":"ⓛ"}
+  ],
+  [
+    {"$":"auto_text_key","label":"ⓩ"},{"$":"auto_text_key","label":"ⓧ"},{"$":"auto_text_key","label":"ⓒ"},{"$":"auto_text_key","label":"ⓥ"},{"$":"auto_text_key","label":"ⓑ"},{"$":"auto_text_key","label":"ⓝ"},{"$":"auto_text_key","label":"ⓜ"}
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: fancy_3.json
+--------------------------------------------------------------------------------
+[
+  [
+    {"$":"auto_text_key","label":"ｑ"},{"$":"auto_text_key","label":"ｗ"},{"$":"auto_text_key","label":"ｅ"},{"$":"auto_text_key","label":"ｒ"},{"$":"auto_text_key","label":"ｔ"},{"$":"auto_text_key","label":"ｙ"},{"$":"auto_text_key","label":"ｕ"},{"$":"auto_text_key","label":"ｉ"},{"$":"auto_text_key","label":"ｏ"},{"$":"auto_text_key","label":"ｐ"}
+  ],
+  [
+    {"$":"auto_text_key","label":"ａ"},{"$":"auto_text_key","label":"ｓ"},{"$":"auto_text_key","label":"ｄ"},{"$":"auto_text_key","label":"ｆ"},{"$":"auto_text_key","label":"ｇ"},{"$":"auto_text_key","label":"ｈ"},{"$":"auto_text_key","label":"ｊ"},{"$":"auto_text_key","label":"ｋ"},{"$":"auto_text_key","label":"ｌ"}
+  ],
+  [
+    {"$":"auto_text_key","label":"ｚ"},{"$":"auto_text_key","label":"ｘ"},{"$":"auto_text_key","label":"ｃ"},{"$":"auto_text_key","label":"ｖ"},{"$":"auto_text_key","label":"ｂ"},{"$":"auto_text_key","label":"ｎ"},{"$":"auto_text_key","label":"ｍ"}
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: fancy_4.json
+--------------------------------------------------------------------------------
+[
+  [
+    {"$":"auto_text_key","label":"𝔮"},{"$":"auto_text_key","label":"𝔴"},{"$":"auto_text_key","label":"𝔢"},{"$":"auto_text_key","label":"𝔯"},{"$":"auto_text_key","label":"𝔱"},{"$":"auto_text_key","label":"𝔶"},{"$":"auto_text_key","label":"𝔲"},{"$":"auto_text_key","label":"𝔦"},{"$":"auto_text_key","label":"𝔬"},{"$":"auto_text_key","label":"𝔭"}
+  ],
+  [
+    {"$":"auto_text_key","label":"𝔞"},{"$":"auto_text_key","label":"𝔰"},{"$":"auto_text_key","label":"𝔡"},{"$":"auto_text_key","label":"𝔣"},{"$":"auto_text_key","label":"𝔤"},{"$":"auto_text_key","label":"𝔥"},{"$":"auto_text_key","label":"𝔧"},{"$":"auto_text_key","label":"𝔨"},{"$":"auto_text_key","label":"𝔩"}
+  ],
+  [
+    {"$":"auto_text_key","label":"𝔷"},{"$":"auto_text_key","label":"𝔵"},{"$":"auto_text_key","label":"𝔠"},{"$":"auto_text_key","label":"𝔳"},{"$":"auto_text_key","label":"𝔟"},{"$":"auto_text_key","label":"𝔫"},{"$":"auto_text_key","label":"𝔪"}
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: fancy_5.json
+--------------------------------------------------------------------------------
+[
+  [
+    {"$":"auto_text_key","label":"𝓺"},{"$":"auto_text_key","label":"𝔀"},{"$":"auto_text_key","label":"𝓮"},{"$":"auto_text_key","label":"𝓻"},{"$":"auto_text_key","label":"𝓽"},{"$":"auto_text_key","label":"𝔂"},{"$":"auto_text_key","label":"𝓾"},{"$":"auto_text_key","label":"𝓲"},{"$":"auto_text_key","label":"𝓸"},{"$":"auto_text_key","label":"𝓹"}
+  ],
+  [
+    {"$":"auto_text_key","label":"𝓪"},{"$":"auto_text_key","label":"𝓼"},{"$":"auto_text_key","label":"𝓭"},{"$":"auto_text_key","label":"𝓯"},{"$":"auto_text_key","label":"𝓰"},{"$":"auto_text_key","label":"𝓱"},{"$":"auto_text_key","label":"𝓳"},{"$":"auto_text_key","label":"𝓴"},{"$":"auto_text_key","label":"𝓵"}
+  ],
+  [
+    {"$":"auto_text_key","label":"𝔃"},{"$":"auto_text_key","label":"𝔁"},{"$":"auto_text_key","label":"𝓬"},{"$":"auto_text_key","label":"𝓿"},{"$":"auto_text_key","label":"𝓫"},{"$":"auto_text_key","label":"𝓷"},{"$":"auto_text_key","label":"𝓶"}
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: fancy_6.json
+--------------------------------------------------------------------------------
+[
+  [
+    {"$":"auto_text_key","label":"𝐪"},{"$":"auto_text_key","label":"𝐰"},{"$":"auto_text_key","label":"𝐞"},{"$":"auto_text_key","label":"𝐫"},{"$":"auto_text_key","label":"𝐭"},{"$":"auto_text_key","label":"𝐲"},{"$":"auto_text_key","label":"𝐮"},{"$":"auto_text_key","label":"𝐢"},{"$":"auto_text_key","label":"𝐨"},{"$":"auto_text_key","label":"𝐩"}
+  ],
+  [
+    {"$":"auto_text_key","label":"𝐚"},{"$":"auto_text_key","label":"𝐬"},{"$":"auto_text_key","label":"𝐝"},{"$":"auto_text_key","label":"𝐟"},{"$":"auto_text_key","label":"𝐠"},{"$":"auto_text_key","label":"𝐡"},{"$":"auto_text_key","label":"𝐣"},{"$":"auto_text_key","label":"𝐤"},{"$":"auto_text_key","label":"𝐥"}
+  ],
+  [
+    {"$":"auto_text_key","label":"𝐳"},{"$":"auto_text_key","label":"𝐱"},{"$":"auto_text_key","label":"𝐜"},{"$":"auto_text_key","label":"𝐯"},{"$":"auto_text_key","label":"𝐛"},{"$":"auto_text_key","label":"𝐧"},{"$":"auto_text_key","label":"𝐦"}
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: fancy_7.json
+--------------------------------------------------------------------------------
+[
+  [
+    {"$":"auto_text_key","label":"𝕢"},{"$":"auto_text_key","label":"𝕨"},{"$":"auto_text_key","label":"𝕖"},{"$":"auto_text_key","label":"𝕣"},{"$":"auto_text_key","label":"𝕥"},{"$":"auto_text_key","label":"𝕪"},{"$":"auto_text_key","label":"𝕦"},{"$":"auto_text_key","label":"𝕚"},{"$":"auto_text_key","label":"𝕠"},{"$":"auto_text_key","label":"𝕡"}
+  ],
+  [
+    {"$":"auto_text_key","label":"𝕒"},{"$":"auto_text_key","label":"𝕤"},{"$":"auto_text_key","label":"𝕕"},{"$":"auto_text_key","label":"𝕗"},{"$":"auto_text_key","label":"𝕘"},{"$":"auto_text_key","label":"𝕙"},{"$":"auto_text_key","label":"𝕛"},{"$":"auto_text_key","label":"𝕜"},{"$":"auto_text_key","label":"𝕝"}
+  ],
+  [
+    {"$":"auto_text_key","label":"𝕫"},{"$":"auto_text_key","label":"𝕩"},{"$":"auto_text_key","label":"𝕔"},{"$":"auto_text_key","label":"𝕧"},{"$":"auto_text_key","label":"𝕓"},{"$":"auto_text_key","label":"𝕟"},{"$":"auto_text_key","label":"𝕞"}
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: fancy_8.json
+--------------------------------------------------------------------------------
+[
+  [
+    {"$":"auto_text_key","label":"ǫ"},{"$":"auto_text_key","label":"ᴡ"},{"$":"auto_text_key","label":"ᴇ"},{"$":"auto_text_key","label":"ʀ"},{"$":"auto_text_key","label":"ᴛ"},{"$":"auto_text_key","label":"ʏ"},{"$":"auto_text_key","label":"ᴜ"},{"$":"auto_text_key","label":"ɪ"},{"$":"auto_text_key","label":"ᴏ"},{"$":"auto_text_key","label":"ᴘ"}
+  ],
+  [
+    {"$":"auto_text_key","label":"ᴀ"},{"$":"auto_text_key","label":"s"},{"$":"auto_text_key","label":"ᴅ"},{"$":"auto_text_key","label":"ғ"},{"$":"auto_text_key","label":"ɢ"},{"$":"auto_text_key","label":"ʜ"},{"$":"auto_text_key","label":"ᴊ"},{"$":"auto_text_key","label":"ᴋ"},{"$":"auto_text_key","label":"ʟ"}
+  ],
+  [
+    {"$":"auto_text_key","label":"ᴢ"},{"$":"auto_text_key","label":"x"},{"$":"auto_text_key","label":"ᴄ"},{"$":"auto_text_key","label":"ᴠ"},{"$":"auto_text_key","label":"ʙ"},{"$":"auto_text_key","label":"ɴ"},{"$":"auto_text_key","label":"ᴍ"}
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: fancy_9.json
+--------------------------------------------------------------------------------
+[
+  [
+    {"$":"auto_text_key","label":"q҉"},{"$":"auto_text_key","label":"w҉"},{"$":"auto_text_key","label":"e҉"},{"$":"auto_text_key","label":"r҉"},{"$":"auto_text_key","label":"t҉"},{"$":"auto_text_key","label":"y҉"},{"$":"auto_text_key","label":"u҉"},{"$":"auto_text_key","label":"i҉"},{"$":"auto_text_key","label":"o҉"},{"$":"auto_text_key","label":"p҉"}
+  ],
+  [
+    {"$":"auto_text_key","label":"a҉"},{"$":"auto_text_key","label":"s҉"},{"$":"auto_text_key","label":"d҉"},{"$":"auto_text_key","label":"f҉"},{"$":"auto_text_key","label":"g҉"},{"$":"auto_text_key","label":"h҉"},{"$":"auto_text_key","label":"j҉"},{"$":"auto_text_key","label":"k҉"},{"$":"auto_text_key","label":"l҉"}
+  ],
+  [
+    {"$":"auto_text_key","label":"z҉"},{"$":"auto_text_key","label":"x҉"},{"$":"auto_text_key","label":"c҉"},{"$":"auto_text_key","label":"v҉"},{"$":"auto_text_key","label":"b҉"},{"$":"auto_text_key","label":"n҉"},{"$":"auto_text_key","label":"m҉"}
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: french.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":  113, "label": "q" },
+    { "$": "auto_text_key", "code":  119, "label": "w" },
+    { "$": "auto_text_key", "code":  101, "label": "e" },
+    { "$": "auto_text_key", "code":  114, "label": "r" },
+    { "$": "auto_text_key", "code":  116, "label": "t" },
+    { "$": "auto_text_key", "code":  121, "label": "y" },
+    { "$": "auto_text_key", "code":  117, "label": "u" },
+    { "$": "auto_text_key", "code":  105, "label": "i" },
+    { "$": "auto_text_key", "code":  111, "label": "o" },
+    { "$": "auto_text_key", "code":  112, "label": "p" },
+    { "$": "auto_text_key", "code":  232, "label": "è" }
+  ],
+  [
+    { "$": "auto_text_key", "code":   97, "label": "a" },
+    { "$": "auto_text_key", "code":  115, "label": "s" },
+    { "$": "auto_text_key", "code":  100, "label": "d" },
+    { "$": "auto_text_key", "code":  102, "label": "f" },
+    { "$": "auto_text_key", "code":  103, "label": "g" },
+    { "$": "auto_text_key", "code":  104, "label": "h" },
+    { "$": "auto_text_key", "code":  106, "label": "j" },
+    { "$": "auto_text_key", "code":  107, "label": "k" },
+    { "$": "auto_text_key", "code":  108, "label": "l" },
+    { "$": "auto_text_key", "code":  233, "label": "é" },
+    { "$": "auto_text_key", "code":  224, "label": "à" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  122, "label": "z" },
+    { "$": "auto_text_key", "code":  120, "label": "x" },
+    { "$": "auto_text_key", "code":   99, "label": "c" },
+    { "$": "auto_text_key", "code":  118, "label": "v" },
+    { "$": "auto_text_key", "code":   98, "label": "b" },
+    { "$": "auto_text_key", "code":  110, "label": "n" },
+    { "$": "auto_text_key", "code":  109, "label": "m" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: german.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":  113, "label": "q" },
+    { "$": "auto_text_key", "code":  119, "label": "w" },
+    { "$": "auto_text_key", "code":  101, "label": "e" },
+    { "$": "auto_text_key", "code":  114, "label": "r" },
+    { "$": "auto_text_key", "code":  116, "label": "t" },
+    { "$": "auto_text_key", "code":  122, "label": "z" },
+    { "$": "auto_text_key", "code":  117, "label": "u" },
+    { "$": "auto_text_key", "code":  105, "label": "i" },
+    { "$": "auto_text_key", "code":  111, "label": "o" },
+    { "$": "auto_text_key", "code":  112, "label": "p" },
+    { "$": "auto_text_key", "code":  252, "label": "ü" }
+  ],
+  [
+    { "$": "auto_text_key", "code":   97, "label": "a" },
+    { "$": "auto_text_key", "code":  115, "label": "s" },
+    { "$": "auto_text_key", "code":  100, "label": "d" },
+    { "$": "auto_text_key", "code":  102, "label": "f" },
+    { "$": "auto_text_key", "code":  103, "label": "g" },
+    { "$": "auto_text_key", "code":  104, "label": "h" },
+    { "$": "auto_text_key", "code":  106, "label": "j" },
+    { "$": "auto_text_key", "code":  107, "label": "k" },
+    { "$": "auto_text_key", "code":  108, "label": "l" },
+    { "$": "auto_text_key", "code":  246, "label": "ö" },
+    { "$": "auto_text_key", "code":  228, "label": "ä" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  121, "label": "y" },
+    { "$": "auto_text_key", "code":  120, "label": "x" },
+    { "$": "auto_text_key", "code":   99, "label": "c" },
+    { "$": "auto_text_key", "code":  118, "label": "v" },
+    { "$": "auto_text_key", "code":   98, "label": "b" },
+    { "$": "auto_text_key", "code":  110, "label": "n" },
+    { "$": "auto_text_key", "code":  109, "label": "m" },
+    { "$": "case_selector",
+      "lower": { "code":  223, "label": "ß" },
+      "upper": { "code": 7838, "label": "ẞ" }
+    }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: greek.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":  894, "label": ";" },
+    { "$": "auto_text_key", "code":  962, "label": "ς" },
+    { "$": "auto_text_key", "code":  949, "label": "ε" },
+    { "$": "auto_text_key", "code":  961, "label": "ρ" },
+    { "$": "auto_text_key", "code":  964, "label": "τ" },
+    { "$": "auto_text_key", "code":  965, "label": "υ" },
+    { "$": "auto_text_key", "code":  952, "label": "θ" },
+    { "$": "auto_text_key", "code":  953, "label": "ι" },
+    { "$": "auto_text_key", "code":  959, "label": "ο" },
+    { "$": "auto_text_key", "code":  960, "label": "π" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  945, "label": "α" },
+    { "$": "auto_text_key", "code":  963, "label": "σ" },
+    { "$": "auto_text_key", "code":  948, "label": "δ" },
+    { "$": "auto_text_key", "code":  966, "label": "φ" },
+    { "$": "auto_text_key", "code":  947, "label": "γ" },
+    { "$": "auto_text_key", "code":  951, "label": "η" },
+    { "$": "auto_text_key", "code":  958, "label": "ξ" },
+    { "$": "auto_text_key", "code":  954, "label": "κ" },
+    { "$": "auto_text_key", "code":  955, "label": "λ" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  950, "label": "ζ" },
+    { "$": "auto_text_key", "code":  967, "label": "χ" },
+    { "$": "auto_text_key", "code":  968, "label": "ψ" },
+    { "$": "auto_text_key", "code":  969, "label": "ω" },
+    { "$": "auto_text_key", "code":  946, "label": "β" },
+    { "$": "auto_text_key", "code":  957, "label": "ν" },
+    { "$": "auto_text_key", "code":  956, "label": "μ" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: horami.json
+--------------------------------------------------------------------------------
+[
+    [
+      { "code":  1670, "label": "چ" },
+      { "code":  1662, "label": "پ", "popup": {
+        "main": { "code": 1579, "label": "ث" }
+      } },
+      { "code":  1602, "label": "ق"},
+      { "code":  1601, "label": "ف" , "popup": {
+        "main": {"code": 1700, "label": "ڤ" }
+      } },
+      { "code":  1594, "label": "غ" },
+      { "code":  1593, "label": "ع", "popup": {
+        "main": { "code": 1551, "label": "؏" }
+      } },      { "code":  1726, "label": "ھ" },
+      { "code":  1582, "label": "خ" },
+      { "code":  1581, "label": "ح" },
+      { "code":  1580, "label": "ج", "popup": {
+        "main": {"code": -255, "label": "‌خاسی‌ وەشی‌"}
+      } }
+    ],
+    [
+      { "code":  1588, "label": "ش" },
+      { "code":  1587, "label": "س" },
+      { "code":  1740, "label": "ی" },
+      { "code":  1576, "label": "ب", "popup": {
+        "main": { "code": -255, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ"},
+        "relevant": [
+          { "code": 65021, "label": "﷽" }]
+      }},
+      { "code":  1604, "label": "ل" },
+      { "code":  1575, "label": "ا" },
+      { "code":  1578, "label": "ت", "popup": {
+        "main": { "code": 1591, "label": "ط" },
+        "relevant": [{"code": 1592, "label": "ظ" }]
+      } },
+      { "code":  1606, "label": "ن" },
+      { "code":  1605, "label": "م" },
+      { "code":  1705, "label": "ک", "popup": {
+        "main": { "code": 1711, "label": "گ" }
+      } }
+    ],
+    [
+      { "code":  1574, "label": "ئ", "popup": {
+        "main": { "code": 1569, "label": "ء" }
+      } },
+      { "code":  1742, "label": "ێ" },
+      { "code":  1585, "label": "ر", "popup": {
+        "main": {"code": 1685, "label": "ڕ" }
+      } },
+      { "code":  1586, "label": "ز", "popup": {
+        "main": {"code": 1688, "label": "ژ" }
+      } },
+      { "code":  1717, "label": "ڵ" , "popup": {
+        "main": {"code": -255, "label": "‌‌إِنْ‌ ‌شَاءَ‌ ‌اللّٰه‌" }
+      } },
+      { "code":  1749, "label": "ە", "popup": {
+        "main": { "code": 1577, "label": "ة" }
+      } },
+      { "code":  1608, "label": "و", "popup": {
+        "main": { "code": -1001, "label": "وْ" },
+        "relevant": [
+          { "code": -1001, "label": "وو" }
+        ]
+      } },
+
+      { "code": 1737, "label": "ۉ" , "popup": {
+        "main": { "code": 1734, "label": "ۆ" },
+        "relevant": [
+          { "code": 1743, "label": "ۏ" },
+          { "code": 1735, "label": "ۇ" },
+          { "code": 1738, "label": "ۊ" },
+          { "code": 1739, "label": "ۋ" }
+        ]
+      } },
+      { "code":  1583, "label": "د", "popup": {
+        "main": {"code": 1584, "label": "ذ" }
+      } },
+      { "code":  64390, "label": "ﮆ" }
+    ]
+  ]
+
+
+--------------------------------------------------------------------------------
+FILE: korean.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "case_selector",
+      "lower": { "code": 12610, "label": "ㅂ" },
+      "upper": { "code": 12611, "label": "ㅃ" }
+    },
+    { "$": "case_selector",
+      "lower": { "code": 12616, "label": "ㅈ" },
+      "upper": { "code": 12617, "label": "ㅉ" }
+    },
+    { "$": "case_selector",
+      "lower": { "code": 12599, "label": "ㄷ" },
+      "upper": { "code": 12600, "label": "ㄸ" }
+    },
+    { "$": "case_selector",
+      "lower": { "code": 12593, "label": "ㄱ" },
+      "upper": { "code": 12594, "label": "ㄲ" }
+    },
+    { "$": "case_selector",
+      "lower": { "code": 12613, "label": "ㅅ" },
+      "upper": { "code": 12614, "label": "ㅆ" }
+    },
+    { "$": "auto_text_key", "code": 12635, "label": "ㅛ"},
+    { "$": "auto_text_key", "code": 12629, "label": "ㅕ"},
+    { "$": "auto_text_key", "code": 12625, "label": "ㅑ"},
+    { "$": "case_selector",
+      "lower": { "code": 12624, "label": "ㅐ" },
+      "upper": { "code": 12626, "label": "ㅒ" }
+    },
+    { "$": "case_selector",
+      "lower": { "code": 12628, "label": "ㅔ" },
+      "upper": { "code": 12630, "label": "ㅖ" }
+    }
+  ],
+  [
+    { "$": "auto_text_key", "code": 12609, "label": "ㅁ"},
+    { "$": "auto_text_key", "code": 12596, "label": "ㄴ"},
+    { "$": "auto_text_key", "code": 12615, "label": "ㅇ"},
+    { "$": "auto_text_key", "code": 12601, "label": "ㄹ"},
+    { "$": "auto_text_key", "code": 12622, "label": "ㅎ"},
+    { "$": "auto_text_key", "code": 12631, "label": "ㅗ"},
+    { "$": "auto_text_key", "code": 12627, "label": "ㅓ"},
+    { "$": "auto_text_key", "code": 12623, "label": "ㅏ"},
+    { "$": "auto_text_key", "code": 12643, "label": "ㅣ"}
+  ],
+  [
+    { "$": "auto_text_key", "code": 12619, "label": "ㅋ"},
+    { "$": "auto_text_key", "code": 12620, "label": "ㅌ"},
+    { "$": "auto_text_key", "code": 12618, "label": "ㅊ"},
+    { "$": "auto_text_key", "code": 12621, "label": "ㅍ"},
+    { "$": "auto_text_key", "code": 12640, "label": "ㅠ"},
+    { "$": "auto_text_key", "code": 12636, "label": "ㅜ"},
+    { "$": "auto_text_key", "code": 12641, "label": "ㅡ"}
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_alfbe.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":  1594, "label": "غ" },
+    { "code":  1593, "label": "ع", "popup": {
+      "main": { "code": 1551, "label": "؏" }
+    } },
+
+    { "code":  1582, "label": "خ" },
+    { "code":  1581, "label": "ح" },
+    { "code":  1670, "label": "چ" },
+    { "code":  1580, "label": "ج" },
+    { "code":  1578, "label": "ت", "popup": {
+      "main": { "code": 1591, "label": "ط" }
+    } },
+    { "code":  1662, "label": "پ", "popup": {
+      "main": { "code": 1579, "label": "ث" }
+    } },
+    { "code":  1576, "label": "ب", "popup": {
+      "main": { "code": -255, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ"},
+      "relevant": [
+        { "code": 65021, "label": "﷽" }]
+    }},
+    { "code":  1575, "label": "ا" },
+     { "code":  1574, "label": "ئ", "popup": {
+        "main": { "code": 1569, "label": "ء" }
+      } }
+    ],
+    [
+      { "code":  1602, "label": "ق"},
+      { "code":  1700, "label": "ڤ" },
+      { "code":  1601, "label": "ف" },
+      { "code":  1588, "label": "ش", "popup": {
+        "main": { "code": -255, "label": "و علیکم|وَ \u200Cعَلَيْكُمَ \u200C\u200Cالسَّلَاْم\u200C " }
+      }},
+      { "code":  1587, "label": "س", "popup": {
+        "main": { "code": -255, "label": "سلام|السَّلَاْمُ \u200C\u200Cعَلَیْکُم\u200C " }
+      }},
+      { "code":  1607, "label": "ھ" },
+      { "code": 1688, "label": "ژ" },
+      { "code":  1586, "label": "ز" },
+      { "code":  1685, "label": "ڕ" },
+      { "code":  1585, "label": "ر" },
+      { "code":  1583, "label": "د", "popup": {
+        "main": {"code": 1584, "label": "ذ" }
+      } }
+    ],
+    [
+      { "code":  1742, "label": "ێ" },
+      { "code":  1740, "label": "ی" },
+      { "code":  -255, "label": "وو" },
+      { "code":  1734, "label": "ۆ" },
+      { "code":  1608, "label": "و"},
+      { "code":  1749, "label": "ە", "popup": {
+        "main": { "code": 1577, "label": "ة" }
+      } },
+      { "code":  1606, "label": "ن" },
+      { "code":  1605, "label": "م" },
+      { "code":  1717, "label": "ڵ", "popup": {
+        "main": { "code": -255, "label": "إِنْ ‌شَاءَ اللّٰه "},
+        "relevant": [
+          { "code": -255, "label": "مَاشَاءَ\u200C اللّٰه " }]
+      }},
+      { "code":  1604, "label": "ل" , "popup": {
+        "main": {"code": -255, "label": "لَاْ \u200Cإِلٰهَ \u200Cإِلَّاْ\u200C اللّٰه‌" }
+      } },
+      { "code":  1711, "label": "گ" },
+      { "code":  1705, "label": "ک" }
+    ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_chpqv.json
+--------------------------------------------------------------------------------
+[
+    [
+      { "code":  1670, "label": "چ" , "popup": {
+        "main": { "code": -255, "label": "سُبْحَانَ ‌اللّٰه "},
+        "relevant": [
+          { "code": -255, "label": "أَسْتَغْفِرُ\u200C‌ اللّٰه " }]
+      } },
+
+      { "code":  1662, "label": "پ", "popup": {
+        "main": { "code": 1579, "label": "ث" }
+      } },
+
+      { "code":  1602, "label": "ق" },
+      { "code":  1700, "label": "ڤ" },
+      { "code":  1601, "label": "ف" },
+      { "code":  1594, "label": "غ" },
+      { "code":  1593, "label": "ع", "popup": {
+        "main": { "code": 1551, "label": "؏" }
+      } },
+
+      { "code":  1607, "label": "ھ" },
+      { "code":  1582, "label": "خ" , "popup": {
+        "main": { "code": -255, "label": "اللّٰهُ‌\u200Cأَكْبر "}}
+      },
+      { "code":  1581, "label": "ح", "popup": {
+        "main": { "code": -255, "label": "الْحَمْدُ‌ لِلّٰه "}}
+      },
+      { "code":  1580, "label": "ج" , "popup": {
+        "main": {"code": -255, "label": "جزاك الله|\u200Cجَزَاكَ\u200C اللّٰهُ \u200Cخَيْرََا\u200C" }
+      } }
+    ],
+    [
+      { "code":  1588, "label": "ش", "popup": {
+        "main": { "code": -255, "label": "و علیکم|وَ \u200Cعَلَيْكُمَ \u200Cالسَّلَاْم\u200C " }
+      }},
+      { "code":  1587, "label": "س", "popup": {
+        "main": { "code": -255, "label": "سلام|السَّلَاْمُ \u200Cعَلَیْکُم\u200C " }
+      }},
+      { "code":  1740, "label": "ی" },
+      { "code":  1576, "label": "ب", "popup": {
+        "main": { "code": -255, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ"},
+        "relevant": [
+          { "code": 65021, "label": "﷽" }]
+      }},
+      { "code":  1604, "label": "ل" , "popup": {
+        "main": { "code": -255, "label": "لَاْ \u200Cإِلٰهَ \u200Cإِلَّاْ\u200C اللّٰه " }
+      } },
+      { "code":  1575, "label": "ا" },
+      { "code":  1578, "label": "ت", "popup": {
+        "main": { "code": 1591, "label": "ط" }
+      } },
+      { "code":  1606, "label": "ن" },
+      { "code":  1605, "label": "م" },
+      { "code":  1705, "label": "ک" },
+      { "code":  1711, "label": "گ" , "popup": {
+        "main": {"code": -255, "label": "ﷲﷻ‌" }
+      } }
+    ],
+    [
+      { "code":  1574, "label": "ئ", "popup": {
+        "main": { "code": 1569, "label": "ء" }
+      } },
+      { "code":  1685, "label": "ڕ" },
+      { "code":  1585, "label": "ر" },
+      { "code":  1742, "label": "ێ" },
+
+      { "code":  1717, "label": "ڵ", "popup": {
+        "main": { "code": -255, "label": "إِنْ ‌شَاءَ ‌اللّٰه "},
+        "relevant": [
+          { "code": -255, "label": "مَا ‌شَاءَ\u200C اللّٰه " }]
+      }},
+
+      { "code":  1749, "label": "ە", "popup": {
+        "main": { "code": 1577, "label": "ة" }
+      } },
+      { "code":  1608, "label": "و", "popup": {
+        "main": { "code": -1001, "label": "وو" }
+      } },
+      { "code":  1586, "label": "ز", "popup": {
+        "main": {"code": 1688, "label": "ژ" }
+      } },
+
+      { "code":  1734, "label": "ۆ" },
+      { "code":  1583, "label": "د", "popup": {
+        "main": {"code": 1584, "label": "ذ" }
+      } }
+    ]
+  ]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_hybrid.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "kana_selector",
+      "hira": { "code": 1602, "label": "ق" },
+      "kata": { "$": "auto_text_key", "code": 113, "label": "q" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1608, "label": "و" },
+      "kata": { "$": "auto_text_key", "code": 119, "label": "w" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1749, "label": "ە", "popup": { "main": { "code": 1577, "label": "ة" } } },
+      "kata": { "$": "auto_text_key", "code": 101, "label": "e" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1585, "label": "ر", "popup": { "main": { "code": 1685, "label": "ڕ" } } },
+      "kata": { "$": "auto_text_key", "code": 114, "label": "r" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1578, "label": "ت", "popup": { "main": { "code": 1591, "label": "ط" } } },
+      "kata": { "$": "auto_text_key", "code": 116, "label": "t" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1609, "label": "ى" },
+      "kata": { "$": "auto_text_key", "code": 121, "label": "y" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1574, "label": "ئ", "popup": { "main": { "code": 1569, "label": "ء" } } },
+      "kata": { "$": "auto_text_key", "code": 117, "label": "u" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1581, "label": "ح", "popup": { "main": { "code": 1593, "label": "ع" } } },
+      "kata": { "$": "auto_text_key", "code": 105, "label": "i" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1734, "label": "ۆ" },
+      "kata": { "$": "auto_text_key", "code": 111, "label": "o" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1662, "label": "پ", "popup": { "main": { "code": 1579, "label": "ث" } } },
+      "kata": { "$": "auto_text_key", "code": 112, "label": "p" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": -255, "label": "وو", "popup": { "main": { "code": 1572, "label": "ؤ" } } },
+      "kata": { "$": "auto_text_key", "code": 251, "label": "û" }
+    }
+  ],
+  [
+    { "$": "kana_selector",
+      "hira": { "code": 1575, "label": "ا" },
+      "kata": { "$": "auto_text_key", "code": 97, "label": "a" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1587, "label": "س", "popup": { "main": { "code": -255, "label": "سلام|السَّلَاْمُ \u200C\u200Cعَلَیْکُم\u200C " } } },
+      "kata": { "$": "auto_text_key", "code": 115, "label": "s" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1583, "label": "د", "popup": { "main": { "code": 1584, "label": "ذ" } } },
+      "kata": { "$": "auto_text_key", "code": 100, "label": "d" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1601, "label": "ف" },
+      "kata": { "$": "auto_text_key", "code": 102, "label": "f" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1711, "label": "گ", "popup": { "main": { "code": 1594, "label": "غ" } } },
+      "kata": { "$": "auto_text_key", "code": 103, "label": "g" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1607, "label": "ھ" },
+      "kata": { "$": "auto_text_key", "code": 104, "label": "h" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1688, "label": "ژ" },
+      "kata": { "$": "auto_text_key", "code": 106, "label": "j" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1705, "label": "ک" },
+      "kata": { "$": "auto_text_key", "code": 107, "label": "k" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1604, "label": "ل", "popup": { "main": { "code": 1717, "label": "ڵ" } } },
+      "kata": { "$": "auto_text_key", "code": 108, "label": "l" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1742, "label": "ێ" },
+      "kata": { "$": "auto_text_key", "code": 234, "label": "ê" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1740, "label": "ی" },
+      "kata": { "$": "auto_text_key", "code": 238, "label": "î" }
+    }
+  ],
+  [
+    { "$": "kana_selector",
+      "hira": { "code": 1586, "label": "ز", "popup": { "main": { "code": 1592, "label": "ظ" } } },
+      "kata": { "$": "auto_text_key", "code": 122, "label": "z" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1582, "label": "خ" },
+      "kata": { "$": "auto_text_key", "code": 120, "label": "x" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1580, "label": "ج" },
+      "kata": { "$": "auto_text_key", "code": 99, "label": "c" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1700, "label": "ڤ" },
+      "kata": { "$": "auto_text_key", "code": 118, "label": "v" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1576, "label": "ب" },
+      "kata": { "$": "auto_text_key", "code": 98, "label": "b" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1606, "label": "ن" },
+      "kata": { "$": "auto_text_key", "code": 110, "label": "n" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1605, "label": "م" },
+      "kata": { "$": "auto_text_key", "code": 109, "label": "m" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1670, "label": "چ" },
+      "kata": { "$": "auto_text_key", "code": 231, "label": "ç" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1588, "label": "ش", "popup": { "main": { "code": -255, "label": "و علیکم|وَ \u200Cعَلَيْكُمَ \u200C\u200Cالسَّلَاْم\u200C "} } },
+      "kata": { "$": "auto_text_key", "code": 351, "label": "ş" }
+    }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_qfghh.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":  1602, "label": "ق"},
+    { "code":  1601, "label": "ف" , "popup": {
+      "main": {"code": 1700, "label": "ڤ" }
+    } },
+    { "code":  1594, "label": "غ", "popup": {
+      "main": { "code": 1593, "label": "ع" }
+    } },
+    { "code":  1607, "label": "ھ" },
+    { "code":  1749, "label": "ە", "popup": {
+      "main": { "code": 1577, "label": "ة" }
+    } },
+    { "code":  1578, "label": "ت", "popup": {
+      "main": { "code": 1591, "label": "ط" }
+    } },
+    { "code":  1662, "label": "پ", "popup": {
+      "main": { "code": 1579, "label": "ث" }
+    } },
+    { "code":  1582, "label": "خ", "popup": {
+      "main": { "code": 1581, "label": "ح" }
+    } },
+    { "code":  1580, "label": "ج" },
+    { "code":  1670, "label": "چ" }
+  ],
+  [
+
+    { "code":  1588, "label": "ش", "popup": {
+      "main": { "code": -255, "label": "و علیکم|وَ \u200Cعَلَيْكُمَ \u200Cالسَّلَاْم\u200C " }
+    }},
+    { "code":  1587, "label": "س", "popup": {
+      "main": { "code": -255, "label": "سلام|السَّلَاْمُ \u200Cعَلَیْکُم\u200C " }
+    }},
+
+    { "code":  1740, "label": "ی"},
+    { "code":  1742, "label": "ێ" },
+    { "code":  1574, "label": "ئ", "popup": {
+      "main": { "code": 1569, "label": "ء" }
+    } },
+    { "code":  1604, "label": "ل" , "popup": {
+      "main": {"code": -255, "label": "لَاْ \u200Cإِلٰهَ \u200Cإِلَّاْ\u200C اللّٰه‌" }
+    } },
+    { "code":  1717, "label": "ڵ" , "popup": {
+      "main": {"code": -255, "label": "‌‌إِنْ‌ ‌شَاءَ‌ ‌اللّٰه‌" }
+    } },
+    { "code":  1575, "label": "ا" },
+    { "code":  1606, "label": "ن" }
+  ],
+  [
+    { "code":  1600, "label": "━" },
+
+    { "code":  1576, "label": "ب", "popup": {
+      "main": { "code": -255, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ"},
+      "relevant": [
+        { "code": 65021, "label": "﷽" }]
+    }},
+    { "code":  1586, "label": "ز", "popup": {
+      "main": {"code": 1688, "label": "ژ" }
+    } },
+    { "code":  1585, "label": "ر", "popup": {
+      "main": { "code": 1685, "label": "ڕ" }
+    } },
+    { "code":  1583, "label": "د", "popup": {
+      "main": {"code": 1584, "label": "ذ" }
+    } },
+    {"code": 1608, "label": "و",
+      "popup": {
+        "main": { "code": 1734, "label": "ۆ" },
+        "relevant": [
+          { "code": -1001, "label": "وو" },
+          { "code": 1739, "label": "ۋ" },
+          { "code": 1738, "label": "ۊ" },
+          { "code": 1743, "label": "ۏ" },
+          { "code": 1735, "label": "ۇ" },
+          { "code": 1737, "label": "ۉ" },
+          { "code": 1572, "label": "ؤ" }
+        ]
+      }
+    },
+    { "code":  1605, "label": "م" },
+    { "code":  1705, "label": "ک", "popup": {
+      "main": {"code": 1711, "label": "گ" }
+    } }
+
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_qvfgh.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":  1602, "label": "ق"},
+    { "code":  1700, "label": "ڤ" },
+    { "code":  1601, "label": "ف" },
+    { "code":  1594, "label": "غ" },
+    { "code":  1593, "label": "ع"},
+    { "code":  1607, "label": "ھ" },
+    { "code":  1749, "label": "ە" },
+    { "code":  1578, "label": "ت" },
+    { "code":  1581, "label": "ح"},
+    { "code":  1582, "label": "خ" }
+  ],
+  [
+    { "code":  1588, "label": "ش", "popup": {
+      "main": { "code": -255, "label": "و علیکم|وَ \u200Cعَلَيْكُمَ \u200Cالسَّلَاْم\u200C " }
+    }},
+    { "code":  1587, "label": "س", "popup": {
+      "main": { "code": -255, "label": "سلام|السَّلَاْمُ \u200Cعَلَیْکُم\u200C " }
+    }},
+
+    { "code":  1740, "label": "ی" },
+    { "code":  1742, "label": "ێ" },
+    { "code":  1604, "label": "ل" , "popup": {
+      "main": {"code": -255, "label": "لَاْ \u200Cإِلٰهَ \u200Cإِلَّاْ\u200C اللّٰه‌" }
+    } },
+
+    { "code":  1717, "label": "ڵ", "popup": {
+      "main": { "code": -255, "label": "اللّٰهُ \u200Cأَكْبر "},
+      "relevant": [
+        { "code": -255, "label": "الْحَمْدُ لِله " }]
+    }},
+
+    { "code":  1575, "label": "ا" },
+    { "code":  1606, "label": "ن"},
+   { "code":  1580, "label": "ج" , "popup": {
+     "main": {"code": -255, "label": "جزاك الله|\u200Cجَزَاكَ\u200C اللّٰهُ \u200Cخَيْرََا\u200C" }
+   } },
+   { "code":  1670, "label": "چ" , "popup": {
+     "main": { "code": -255, "label": "سُبْحَانَ ‌اللّٰه "},
+     "relevant": [
+       { "code": -255, "label": "أَسْتَغْفِرُ\u200C اللّٰه " }]
+   } }
+  ],
+  [
+    { "code":  1576, "label": "ب", "popup": {
+      "main": { "code": -255, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ"},
+      "relevant": [
+        { "code": 65021, "label": "﷽" }]
+    }},
+    { "code":  1586, "label": "ز", "popup": {
+      "main": {"code": 1592, "label": "ظ" }
+    } },
+    { "code":  1585, "label": "ر" },
+    { "code":  1685, "label": "ڕ" },
+    { "code":  1583, "label": "د", "popup": {
+      "main": {"code": 1584, "label": "ذ" }
+    } },
+    { "code":  -255, "label": "وو"},
+
+    { "code":   1608, "label": "و", "popup": {
+      "main": { "code":   1743, "label": "ۏ" },
+      "relevant": [
+        { "code": 1739, "label": "ۋ" },
+        { "code": 1738, "label": "ۊ" }
+      ]
+    } },
+
+    { "code":   1734, "label": "ۆ", "popup": {
+      "main": { "code":   1572, "label": "ؤ" },
+      "relevant": [
+        { "code": 1735, "label": "ۇ" },
+        { "code": 1737, "label": "ۉ" }
+      ]
+    } },
+
+    { "code":  1705, "label": "ک" },
+    { "code":  1711, "label": "گ" , "popup": {
+      "main": {"code": -255, "label": "ﷲﷻ‌" }
+    } }
+  ],
+  [
+    { "code":  1600, "label": "━" },
+
+    { "code":  1574, "label": "ئ", "popup": {
+      "main": { "code": 1569, "label": "ء" }
+    } },
+
+    { "code":  1662, "label": "پ", "popup": {
+      "main": { "code": 1579, "label": "ث" }
+    } },
+
+    { "code":  1688, "label": "ژ", "popup": {
+      "main": { "code": -255, "label": "إِنْ ‌‌شَاءَ ‌‌اللّٰه "},
+      "relevant": [
+        { "code": -255, "label": "مَا‌شَاءَ\u200C اللّٰه " }]
+    }},
+
+    { "code":  1605, "label": "م" },
+
+    { "code":  1567, "label": "؟", "popup": {
+      "main": { "code": 63, "label": "?" }
+    } },
+    { "code":  1548, "label": "،", "popup": {
+      "main": { "code": 1643, "label": "٫" }
+    } },
+
+    { "code":  58, "label": ":", "popup": {
+      "main": { "code": 1563, "label": "؛" }
+    } }  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_qvfp.json
+--------------------------------------------------------------------------------
+[
+  [
+      { "code":  1602, "label": "ق"},
+      { "code":  1700, "label": "ڤ" },
+      { "code":  1601, "label": "ف" },
+      { "code":  1662, "label": "پ", "popup": {
+        "main": { "code": 1579, "label": "ث" }
+      } },
+    { "code":  1717, "label": "ڵ" },
+
+    { "code":  1578, "label": "ت", "popup": {
+      "main": { "code": 1591, "label": "ط" },
+      "relevant": [{"code": 1592, "label": "ظ" }]
+    } },
+    { "code":  1607, "label": "ھ" },
+    { "code":  1582, "label": "خ" },
+
+    { "code":  1581, "label": "ح", "popup": {
+      "main": { "code": 1593, "label": "ع" },
+      "relevant": [{"code": 1551, "label": "؏" }]
+    } },
+
+    { "code":  1580, "label": "ج" },
+    { "code":  1670, "label": "چ" }
+    ],
+    [
+      { "code":  1588, "label": "ش", "popup": {
+        "main": { "code": -255, "label": "و علیکم|وَ \u200Cعَلَيْكُمَ \u200Cالسَّلَاْم\u200C " }
+      }},
+      { "code":  1587, "label": "س", "popup": {
+        "main": { "code": -255, "label": "سلام|السَّلَاْمُ \u200Cعَلَیْکُم\u200C " }
+      }},
+      { "code":  1740, "label": "ی" },
+      { "code":  1576, "label": "ب", "popup": {
+        "main": { "code": -255, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ"},
+        "relevant": [
+          { "code": 65021, "label": "﷽" }]
+      }},
+      { "code":  1604, "label": "ل" , "popup": {
+        "main": {"code": -255, "label": "لَاْ \u200Cإِلٰهَ \u200Cإِلَّاْ\u200C اللّٰه‌" }
+      } },
+      { "code":  1575, "label": "ا" },
+      { "code":  1606, "label": "ن" },
+      { "code":  1605, "label": "م" },
+      { "code":  1705, "label": "ک" },
+      { "code":  1711, "label": "گ" , "popup": {
+        "main":
+        { "code":  1594, "label": "غ" }
+      } },
+      { "code":  1749, "label": "ە", "popup": {
+        "main": { "code": 1577, "label": "ة" }
+      } }
+    ],
+    [
+      { "code":  1574, "label": "ئ", "popup": {
+        "main": { "code": 1569, "label": "ء" }
+      } },
+      { "code":  1742, "label": "ێ" },
+      { "code":  1688, "label": "ژ" },
+      { "code":  1586, "label": "ز", "popup": {
+        "main": {"code": 1688, "label": "ژ" }
+      } },
+      { "code":  1685, "label": "ڕ" },
+      { "code":  1585, "label": "ر" },
+
+      { "code":  1583, "label": "د", "popup": {
+        "main": {"code": 1584, "label": "ذ" }
+      } },
+
+      { "code":  1608, "label": "و", "popup": {
+        "main": { "code": -255, "label": "وو" }
+      } },
+
+      { "code":  1734, "label": "ۆ" }
+
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_qwerty.json
+--------------------------------------------------------------------------------
+[
+    [
+      { "code":  1602, "label": "ق"},
+      { "code":  1608, "label": "و", "popup": {
+        "main": { "code": -255, "label": "وو" }
+      } },
+      { "code":  1749, "label": "ە", "popup": {
+        "main": { "code": 1577, "label": "ة" }
+      } },
+      { "code":  1585, "label": "ر", "popup": {
+        "main": { "code": 1685, "label": "ڕ" }
+      } },
+      { "code":  1578, "label": "ت", "popup": {
+        "main": { "code": 1591, "label": "ط" }
+      } },
+      { "code":  1740, "label": "ی", "popup": {
+        "main": { "code": 1742, "label": "ێ" }
+      } },
+      { "code":  1574, "label": "ئ", "popup": {
+        "main": { "code": 1569, "label": "ء" }
+      } },
+      { "code":  1581, "label": "ح", "popup": {
+        "main": { "code": 1593, "label": "ع" }
+      } },
+      { "code":  1734, "label": "ۆ" },
+      { "code":  1662, "label": "پ", "popup": {
+        "main": { "code": 1579, "label": "ث" }
+      } }
+    ],
+    [
+      { "code":  1575, "label": "ا" },
+
+      { "code":  1587, "label": "س", "popup": {
+        "main": { "code": 1588, "label": "ش"},
+        "relevant": [
+          { "code": -255, "label": "سلام|السَّلَاْمُ \u200Cعَلَیْکُم\u200C " }]
+      }},
+
+      { "code":  1583, "label": "د", "popup": {
+        "relevant": [
+          { "code":   -255, "label": "وعلیکم|وَ \u200Cعَلَيْكُمُ \u200Cالسَّلَاْم\u200C " }
+        ]
+      } },
+
+      { "code":  1601, "label": "ف", "popup": {
+        "main": { "code": -255, "label": "الْحَمْدُ لِله "},
+        "relevant": [
+          { "code": -255, "label": "لَاْ \u200Cإِلٰهَ \u200Cإِلَّاْ\u200C اللّٰه " }]
+      }},
+
+      { "code":  1711, "label": "گ", "popup": {
+        "main": { "code": 1594, "label": "غ" }
+      } },
+      { "code":  1607, "label": "ھ" },
+      { "code":  1688, "label": "ژ" , "popup": {
+        "main": { "code": -255, "label": "سُبْحَانَ ‌‌اللّٰه "},
+        "relevant": [
+          { "code": -255, "label": "أَسْتَغْفِرُ\u200C اللّٰه " }]
+      }},
+      { "code":  1705, "label": "ک" },
+      { "code":  1604, "label": "ل", "popup": {
+        "main": { "code": 1717, "label": "ڵ" }
+      } }
+    ],
+    [
+      { "code":  1600, "label": "━" },
+      { "code":   1586, "label": "ز", "popup": {
+        "main": { "code":   1590, "label": "ض" },
+        "relevant": [
+          { "code": 1592, "label": "ظ" }
+        ]
+      } },
+
+      { "code":  1582, "label": "خ"  , "popup": {
+        "main": { "code": -255, "label": "ﷲ ﷻ"},
+        "relevant": [
+          { "code": -255, "label": "اللّٰهُ\u200Cأَكْبر " }]
+      }},
+
+      { "code":  1580, "label": "ج", "popup": {
+        "main": { "code": 1670, "label": "چ"},
+        "relevant": [
+          { "code": -255, "label": "جزاك الله|\u200Cجَزَاكَ\u200C اللّٰهُ \u200Cخَيْرََا\u200C" }]
+      }},
+
+      { "code":  1700, "label": "ڤ", "popup": {
+        "main": { "code": -255, "label": "إِنْ ‌‌شَاءَ ‌اللّٰه "},
+        "relevant": [
+          { "code": -255, "label": "مَاشَاءَ\u200C اللّٰه " }]
+      }},
+
+      { "code":  1576, "label": "ب", "popup": {
+        "main": { "code": 65021, "label": "﷽"},
+        "relevant": [
+          { "code": -1001, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ" }]
+      }},
+
+      { "code":  1606, "label": "ن" },
+      { "code":  1605, "label": "م" }
+    ]
+  ]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_qwerty_nwe.json
+--------------------------------------------------------------------------------
+[
+    [
+    { "code":  1602, "label": "ق"},
+    { "code":  1608, "label": "و", "popup": {
+      "main": { "code": -255, "label": "وو" }
+    } },
+    { "code":  1749, "label": "ە", "popup": {
+       "main": { "code": 1577, "label": "ة" }
+    } },
+    { "code":  1585, "label": "ر", "popup": {
+      "main": { "code": 1685, "label": "ڕ" }
+    } },
+    { "code":  1578, "label": "ت", "popup": {
+      "main": { "code": 1591, "label": "ط" }
+    } },
+    { "code":  1740, "label": "ی" },
+    { "code":  1742, "label": "ێ" },
+    { "code":  1574, "label": "ئ", "popup": {
+      "main": { "code": 1569, "label": "ء" }
+    } },
+    { "code":  1734, "label": "ۆ" },
+    { "code":  1662, "label": "پ", "popup": {
+      "main": { "code": 1579, "label": "ث" }
+    } }
+    ],
+    [
+   { "code": 1575, "label": "ا"},
+   { "code":  1587, "label": "س", "popup": {
+     "main": { "code": -255, "label": "سلام|السَّلَاْمُ \u200Cعَلَیْکُم\u200C " }
+   }},
+   { "code":  1588, "label": "ش", "popup": {
+     "main": { "code": -255, "label": "و علیکم|وَ \u200Cعَلَيْكُمَ \u200Cالسَّلَاْم\u200C " }
+   }},
+   { "code":  1583, "label": "د", "popup": {
+     "main": {"code": 1584, "label": "ذ" }
+   } },
+   { "code":  1601, "label": "ف" , "popup": {
+     "main": {"code": 1700, "label": "ڤ" }
+    } },
+   { "code":  1607, "label": "ھ" },
+   { "code":  1688, "label": "ژ", "popup": {
+     "main": { "code": 1600, "label": "━" }
+   } },
+   { "code":  1604, "label": "ل", "popup": {
+     "main": { "code": 1717, "label": "ڵ" }
+   } },
+   { "code":  1705, "label": "ک" },
+   { "code":  1711, "label": "گ" , "popup": {
+     "main": { "code": 1594, "label": "غ" }
+   } }
+    ],
+    [
+   { "code":  1586, "label": "ز", "popup": {
+     "main": {"code": 1592, "label": "ظ" }
+   } },
+   { "code":  1582, "label": "خ"  , "popup": {
+     "main": { "code": -255, "label": "ﷲ ﷻ"},
+     "relevant": [
+       { "code": -255, "label": "اللّٰهُ\u200Cأَكْبر " }]
+   }},
+   { "code":  1580, "label": "ج" , "popup": {
+     "main": {"code": -255, "label": "جزاك الله|\u200Cجَزَاكَ\u200C اللّٰهُ \u200Cخَيْرََا\u200C" }
+   } },
+   { "code":  1670, "label": "چ" , "popup": {
+     "main": { "code": -255, "label": "سُبْحَانَ ‌‌اللّٰه "},
+     "relevant": [
+       { "code": -255, "label": "أَسْتَغْفِرُ\u200C اللّٰه " }]
+   }},
+
+   { "code":  1581, "label": "ح", "popup": {
+     "main": { "code": -255, "label": "الْحَمْدُ لِله "},
+     "relevant": [
+       { "code": -255, "label": "لَاْ \u200Cإِلٰهَ \u200Cإِلَّاْ\u200C اللّٰه " }]
+   }},
+
+   { "code":  1593, "label": "ع", "popup": {
+     "main": { "code": -255, "label": "إِنْ ‌شَاءَ ‌اللّٰه "},
+     "relevant": [
+       { "code": -255, "label": "مَاشَاءَ\u200C اللّٰه " }]
+   }},
+
+      { "code":  1576, "label": "ب", "popup": {
+        "main": { "code": 65021, "label": "﷽"},
+        "relevant": [
+          { "code": -1001, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ" }]
+      }},
+
+   { "code":  1606, "label": "ن" },
+   { "code":  1605, "label": "م" }
+    ]
+  ]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_vaeq.json
+--------------------------------------------------------------------------------
+[
+    [
+      { "code":  1700, "label": "ڤ" },
+      { "code":  1574, "label": "ئ", "popup": {
+        "main": { "code": 1569, "label": "ء" }
+      } },
+      { "code":  1742, "label": "ێ" },
+      { "code":  1602, "label": "ق"},
+      { "code":  1601, "label": "ف" },
+      { "code":  1594, "label": "غ" },
+      { "code":  1593, "label": "ع" },
+      { "code":  1749, "label": "ە", "popup": {
+        "main": { "code": 1577, "label": "ة" }
+      } },
+      { "code":  1582, "label": "خ" },
+      { "code":  1581, "label": "ح" },
+      { "code":  1580, "label": "ج" }
+    ],
+    [
+      { "code":  1588, "label": "ش", "popup": {
+        "main": { "code": -255, "label": "و علیکم|وَ \u200Cعَلَيْكُمَ \u200Cالسَّلَاْم\u200C " }
+      }},
+      { "code":  1587, "label": "س", "popup": {
+        "main": { "code": -255, "label": "سلام|السَّلَاْمُ \u200Cعَلَیْکُم\u200C " }
+      }},
+      { "code":  1740, "label": "ی" },
+      { "code":  1576, "label": "ب", "popup": {
+        "main": { "code": -255, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ"},
+        "relevant": [
+          { "code": 65021, "label": "﷽" }]
+      }},
+      { "code":  1604, "label": "ل" , "popup": {
+        "main": {"code": -255, "label": "لَاْ \u200Cإِلٰهَ \u200Cإِلَّاْ\u200C اللّٰه‌" }
+      } },
+      { "code":  1575, "label": "ا" },
+      { "code":  1578, "label": "ت", "popup": {
+        "main": { "code": 1591, "label": "ط" },
+      "relevant": [{"code": 1592, "label": "ظ" }]
+      } },
+      { "code":  1606, "label": "ن" },
+      { "code":  1605, "label": "م" },
+      { "code":  1705, "label": "ک" },
+      { "code":  1711, "label": "گ", "popup": {
+        "main": { "code": -255, "label": "إِنْ ‌‌شَاءَ ‌اللّٰه "},
+        "relevant": [
+          { "code": -255, "label": "مَاشَاءَ\u200C اللّٰه " }]
+      }}
+    ],
+    [
+      { "code":  1688, "label": "ژ" },
+      { "code":  1607, "label": "ھ" },
+      { "code":  1734, "label": "ۆ" },
+      { "code":  1586, "label": "ز" },
+      { "code":  1717, "label": "ڵ" },
+      { "code":  1585, "label": "ر", "popup": {
+        "main": {"code": 1685, "label": "ڕ" }
+      } },
+      { "code":  1583, "label": "د", "popup": {
+        "main": {"code": 1584, "label": "ذ" }
+      } },
+      { "code":  1662, "label": "پ", "popup": {
+        "main": { "code": 1579, "label": "ث" }
+      } },
+      { "code":  1608, "label": "و", "popup": {
+        "main": { "code": -1001, "label": "وو" }
+      } },
+      { "code":  1670, "label": "چ" , "popup": {
+        "main": { "code": -255, "label": "سُبْحَانَ ‌اللّٰه "},
+        "relevant": [
+          { "code": -255, "label": "أَسْتَغْفِرُ\u200C اللّٰه " }]
+      } }
+    ]
+  ]
+
+
+--------------------------------------------------------------------------------
+FILE: kurmanci.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":  113, "label": "q" },
+    { "$": "auto_text_key", "code":  119, "label": "w" },
+    { "$": "auto_text_key", "code":  101, "label": "e" },
+    { "$": "auto_text_key", "code":  114, "label": "r" },
+    { "$": "auto_text_key", "code":  116, "label": "t" },
+    { "$": "auto_text_key", "code":  121, "label": "y" },
+    { "$": "auto_text_key", "code":  117, "label": "u" },
+    { "$": "auto_text_key", "code":  105, "label": "i" },
+    { "$": "auto_text_key", "code":  111, "label": "o" },
+    { "$": "auto_text_key", "code":  112, "label": "p" },
+    { "$": "auto_text_key", "code":  251, "label": "û" }
+  ],
+  [
+    { "$": "auto_text_key", "code":   97, "label": "a" },
+    { "$": "auto_text_key", "code":  115, "label": "s" },
+    { "$": "auto_text_key", "code":  100, "label": "d" },
+    { "$": "auto_text_key", "code":  102, "label": "f" },
+    { "$": "auto_text_key", "code":  103, "label": "g" },
+    { "$": "auto_text_key", "code":  104, "label": "h" },
+    { "$": "auto_text_key", "code":  106, "label": "j" },
+    { "$": "auto_text_key", "code":  107, "label": "k" },
+    { "$": "auto_text_key", "code":  108, "label": "l" },
+    { "$": "auto_text_key", "code":  234, "label": "ê" },
+    { "$": "auto_text_key", "code":  238, "label": "î" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  122, "label": "z" },
+    { "$": "auto_text_key", "code":  120, "label": "x" },
+    { "$": "auto_text_key", "code":   99, "label": "c" },
+    { "$": "auto_text_key", "code":  118, "label": "v" },
+    { "$": "auto_text_key", "code":   98, "label": "b" },
+    { "$": "auto_text_key", "code":  110, "label": "n" },
+    { "$": "auto_text_key", "code":  109, "label": "m" },
+    { "$": "auto_text_key", "code":  231, "label": "ç" },
+    { "$": "auto_text_key", "code":  351, "label": "ş" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: norwegian.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":  113, "label": "q" },
+    { "$": "auto_text_key", "code":  119, "label": "w" },
+    { "$": "auto_text_key", "code":  101, "label": "e" },
+    { "$": "auto_text_key", "code":  114, "label": "r" },
+    { "$": "auto_text_key", "code":  116, "label": "t" },
+    { "$": "auto_text_key", "code":  121, "label": "y" },
+    { "$": "auto_text_key", "code":  117, "label": "u" },
+    { "$": "auto_text_key", "code":  105, "label": "i" },
+    { "$": "auto_text_key", "code":  111, "label": "o" },
+    { "$": "auto_text_key", "code":  112, "label": "p" },
+    { "$": "auto_text_key", "code":  229, "label": "å" }
+  ],
+  [
+    { "$": "auto_text_key", "code":   97, "label": "a" },
+    { "$": "auto_text_key", "code":  115, "label": "s" },
+    { "$": "auto_text_key", "code":  100, "label": "d" },
+    { "$": "auto_text_key", "code":  102, "label": "f" },
+    { "$": "auto_text_key", "code":  103, "label": "g" },
+    { "$": "auto_text_key", "code":  104, "label": "h" },
+    { "$": "auto_text_key", "code":  106, "label": "j" },
+    { "$": "auto_text_key", "code":  107, "label": "k" },
+    { "$": "auto_text_key", "code":  108, "label": "l" },
+    { "$": "auto_text_key", "code":  248, "label": "ø" },
+    { "$": "auto_text_key", "code":  230, "label": "æ" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  122, "label": "z" },
+    { "$": "auto_text_key", "code":  120, "label": "x" },
+    { "$": "auto_text_key", "code":   99, "label": "c" },
+    { "$": "auto_text_key", "code":  118, "label": "v" },
+    { "$": "auto_text_key", "code":   98, "label": "b" },
+    { "$": "auto_text_key", "code":  110, "label": "n" },
+    { "$": "auto_text_key", "code":  109, "label": "m" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: persian1.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":  1590, "label": "ض" },
+    { "code":  1589, "label": "ص" },
+    { "code":  1579, "label": "ث" },
+    { "code":  1602, "label": "ق" },
+    { "code":  1601, "label": "ف" },
+    { "code":  1594, "label": "غ" },
+    { "code":  1593, "label": "ع" },
+    { "code":  1607, "label": "ه" },
+    { "code":  1582, "label": "خ" },
+    { "code":  1581, "label": "ح" },
+    { "code":  1580, "label": "ج" }
+  ],
+  [
+    { "code":  1588, "label": "ش" },
+    { "code":  1587, "label": "س" },
+    { "code":  1740, "label": "ی" },
+    { "code":  1576, "label": "ب" },
+    { "code":  1604, "label": "ل" },
+    { "code":  1575, "label": "ا" },
+    { "code":  1578, "label": "ت" },
+    { "code":  1606, "label": "ن" },
+    { "code":  1605, "label": "م" },
+    { "code":  1705, "label": "ک" },
+    { "code":  1711, "label": "گ" }
+  ],
+  [
+    { "code":  1592, "label": "ظ" },
+    { "code":  1591, "label": "ط" },
+    { "code":  1586, "label": "ز" },
+    { "code":  1585, "label": "ر" },
+    { "code":  1584, "label": "ذ" },
+    { "code":  1583, "label": "د" },
+    { "code":  1662, "label": "پ" },
+    { "code":  1608, "label": "و" },
+    { "code":  1670, "label": "چ" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: persian2.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":  1589, "label": "ص" },
+    { "code":  1602, "label": "ق" },
+    { "code":  1601, "label": "ف" },
+    { "code":  1594, "label": "غ" },
+    { "code":  1593, "label": "ع" },
+    { "code":  1607, "label": "ه" },
+    { "code":  1582, "label": "خ" },
+    { "code":  1581, "label": "ح" },
+    { "code":  1580, "label": "ج" },
+    { "code":  1670, "label": "چ" }
+  ],
+  [
+    { "code":  1588, "label": "ش" },
+    { "code":  1587, "label": "س" },
+    { "code":  1740, "label": "ی" },
+    { "code":  1576, "label": "ب" },
+    { "code":  1604, "label": "ل" },
+    { "code":  1575, "label": "ا" },
+    { "code":  1578, "label": "ت" },
+    { "code":  1606, "label": "ن" },
+    { "code":  1605, "label": "م" },
+    { "code":  1705, "label": "ک" }
+  ],
+  [
+    { "code":  8204, "label": "half_space" },
+    { "code":  1591, "label": "ط" },
+    { "code":  1586, "label": "ز" },
+    { "code":  1585, "label": "ر" },
+    { "code":  1584, "label": "ذ" },
+    { "code":  1583, "label": "د" },
+    { "code":  1608, "label": "و" },
+    { "code":  1711, "label": "گ" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: qwerty.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":  113, "label": "q" },
+    { "$": "auto_text_key", "code":  119, "label": "w" },
+    { "$": "auto_text_key", "code":  101, "label": "e" },
+    { "$": "auto_text_key", "code":  114, "label": "r" },
+    { "$": "auto_text_key", "code":  116, "label": "t" },
+    { "$": "auto_text_key", "code":  121, "label": "y" },
+    { "$": "auto_text_key", "code":  117, "label": "u" },
+    { "$": "auto_text_key", "code":  105, "label": "i" },
+    { "$": "auto_text_key", "code":  111, "label": "o" },
+    { "$": "auto_text_key", "code":  112, "label": "p" }
+  ],
+  [
+    { "$": "auto_text_key", "code":   97, "label": "a" },
+    { "$": "auto_text_key", "code":  115, "label": "s" },
+    { "$": "auto_text_key", "code":  100, "label": "d" },
+    { "$": "auto_text_key", "code":  102, "label": "f" },
+    { "$": "auto_text_key", "code":  103, "label": "g" },
+    { "$": "auto_text_key", "code":  104, "label": "h" },
+    { "$": "auto_text_key", "code":  106, "label": "j" },
+    { "$": "auto_text_key", "code":  107, "label": "k" },
+    { "$": "auto_text_key", "code":  108, "label": "l" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  122, "label": "z" },
+    { "$": "auto_text_key", "code":  120, "label": "x" },
+    { "$": "auto_text_key", "code":   99, "label": "c" },
+    { "$": "auto_text_key", "code":  118, "label": "v" },
+    { "$": "auto_text_key", "code":   98, "label": "b" },
+    { "$": "auto_text_key", "code":  110, "label": "n" },
+    { "$": "auto_text_key", "code":  109, "label": "m" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: qwerty_kurdi.json
+--------------------------------------------------------------------------------
+[
+    [
+      { "code":  1602, "label": "Q", "popup": {
+        "main": { "code": 1647, "label": "ٯ" }
+      } },
+      { "code":  1608, "label": "W", "popup": {
+        "main": { "code": -255, "label": "وو" }
+      } },
+      { "code":  1749, "label": "E", "popup": {
+        "main": { "code": 1577, "label": "ة" }
+      } },
+      { "code":  1585, "label": "R", "popup": {
+        "main": { "code": 1685, "label": "ڕ" }
+      } },
+      { "code":  1578, "label": "T", "popup": {
+        "main": { "code": 1591, "label": "ط" }
+      } },
+      { "code":  1740, "label": "Y", "popup": {
+        "main": { "code": 1742, "label": "ێ" }
+      } },
+      { "code":  1574, "label": "U", "popup": {
+        "main": { "code": 1569, "label": "ء" }
+      } },
+      { "code":  1581, "label": "I", "popup": {
+        "main": { "code": 1593, "label": "ع" }
+      } },
+      { "code":  1734, "label": "O" },
+      { "code":  1662, "label": "P", "popup": {
+        "main": { "code": 1579, "label": "ث" }
+      } }
+    ],
+    [
+
+      { "code":   1575, "label": "A", "popup": {
+        "main": { "code":   1570, "label": "آ" },
+        "relevant": [
+          { "code": 1571, "label": "أ" },
+          { "code": 1573, "label": "إ" },
+          { "code": 1649, "label": "ٱ" }
+        ]
+      } },
+      { "code":  1587, "label": "S", "popup": {
+        "main": { "code": 1588, "label": "ش"},
+        "relevant": [
+          { "code": -255, "label": "سلام|السَّلَاْمُ \u200Cعَلَیْکُم\u200C " },
+          { "code": 1590, "label": "ص" }
+        ]
+      }},
+
+      { "code":  1583, "label": "D", "popup": {
+        "main": { "code": 1584, "label": "ذ"},
+        "relevant": [
+          { "code":   -255, "label": "وعلیکم|وَ \u200Cعَلَيْكُمُ \u200Cالسَّلَاْم\u200C " }
+        ]
+      } },
+
+      { "code":  1601, "label": "F" },
+      { "code":  1711, "label": "G", "popup": {
+        "main": { "code": 1594, "label": "غ" }
+      } },
+      { "code":  1607, "label": "H", "popup": {
+        "main": { "code": -255, "label": "الْحَمْدُ‌ لِلّٰه "}
+      }},
+      { "code":  1688, "label": "J" },
+      { "code":  1705, "label": "K", "popup": {
+        "main": { "code": 1603, "label": "ك"},
+        "relevant": [
+          { "code":   1706, "label": "ڪ " }
+        ]
+      } },
+
+      { "code":  1604, "label": "L", "popup": {
+        "main": { "code": 1717, "label": "ڵ" }
+      } }
+    ],
+    [
+
+      { "code":  1600, "label": "━" },
+
+      { "code":  1586, "label": "Z", "popup": {
+        "main": {"code": 1592, "label": "ظ" }
+      } },
+      { "code":  1582, "label": "X" },
+      { "code":  1580, "label": "C", "popup": {
+        "main": {"code": 1670, "label": "چ" }
+      } },
+      { "code":  1700, "label": "V", "popup": {
+        "main": { "code": -255, "label": "إِنْ ‌‌شَاءَ ‌اللّٰه "},
+        "relevant": [
+          { "code": -255, "label": "مَاشَاءَ\u200C اللّٰه " }]
+      }},
+      { "code":  1576, "label": "B", "popup": {
+        "main": { "code": -255, "label": "﷽"},
+        "relevant": [
+          { "code": -255, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ" }]
+      }},
+      { "code":  1606, "label": "N" },
+      { "code":  1605, "label": "M", "popup": {
+        "main": { "code": -255, "label": "ﷴ"},
+        "relevant": [
+          { "code":   65018, "label": "ﷺ" }
+        ]
+      } }
+    ]
+  ]
+
+
+--------------------------------------------------------------------------------
+FILE: qwertz.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":  113, "label": "q" },
+    { "$": "auto_text_key", "code":  119, "label": "w" },
+    { "$": "auto_text_key", "code":  101, "label": "e" },
+    { "$": "auto_text_key", "code":  114, "label": "r" },
+    { "$": "auto_text_key", "code":  116, "label": "t" },
+    { "$": "auto_text_key", "code":  122, "label": "z" },
+    { "$": "auto_text_key", "code":  117, "label": "u" },
+    { "$": "auto_text_key", "code":  105, "label": "i" },
+    { "$": "auto_text_key", "code":  111, "label": "o" },
+    { "$": "auto_text_key", "code":  112, "label": "p" }
+  ],
+  [
+    { "$": "auto_text_key", "code":   97, "label": "a" },
+    { "$": "auto_text_key", "code":  115, "label": "s" },
+    { "$": "auto_text_key", "code":  100, "label": "d" },
+    { "$": "auto_text_key", "code":  102, "label": "f" },
+    { "$": "auto_text_key", "code":  103, "label": "g" },
+    { "$": "auto_text_key", "code":  104, "label": "h" },
+    { "$": "auto_text_key", "code":  106, "label": "j" },
+    { "$": "auto_text_key", "code":  107, "label": "k" },
+    { "$": "auto_text_key", "code":  108, "label": "l" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  121, "label": "y" },
+    { "$": "auto_text_key", "code":  120, "label": "x" },
+    { "$": "auto_text_key", "code":   99, "label": "c" },
+    { "$": "auto_text_key", "code":  118, "label": "v" },
+    { "$": "auto_text_key", "code":   98, "label": "b" },
+    { "$": "auto_text_key", "code":  110, "label": "n" },
+    { "$": "auto_text_key", "code":  109, "label": "m" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: russian.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":  1081, "label": "й" },
+    { "$": "auto_text_key", "code":  1094, "label": "ц" },
+    { "$": "auto_text_key", "code":  1091, "label": "у" },
+    { "$": "auto_text_key", "code":  1082, "label": "к" },
+    { "$": "auto_text_key", "code":  1077, "label": "е" },
+    { "$": "auto_text_key", "code":  1085, "label": "н" },
+    { "$": "auto_text_key", "code":  1075, "label": "г" },
+    { "$": "auto_text_key", "code":  1096, "label": "ш" },
+    { "$": "auto_text_key", "code":  1097, "label": "щ" },
+    { "$": "auto_text_key", "code":  1079, "label": "з" },
+    { "$": "auto_text_key", "code":  1093, "label": "х" }
+  ],
+  [
+    { "$": "auto_text_key", "code": 1092 , "label": "ф" },
+    { "$": "auto_text_key", "code": 1099 , "label": "ы" },
+    { "$": "auto_text_key", "code": 1074 , "label": "в" },
+    { "$": "auto_text_key", "code": 1072 , "label": "а" },
+    { "$": "auto_text_key", "code": 1087 , "label": "п" },
+    { "$": "auto_text_key", "code": 1088 , "label": "р" },
+    { "$": "auto_text_key", "code": 1086 , "label": "о" },
+    { "$": "auto_text_key", "code": 1083 , "label": "л" },
+    { "$": "auto_text_key", "code": 1076 , "label": "д" },
+    { "$": "auto_text_key", "code": 1078 , "label": "ж" },
+    { "$": "auto_text_key", "code": 1101 , "label": "э" }
+  ],
+  [
+    { "$": "auto_text_key", "code": 1103 , "label": "я" },
+    { "$": "auto_text_key", "code": 1095 , "label": "ч" },
+    { "$": "auto_text_key", "code": 1089 , "label": "с" },
+    { "$": "auto_text_key", "code": 1084 , "label": "м" },
+    { "$": "auto_text_key", "code": 1080 , "label": "и" },
+    { "$": "auto_text_key", "code": 1090 , "label": "т" },
+    { "$": "auto_text_key", "code": 1100 , "label": "ь" },
+    { "$": "auto_text_key", "code": 1073 , "label": "б" },
+    { "$": "auto_text_key", "code": 1102 , "label": "ю" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: spanish.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":  113, "label": "q" },
+    { "$": "auto_text_key", "code":  119, "label": "w" },
+    { "$": "auto_text_key", "code":  101, "label": "e" },
+    { "$": "auto_text_key", "code":  114, "label": "r" },
+    { "$": "auto_text_key", "code":  116, "label": "t" },
+    { "$": "auto_text_key", "code":  121, "label": "y" },
+    { "$": "auto_text_key", "code":  117, "label": "u" },
+    { "$": "auto_text_key", "code":  105, "label": "i" },
+    { "$": "auto_text_key", "code":  111, "label": "o" },
+    { "$": "auto_text_key", "code":  112, "label": "p" }
+  ],
+  [
+    { "$": "auto_text_key", "code":   97, "label": "a" },
+    { "$": "auto_text_key", "code":  115, "label": "s" },
+    { "$": "auto_text_key", "code":  100, "label": "d" },
+    { "$": "auto_text_key", "code":  102, "label": "f" },
+    { "$": "auto_text_key", "code":  103, "label": "g" },
+    { "$": "auto_text_key", "code":  104, "label": "h" },
+    { "$": "auto_text_key", "code":  106, "label": "j" },
+    { "$": "auto_text_key", "code":  107, "label": "k" },
+    { "$": "auto_text_key", "code":  108, "label": "l" },
+    { "$": "auto_text_key", "code":  241, "label": "ñ" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  122, "label": "z" },
+    { "$": "auto_text_key", "code":  120, "label": "x" },
+    { "$": "auto_text_key", "code":   99, "label": "c" },
+    { "$": "auto_text_key", "code":  118, "label": "v" },
+    { "$": "auto_text_key", "code":   98, "label": "b" },
+    { "$": "auto_text_key", "code":  110, "label": "n" },
+    { "$": "auto_text_key", "code":  109, "label": "m" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: swedish_finnish.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "auto_text_key", "code":  113, "label": "q" },
+    { "$": "auto_text_key", "code":  119, "label": "w" },
+    { "$": "auto_text_key", "code":  101, "label": "e" },
+    { "$": "auto_text_key", "code":  114, "label": "r" },
+    { "$": "auto_text_key", "code":  116, "label": "t" },
+    { "$": "auto_text_key", "code":  121, "label": "y" },
+    { "$": "auto_text_key", "code":  117, "label": "u" },
+    { "$": "auto_text_key", "code":  105, "label": "i" },
+    { "$": "auto_text_key", "code":  111, "label": "o" },
+    { "$": "auto_text_key", "code":  112, "label": "p" },
+    { "$": "auto_text_key", "code":  229, "label": "å" }
+  ],
+  [
+    { "$": "auto_text_key", "code":   97, "label": "a" },
+    { "$": "auto_text_key", "code":  115, "label": "s" },
+    { "$": "auto_text_key", "code":  100, "label": "d" },
+    { "$": "auto_text_key", "code":  102, "label": "f" },
+    { "$": "auto_text_key", "code":  103, "label": "g" },
+    { "$": "auto_text_key", "code":  104, "label": "h" },
+    { "$": "auto_text_key", "code":  106, "label": "j" },
+    { "$": "auto_text_key", "code":  107, "label": "k" },
+    { "$": "auto_text_key", "code":  108, "label": "l" },
+    { "$": "auto_text_key", "code":  246, "label": "ö" },
+    { "$": "auto_text_key", "code":  228, "label": "ä" }
+  ],
+  [
+    { "$": "auto_text_key", "code":  122, "label": "z" },
+    { "$": "auto_text_key", "code":  120, "label": "x" },
+    { "$": "auto_text_key", "code":   99, "label": "c" },
+    { "$": "auto_text_key", "code":  118, "label": "v" },
+    { "$": "auto_text_key", "code":   98, "label": "b" },
+    { "$": "auto_text_key", "code":  110, "label": "n" },
+    { "$": "auto_text_key", "code":  109, "label": "m" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: xwarg.json
+--------------------------------------------------------------------------------
+[
+    [
+      { "code": 1700, "label": "ڤ" },
+      { "code":  1574, "label": "ئ", "popup": {
+        "main": { "code": 1569, "label": "ء" }
+      } },
+      { "code":  1742, "label": "ێ" },
+      { "code":  1602, "label": "ق"},
+      { "code":  1601, "label": "ف" },
+      { "code":  1594, "label": "غ" },
+      { "code":  1593, "label": "ع", "popup": {
+        "main": { "code": 1551, "label": "؏" }
+      } },
+      { "code":  1749, "label": "ە", "popup": {
+        "main": { "code": 1577, "label": "ة" }
+      } },
+      { "code":  1582, "label": "خ" },
+      { "code":  1581, "label": "ح" },
+      { "code":  1580, "label": "ج" }
+    ],
+    [
+      { "code":  1588, "label": "ش" },
+      { "code":  1587, "label": "س" },
+      { "code":  1740, "label": "ی" },
+      { "code":  1576, "label": "ب", "popup": {
+        "main": { "code": -255, "label": "بارك الله|بَاْرَكَ\u200C اللّٰهُ\u200Cفِیكْ"},
+        "relevant": [
+          { "code": 65021, "label": "﷽" }]
+      }},
+      { "code":  1604, "label": "ل" },
+      { "code":  1575, "label": "ا" },
+      { "code":  1578, "label": "ت", "popup": {
+        "main": { "code": 1591, "label": "ط" },
+        "relevant": [{"code": 1592, "label": "ظ" }]
+      } },
+      { "code":  1606, "label": "ن" },
+      { "code":  1605, "label": "م" },
+      { "code":  1705, "label": "ک" },
+      { "code":  1711, "label": "گ" , "popup": {
+        "main": {"code": -255, "label": "‌‌إِنْ‌ ‌شَاءَ‌ ‌اللّٰه‌" }
+      } }
+    ],
+    [
+      { "code":  1688, "label": "ژ" },
+      { "code":  1607, "label": "ھ" },
+      { "code":  1738, "label": "ۊ", "popup": {
+        "main": {"code": 1734, "label": "ۆ" },
+        "relevant": [
+          { "code": 1737, "label": "ۉ" },
+          { "code": 1739, "label": "ۋ" },
+          { "code": 1735, "label": "ۇ" },
+          { "code": 1739, "label": "ۋ" }
+        ]
+      }},
+      { "code":  1586, "label": "ز", "popup": {
+        "main": {"code": 1592, "label": "ظ" }
+      } },
+      { "code":  1717, "label": "ڵ" },
+      { "code":  1585, "label": "ر", "popup": {
+        "main": { "code": 1685, "label": "ڕ" }
+      } },
+      { "code":  1583, "label": "د", "popup": {
+        "main": {"code": 1584, "label": "ذ" }
+      } },
+      { "code":  1662, "label": "پ", "popup": {
+        "main": { "code": 1579, "label": "ث" }
+      } },
+      { "code":  1608, "label": "و", "popup": {
+        "main": { "code": -1001, "label": "وو" }
+      } },      { "code":  1670, "label": "چ" }
+    ]
+  ]
+
+
+################################################################################
+# 3. charactersMod/  (Modifier / Shift layouts)
+################################################################################
+
+--------------------------------------------------------------------------------
+FILE: amazigh.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code":   44, "label": ","},
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: arabic.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code": 1548, "label": "،" },
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: arabic1.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code": 1548, "label": "،" },
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: arabic2.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code": 1548, "label": "،" },
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: bottom_row_anysoft_classic.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "$": "variation_selector",
+      "default":  { "code":   44, "label": ","},
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: bottom_row_compact.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing", "width": 1.56 }
+  ],
+  [
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui", "width": 1.56 },
+    { "code": -227, "label": "language_switch", "type": "system_gui", "width": 1.1 },
+    { "$": "variation_selector",
+      "default":  { "code":   44, "label": ",", "width": 1.1},
+      "email":    { "code":   64, "label": "@", "width": 1.1},
+      "uri":      { "code":   47, "label": "/", "width": 1.1}
+    },
+    { "code":   32, "label": "space", "width": 4.9},
+    { "code":   46, "label": ".", "groupId": 2, "width": 1.1 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing", "width": 1.56 }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: bottom_row_full.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code":   44, "label": ","},
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "code":   33, "label": "!" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: bottom_row_left_handed.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "$": "variation_selector",
+      "default":  { "code":   44, "label": ","},
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: bottom_row_right_handed.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code":   44, "label": ","},
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   32, "label": "space" },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: bottom_row_simple.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code":   44, "label": ","},
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code":   32, "label": "space" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: default.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":  -11, "label": "shift", "type": "modifier" },
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code":   44, "label": ","},
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: dvorak.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":  -11, "label": "shift", "type": "modifier" },
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "auto_text_key", "code":  113, "label": "q", "groupId": 1 },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "$": "auto_text_key", "code":  122, "label": "z", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: japani.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":     0, "type": "placeholder" },
+    { "code":    -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code":  -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "char_width_selector",
+      "full": { "code": 12289, "label": "、", "groupId": 1 },
+      "half": { "code": 65380, "label": "､", "groupId": 1 }
+    },
+    { "code":  -227, "label": "language_switch", "type": "system_gui" },
+    { "code": 12288, "label": "空白" },
+    { "code":  -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code": -9710, "label": "かな", "groupId": 97, "type": "system_gui" },
+    { "$": "char_width_selector",
+      "full": { "code": 12290, "label": "。", "groupId": 2 },
+      "half": { "code": 65377, "label": "｡", "groupId": 2 }
+    },
+    { "code":    10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_alfbe.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code": -227, "label": "language_switch" , "type": "system_gui" }
+    },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   32, "label": "بۆشایی" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdish.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code": 1548, "label": "،"},
+      "password": { "code": 35, "label": "#"},
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/" }
+    },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code":   32, "label": "بۆشایی" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdish_hybrid.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "kana_selector",
+      "hira": { "code": 1600, "label": "━" },
+      "kata": { "code": -11, "label": "shift", "type": "modifier" }
+    },
+    { "code": 0, "type": "placeholder" },
+    { "code": -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code":  -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "kana_selector",
+      "hira": { "code": 1548, "label": "،" },
+      "kata": { "code": 44, "label": "," }
+    },
+
+    { "$": "kana_selector",
+      "hira": { "code": -9710, "label": "Kurdî", "type": "system_gui", "groupId": 97 },
+      "kata": { "code": -9710, "label": "کوردی", "type": "system_gui", "groupId": 97 }
+    },
+    { "code": 32, "label": "بۆشایی" },
+    { "code":  -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+
+    { "code": 46, "label": ".", "groupId": 2 },
+    { "code":    10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: persian1.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code": 1548, "label": "،"},
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: persian2.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "code": -227, "label": "language_switch", "type": "system_gui" },
+    { "$": "variation_selector",
+      "default":  { "code": 1548, "label": "،" },
+      "email":    { "code":   64, "label": "@"},
+      "uri":      { "code":   47, "label": "/"}
+    },
+    { "code":   32, "label": "space" },
+    { "code":   46, "label": ".", "groupId": 2 },
+    { "code": -212, "label": "ime_ui_mode_media", "type": "system_gui" },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+################################################################################
+# 4. symbols/  (Symbols layouts)
+################################################################################
+
+--------------------------------------------------------------------------------
+FILE: cjk.json
+--------------------------------------------------------------------------------
+[
+  [
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65312, "label": "＠", "popup": {
+          "main": { "code": 64, "label": "@" }
+        }
+      },
+      "half": { "code": 64, "label": "@" }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65283, "label": "＃", "popup": {
+          "main": { "code": 35, "label": "#" },
+          "relevant": [
+            { "code": 12306, "label": "〒"},
+            { "code": 12320, "label": "〠" },
+            { "code": 8470, "label": "№" }
+          ]
+        }
+      },
+      "half": { "code": 35, "label": "#", "popup": {
+          "main": { "code": 65283, "label": "＃" },
+          "relevant": [
+            { "code": 12306, "label": "〒"},
+            { "code": 12320, "label": "〠" },
+            { "code": 8470, "label": "№" }
+          ]
+        }
+      }
+    },
+    { "code": -801, "label": "currency_slot_1", "popup": {
+        "main": { "code": -802, "label": "currency_slot_2" },
+        "relevant": [
+          { "code": -806, "label": "currency_slot_6" },
+          { "code": -803, "label": "currency_slot_3" },
+          { "code": -804, "label": "currency_slot_4" },
+          { "code": -805, "label": "currency_slot_5" }
+        ]
+      }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65285, "label": "％", "popup": {
+          "main": { "code": 37, "label": "%" },
+          "relevant": [
+            { "code": 8240, "label": "‰" },
+            { "code": 8453, "label": "℅" }
+          ]
+        }
+      },
+      "half": { "code": 37, "label": "%", "popup": {
+          "main": { "code": 65285, "label": "％" },
+          "relevant": [
+            { "code": 8240, "label": "‰" },
+            { "code": 8453, "label": "℅" }
+          ]
+        }
+      }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65286, "label": "＆", "popup": {
+          "main": { "code": 38, "label": "&" }
+        }
+      },
+      "half": { "code": 38, "label": "&", "popup": {
+          "main": { "code": 65286, "label": "＆" }
+        }
+      }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65293, "label": "－", "popup": {
+          "main": { "code": 65343, "label": "＿" },
+          "relevant": [
+            { "code": 45, "label": "-" },
+            { "code": 95, "label": "_" },
+            { "code": 8212, "label": "—" },
+            { "code": 8211, "label": "–" },
+            { "code": 183, "label": "·" }
+          ]
+        }
+      },
+      "half": { "code": 45, "label": "-", "popup": {
+          "main": { "code": 95, "label": "_" },
+          "relevant": [
+            { "code": 65293, "label": "－" },
+            { "code": 65343, "label": "＿" },
+            { "code": 8212, "label": "—" },
+            { "code": 8211, "label": "–" },
+            { "code": 183, "label": "·" }
+          ]
+        }
+      }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65291, "label": "＋", "popup": {
+          "main": { "code": 43, "label": "+" },
+          "relevant": [
+            { "code":   177, "label": "±" },
+            { "code":    61, "label": "=" },
+            { "code": 65309, "label": "＝" }
+          ]
+        }
+      },
+      "half": { "code": 43, "label": "+", "popup": {
+          "main": { "code": 65291, "label": "＋" },
+          "relevant": [
+            { "code":   177, "label": "±" },
+            { "code":    61, "label": "=" },
+            { "code": 65309, "label": "＝" }
+          ]
+        }
+      }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 12300, "label": "「", "popup": {
+          "main": { "code": 12302, "label": "『" },
+          "relevant": [
+            { "code": 12304, "label": "【" },
+            { "code": 12310, "label": "〖" },
+            { "code": 65288, "label": "（" },
+            { "code": 65339, "label": "［" }
+          ]
+        }
+      },
+      "half": { "code": 65378, "label": "｢", "popup": {
+          "main": { "code": 12300, "label": "「" },
+          "relevant": [
+            { "code": 12302, "label": "『" },
+            { "code": 12304, "label": "【" },
+            { "code": 12310, "label": "〖" },
+            { "code":    40, "label": "(" },
+            { "code":    91, "label": "[" }
+          ]
+        }
+      }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 12301, "label": "」", "popup": {
+          "main": { "code": 12303, "label": "』" },
+          "relevant": [
+            { "code": 12305, "label": "】" },
+            { "code": 12311, "label": "〗" },
+            { "code": 65289, "label": "）" },
+            { "code": 65341, "label": "］" }
+          ]
+        }
+      },
+      "half": { "code": 65379, "label": "｣", "popup": {
+          "main": { "code": 12301, "label": "」" },
+          "relevant": [
+            { "code": 12303, "label": "』" },
+            { "code": 12305, "label": "】" },
+            { "code": 12311, "label": "〗" },
+            { "code":    41, "label": ")" },
+            { "code":    93, "label": "]" }
+          ]
+        }
+      }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65295, "label": "／", "popup": {
+          "main": { "code": 47, "label": "/" }
+        }
+      },
+      "half": { "code": 47, "label": "/", "popup": {
+          "main": { "code": 65295, "label": "／" }
+        }
+      }
+    }
+  ],
+  [
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65290, "label": "＊", "popup": {
+          "main": { "code": 8251, "label": "※" },
+          "relevant": [
+            { "code": 42, "label": "*" },
+            { "code": 8224, "label": "†" },
+            { "code": 9733, "label": "★" },
+            { "code": 8225, "label": "‡" }
+          ]
+        }
+      },
+      "half": {  "code": 42, "label": "*", "popup": {
+          "main": { "code": 65290, "label": "＊" },
+          "relevant": [
+            { "code": 8251, "label": "※" },
+            { "code": 8224, "label": "†" },
+            { "code": 9733, "label": "★" },
+            { "code": 8225, "label": "‡" }
+          ]
+        }
+      }
+    },
+    { "code": 34, "label": "\"", "popup": {
+        "main": { "code": 8221, "label": "”" },
+        "relevant": [
+          { "code": 8222, "label": "„" },
+          { "code": 8220, "label": "“" },
+          { "code": 171, "label": "«" },
+          { "code": 187, "label": "»" }
+        ]
+      }
+    },
+    { "code": 39, "label": "'", "popup": {
+        "main": { "code": 8217, "label": "’" },
+        "relevant": [
+          { "code": 8218, "label": "‚" },
+          { "code": 8216, "label": "‘" },
+          { "code": 8249, "label": "‹" },
+          { "code": 8250, "label": "›" }
+        ]
+      }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65306, "label": "：", "popup": {
+          "main": { "code": 58, "label": ":" },
+          "relevant": [
+            { "code": 8942, "label": "⋮" }
+          ]
+        }
+      },
+      "half": { "code": 58, "label": ":", "popup": {
+          "main": { "code": 65306, "label": "：" },
+          "relevant": [
+            { "code": 8942, "label": "⋮" }
+          ]
+        }
+      }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65307, "label": "；", "popup": {
+          "main": { "code": 59, "label": ";" }
+        }
+      },
+      "half": { "code": 59, "label": ";", "popup": {
+          "main": { "code": 65307, "label": "；" }
+        }
+      }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65281, "label": "！", "popup": {
+          "main": { "code": 33, "label": "!" },
+          "relevant": [
+            { "code": 161, "label": "¡" }
+          ]
+        }
+      },
+      "half": { "code": 33, "label": "!", "popup": {
+          "main": { "code": 65281, "label": "！" },
+          "relevant": [
+            { "code": 161, "label": "¡" }
+          ]
+        }
+      }
+    },
+    {
+      "$": "char_width_selector",
+      "full": { "code": 65311, "label": "？", "popup": {
+          "main": { "code": 63, "label": "?" },
+          "relevant": [
+            { "code": 191, "label": "¿" },
+            { "code": 8253, "label": "‽" }
+          ]
+        }
+      },
+      "half": {  "code": 63, "label": "?", "popup": {
+          "main": { "code": 65311, "label": "？" },
+          "relevant": [
+            { "code": 191, "label": "¿" },
+            { "code": 8253, "label": "‽" }
+          ]
+        }
+      }
+    }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_arabi_farsi.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code":   9825, "label": "♡", "popup": {
+      "main": { "code":   -1001, "label": "\uF894" },
+      "relevant": [
+        { "code": 9829, "label": "♥" },
+        { "code": -1001, "label": "\uf896" },
+        { "code": 43524, "label": "ꨄ" },
+        { "code": 4317, "label": "ო" },
+        { "code": 10085, "label": "❥" },
+        { "code": 10087, "label": "❧" },
+        { "code": 10086, "label": "❦" }
+      ]
+    } },
+
+    { "code":   60, "label": "<", "popup": {
+      "main": { "code":  10999, "label": "⫷" }
+    } },
+
+    { "code": 124, "label": "|", "popup": {
+      "main": { "code": 166, "label": "¦" },
+      "relevant": [
+        { "code": 126, "label": "~" },
+        { "code": 8776, "label": "≈" }
+      ]
+    } },
+
+    { "code": 62, "label": ">", "popup": {
+      "main": { "code":  11000, "label": "⫸" }
+    } },
+
+    { "code":   95, "label": "_", "popup": {
+      "main": { "code":   -255, "label": "﹍" },
+      "relevant": [
+        { "code": -255, "label": "╌" },
+        { "code": -255, "label": "╍" }
+      ]
+    } },
+    { "code":   45, "label": "-", "popup": {
+      "main": { "code":   95, "label": "_" },
+      "relevant": [
+        { "code": 8212, "label": "—" },
+        { "code": 8211, "label": "–" },
+        { "code":  -255, "label": "‒" }
+      ]
+    } },
+    { "code":   92, "label": "\\" },
+    { "code":   47, "label": "/" },
+
+    { "code":   40, "label": "(", "popup": {
+      "main": { "code":10090, "label": "❪" },
+      "relevant": [
+        { "code":  12310, "label": "〖" },
+        { "code":  12304, "label": "【" },
+        { "code":  12308, "label": "〔" },
+        { "code":  10629, "label": "⦅" }
+      ]
+    } },
+    { "code":   41, "label": ")", "popup": {
+      "main": { "code":10091, "label": "❫" },
+      "relevant": [
+        { "code":  12311, "label": "〗" },
+        { "code":  12305, "label": "】" },
+        { "code":  12309, "label": "〕" },
+        { "code":  10630, "label": "⦆" }
+      ]
+    } }
+  ],
+  [
+    { "code":   42, "label": "*", "popup": {
+      "main": { "code": 1645, "label": "٭" },
+      "relevant": [
+        { "code": -1001, "label": "\uF892" },
+        { "code": 9733, "label": "★" },
+        { "code": 92432, "label": "\uD81A\uDD10" },
+        { "code": 92435, "label": "\uD81A\uDD13" }
+      ]
+    } },
+    { "code":   35, "label": "#", "popup": {
+      "main": { "code": 8470, "label": "№" }
+    } },
+    { "code":   64, "label": "@" },
+
+    { "code": -801, "label": "currency_slot_1", "popup": {
+      "main": { "code": -802, "label": "currency_slot_2" },
+      "relevant": [
+        { "code": -806, "label": "currency_slot_6" },
+        { "code": -803, "label": "currency_slot_3" },
+        { "code": -804, "label": "currency_slot_4" },
+        { "code": -805, "label": "currency_slot_5" }
+      ]
+    } },
+
+    { "code":   38, "label": "&", "popup": {
+      "main": { "code": 94, "label": "^" },
+      "relevant": [
+        { "code": 8743, "label": "∧" },
+        { "code": 8744, "label": "∨" },
+        { "code": 8710, "label": "∆" },
+        { "code": 8711, "label": "∇" }
+      ]
+    } },
+
+    { "code": 1642, "label": "٪", "popup": {
+      "main": { "code":   37, "label": "%" },
+      "relevant": [
+        { "code": 8453, "label": "℅" },
+        { "code": 8240, "label": "‰" }
+      ]
+    } },
+
+    { "code":   91, "label": "[", "popup": {
+      "main": { "code":12314, "label": "〚" },
+      "relevant": [
+        { "code":  12302, "label": "『" },
+        { "code":   12300, "label": "「" }
+      ]
+    } },
+
+    { "code":   93, "label": "]", "popup": {
+      "main": { "code":12315, "label": "〛" },
+      "relevant": [
+        { "code":  12303, "label": "』" },
+        { "code":   12301, "label": "」" }
+      ]
+    } },
+
+    { "code":   123, "label": "{", "popup": {
+      "main": { "code":   65371, "label": "｛" },
+      "relevant": [
+        { "code":  12298, "label": "《" },
+        { "code":   12296, "label": "〈" },
+        { "code":64830, "label": "﴾" }
+      ]
+    } },
+    { "code":   125, "label": "}", "popup": {
+      "main": { "code":   65373, "label": "｝" },
+      "relevant": [
+        { "code":  12299, "label": "》" },
+        { "code":   12297, "label": "〉" },
+        { "code":64831, "label": "﴿" }
+      ]
+    } }
+  ],
+  [
+
+    { "code":   1644, "label": "،", "popup": {
+      "main": { "code": 1643, "label": "٫" },
+      "relevant": [
+        { "code": 44, "label": "," },
+        { "code": 8222, "label": "„" },
+        { "code": 8221, "label": "”" }
+
+      ]
+    } },
+
+    { "code":   58, "label": ":", "popup": {
+      "main":  { "code":  8942, "label": "⋮" },
+      "relevant": [
+        { "code": 1799, "label": "܇" },
+        { "code": 1798, "label": "܆" }
+      ]
+    } },
+
+
+    { "code": 1563, "label": "؛", "popup": {
+      "main": { "code":   59, "label": ";" },
+      "relevant": [
+        { "code": 8271, "label": "⁏" }
+      ]
+    } },
+    { "code":   34, "label": "\"", "popup": {
+      "relevant": [
+        { "code":  171, "label": "«" },
+        { "code":  187, "label": "»" },
+        { "code": 10077, "label": "❝" },
+        { "code": 10078, "label": "❞" }
+      ]
+    } },
+    { "code":   39, "label": "'", "popup": {
+      "relevant": [
+        { "code": 10076, "label": "❜" },
+        { "code": 10075, "label": "❛" },
+        { "code": 8249, "label": "‹" },
+        { "code": 8250, "label": "›" }
+      ]
+    } },
+    { "code":   33, "label": "!", "popup": {
+      "main": { "code":  161, "label": "¡" }
+    } },
+    { "code": 1567, "label": "؟", "popup": {
+      "main": { "code":   63, "label": "?" },
+      "relevant": [
+        { "code":  191, "label": "¿" },
+        { "code": 8253, "label": "‽" }
+      ]
+    } }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: sym_alt.json
+--------------------------------------------------------------------------------
+[
+  [
+      { "code":   9825, "label": "♡", "popup": {
+        "main": { "code":   -1001, "label": "\uF894" },
+        "relevant": [
+          { "code": 9829, "label": "♥" },
+          { "code": -1001, "label": "\uf896" },
+          { "code": 43524, "label": "ꨄ" },
+          { "code": 4317, "label": "ო" },
+          { "code": 10085, "label": "❥" },
+          { "code": 10087, "label": "❧" },
+          { "code": 10086, "label": "❦" }
+        ]
+      } },
+
+    { "code":   60, "label": "<", "popup": {
+      "main": { "code":  10999, "label": "⫷" }
+    } },
+
+    { "code": 124, "label": "|", "popup": {
+      "main": { "code": 166, "label": "¦" },
+      "relevant": [
+        { "code": 126, "label": "~" },
+        { "code": 8776, "label": "≈" }
+      ]
+    } },
+
+    { "code": 62, "label": ">", "popup": {
+      "main": { "code":  11000, "label": "⫸" }
+    } },
+
+    { "code":   95, "label": "_", "popup": {
+      "main": { "code":   -255, "label": "﹍" },
+      "relevant": [
+        { "code": -255, "label": "╌" },
+        { "code": -255, "label": "╍" }
+      ]
+    } },
+    { "code":   45, "label": "-", "popup": {
+      "main": { "code":   95, "label": "_" },
+      "relevant": [
+        { "code": 8212, "label": "—" },
+        { "code": 8211, "label": "–" },
+        { "code":  -255, "label": "‒" }
+      ]
+    } },
+    { "code":   92, "label": "\\" },
+    { "code":   47, "label": "/" },
+
+    { "code":   40, "label": "(", "popup": {
+      "main": { "code":10090, "label": "❪" },
+      "relevant": [
+        { "code":  12310, "label": "〖" },
+        { "code":  12304, "label": "【" },
+        { "code":  12308, "label": "〔" },
+        { "code":  10629, "label": "⦅" }
+      ]
+    } },
+    { "code":   41, "label": ")", "popup": {
+      "main": { "code":10091, "label": "❫" },
+      "relevant": [
+        { "code":  12311, "label": "〗" },
+        { "code":  12305, "label": "】" },
+        { "code":  12309, "label": "〕" },
+        { "code":  10630, "label": "⦆" }
+      ]
+    } }
+  ],
+  [
+    { "code":   42, "label": "*", "popup": {
+      "main": { "code": 1645, "label": "٭" },
+      "relevant": [
+        { "code": -1001, "label": "\uF892" },
+        { "code": 9733, "label": "★" },
+        { "code": 92432, "label": "\uD81A\uDD10" },
+        { "code": 92435, "label": "\uD81A\uDD13" }
+      ]
+    } },
+    { "code":   35, "label": "#", "popup": {
+      "main": { "code": 8470, "label": "№" }
+    } },
+    { "code":   64, "label": "@" }
+  ,
+    { "code": -801, "label": "currency_slot_1", "popup": {
+      "main": { "code": -802, "label": "currency_slot_2" },
+      "relevant": [
+        { "code": -806, "label": "currency_slot_6" },
+        { "code": -803, "label": "currency_slot_3" },
+        { "code": -804, "label": "currency_slot_4" },
+        { "code": -805, "label": "currency_slot_5" }
+      ]
+    } },
+
+    { "code":   38, "label": "&", "popup": {
+      "main": { "code": 94, "label": "^" },
+      "relevant": [
+        { "code": 8743, "label": "∧" },
+        { "code": 8744, "label": "∨" },
+        { "code": 8710, "label": "∆" },
+        { "code": 8711, "label": "∇" }
+      ]
+    } },
+
+    { "code": 37, "label": "%", "popup": {
+      "main": { "code":   1642, "label": "٪" },
+      "relevant": [
+        { "code": 8453, "label": "℅" },
+        { "code": 8240, "label": "‰" }
+      ]
+    } },
+
+    { "code":   91, "label": "[", "popup": {
+      "main": { "code":12314, "label": "〚" },
+      "relevant": [
+        { "code":  12302, "label": "『" },
+        { "code":   12300, "label": "「" }
+      ]
+    } },
+
+    { "code":   93, "label": "]", "popup": {
+      "main": { "code":12315, "label": "〛" },
+      "relevant": [
+        { "code":  12303, "label": "』" },
+        { "code":   12301, "label": "」" }
+      ]
+    } },
+
+    { "code":   123, "label": "{", "popup": {
+      "main": { "code":   65371, "label": "｛" },
+      "relevant": [
+        { "code":  12298, "label": "《" },
+        { "code":   12296, "label": "〈" },
+        { "code":64830, "label": "﴾" }
+      ]
+    } },
+    { "code":   125, "label": "}", "popup": {
+      "main": { "code":   65373, "label": "｝" },
+      "relevant": [
+        { "code":  12299, "label": "》" },
+        { "code":   12297, "label": "〉" },
+        { "code":64831, "label": "﴿" }
+      ]
+    } }
+  ],
+  [
+    { "code":   44, "label": ",", "popup": {
+      "main": { "code": 8216, "label": "‘" },
+      "relevant": [
+        { "code": 1644, "label": "،" },
+        { "code": 8222, "label": "„" },
+        { "code": 8221, "label": "”" }
+      ]
+    } },
+
+    { "code":   58, "label": ":", "popup": {
+      "main":  { "code":  8942, "label": "⋮" },
+      "relevant": [
+        { "code": 1799, "label": "܇" },
+        { "code": 1798, "label": "܆" }
+      ]
+    } },
+
+
+    { "code": 59, "label": ";", "popup": {
+      "main": { "code":   156, "label": "؛" },
+      "relevant": [
+        { "code": 8271, "label": "⁏" }
+      ]
+    } },
+    { "code":   34, "label": "\"", "popup": {
+      "relevant": [
+        { "code":  171, "label": "«" },
+        { "code":  187, "label": "»" },
+        { "code": 10077, "label": "❝" },
+        { "code": 10078, "label": "❞" }
+      ]
+    } },
+    { "code":   39, "label": "'", "popup": {
+      "relevant": [
+        { "code": 10076, "label": "❜" },
+        { "code": 10075, "label": "❛" },
+        { "code": 8249, "label": "‹" },
+        { "code": 8250, "label": "›" }
+      ]
+    } },
+    { "code":   33, "label": "!", "popup": {
+      "main": { "code":  161, "label": "¡" }
+    } },
+    { "code": 63, "label": "?", "popup": {
+      "main": { "code":   1567, "label": "؟" },
+      "relevant": [
+        { "code":  191, "label": "¿" },
+        { "code": 8253, "label": "‽" }
+      ]
+    } }
+  ]
+]
+
+
+################################################################################
+# 5. symbolsMod/
+################################################################################
+
+--------------------------------------------------------------------------------
+FILE: cjk.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code": -203, "label": "view_symbols2", "type": "system_gui" },
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -201, "label": "view_characters", "type": "system_gui" },
+    { "$": "char_width_selector",
+      "full": { "code": 12289, "label": "、", "popup": {
+          "main": { "code":   65292, "label": "，" },
+          "relevant": [
+            { "code":   44, "label": "," }
+          ]
+        }
+      },
+      "half": { "code": 65380, "label": "､", "popup": {
+          "main": { "code":   44, "label": "," },
+          "relevant": [
+            { "code":   65292, "label": "，" }
+          ]
+        }
+      }
+    },
+    { "code": -205, "label": "view_numeric_advanced", "type": "system_gui" },
+    { "code": 12288, "label": "空白" },
+    { "code": -9701, "label": "char_width_switcher", "type": "system_gui", "popup": {
+        "relevant": [
+          { "code": -9702, "label": "char_width_full", "type": "system_gui" },
+          { "code": -9703, "label": "char_width_half", "type": "system_gui" }
+        ]
+      }
+    },
+    { "$": "char_width_selector",
+      "full": { "code": 12290, "label": "。", "popup": {
+          "main": { "code": 8230, "label": "…" },
+          "relevant": [
+            { "code": 12539, "label": "・" },
+            { "code":    46, "label": "." }
+          ]
+        }
+      },
+      "half": { "code": 65377, "label": "｡", "popup": {
+          "main": { "code": 8230, "label": "…" },
+          "relevant": [
+            { "code": 65381, "label": "･" },
+            { "code":    46, "label": "." }
+          ]
+        }
+      }
+    },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: default.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code": -203, "label": "view_symbols2", "type": "system_gui" },
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -201, "label": "view_characters", "type": "system_gui" },
+    { "code":   44, "label": "," },
+    { "code": -205, "label": "view_numeric_advanced", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "code":   46, "label": ".", "popup": {
+      "main": { "code": 8230, "label": "…" }
+    } },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+################################################################################
+# 6. symbols2/
+################################################################################
+
+--------------------------------------------------------------------------------
+FILE: cjk.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "char_width_selector",
+      "full": { "code": 12316, "label": "〜", "popup": {
+        "main": { "code":  126, "label": "~" }
+        }
+      },
+      "half": { "code":  126, "label": "~", "popup": {
+        "main": { "code": 12316, "label": "〜" }
+        }
+      }
+    },
+    { "$": "char_width_selector",
+      "full": { "code": 65344, "label": "｀", "popup": {
+        "main": { "code":   96, "label": "`" }
+        }
+      },
+      "half": { "code":   96, "label": "`", "popup": {
+        "main": { "code": 65344, "label": "｀" }
+        }
+      }
+    },
+    { "$": "char_width_selector",
+      "full": { "code": 65372, "label": "｜", "popup": {
+        "main": { "code":  124, "label": "|" }
+        }
+      },
+      "half": { "code":  124, "label": "|", "popup": {
+        "main": { "code": 65372, "label": "｜" }
+        }
+      }
+    },
+    { "$": "char_width_selector",
+      "full":
+        { "code": 12539, "label": "・", "popup": {
+          "main": { "code": 9834, "label": "♪" },
+          "relevant": [
+            { "code": 8226, "label": "•" },
+            { "code": 9827, "label": "♣" },
+            { "code": 9824, "label": "♠" },
+            { "code": 9829, "label": "♥" },
+            { "code": 9830, "label": "♦" }
+          ]
+        } },
+      "half":
+        { "code": 8226, "label": "•", "popup": {
+          "main": { "code": 9834, "label": "♪" },
+          "relevant": [
+            { "code": 12539, "label": "・" },
+            { "code": 9827, "label": "♣" },
+            { "code": 9824, "label": "♠" },
+            { "code": 9829, "label": "♥" },
+            { "code": 9830, "label": "♦" }
+          ]
+        } }
+    },
+    { "code": 8730, "label": "√", "popup": {
+      "main": { "code": 10003, "label": "✓" }
+    } },
+    { "code":  960, "label": "π", "popup": {
+      "main": { "code":  928, "label": "Π" },
+      "relevant": [
+        { "code":  969, "label": "ω" },
+        { "code":  945, "label": "α" },
+        { "code":  946, "label": "β" },
+        { "code":  937, "label": "Ω" },
+        { "code":  956, "label": "μ" }
+      ]
+    } },
+    { "code":  247, "label": "÷" },
+    { "code":  215, "label": "×" },
+    { "code":  182, "label": "¶" },
+    { "code": 8710, "label": "∆" }
+  ],
+  [
+    { "code": -805, "label": "currency_slot_5" },
+    { "code": -804, "label": "currency_slot_4" },
+    { "code": -803, "label": "currency_slot_3" },
+    { "code": -802, "label": "currency_slot_2" },
+    { "code":   94, "label": "^", "popup": {
+      "main": { "code": 8593, "label": "↑" },
+      "relevant": [
+        { "code": 8592, "label": "←" },
+        { "code": 8595, "label": "↓" },
+        { "code": 8594, "label": "→" }
+      ]
+    } },
+    { "code":  176, "label": "°", "popup": {
+      "main": { "code": 8242, "label": "′" },
+      "relevant": [
+        { "code": 8243, "label": "″" }
+      ]
+    } },
+    { "$": "char_width_selector",
+      "full":
+        { "code": 65309, "label": "＝", "popup": {
+          "main": { "code": 8800, "label": "≠" },
+          "relevant": [
+            { "code":   61, "label": "=" },
+            { "code": 8734, "label": "∞" },
+            { "code": 8776, "label": "≈" }
+          ]
+        }
+      },
+      "half":
+        { "code":   61, "label": "=", "popup": {
+          "main": { "code": 8800, "label": "≠" },
+          "relevant": [
+            { "code": 65309, "label": "＝" },
+            { "code": 8734, "label": "∞" },
+            { "code": 8776, "label": "≈" }
+          ]
+        }
+      }
+    },
+    { "$": "char_width_selector",
+      "full": { "code": 65371, "label": "｛", "popup": {
+          "main": { "code": 65288, "label": "（" },
+          "relevant": [
+            { "code":   123, "label": "{" },
+            { "code": 12308, "label": "〔" },
+            { "code": 12312, "label": "〘" },
+            { "code": 65375, "label": "｟" }
+          ]
+        }
+      },
+      "half": { "code":   123, "label": "{", "popup": {
+          "main": { "code": 40, "label": "(" },
+          "relevant": [
+            { "code": 65371, "label": "｛" }
+          ]
+        }
+      }
+    },
+    { "$": "char_width_selector",
+      "full": { "code": 65373, "label": "｝", "popup": {
+          "main": { "code": 65289, "label": "）" },
+          "relevant": [
+            { "code":   125, "label": "}" },
+            { "code": 12309, "label": "〕" },
+            { "code": 12313, "label": "〙" },
+            { "code": 65376, "label": "｠" }
+          ]
+        }
+      },
+      "half": { "code":   125, "label": "}", "popup": {
+          "main": { "code": 41, "label": ")" },
+          "relevant": [
+            { "code": 65373, "label": "｝" }
+          ]
+        }
+      }
+    },
+    { "$": "char_width_selector",
+      "full": { "code": 65340, "label": "＼", "popup": {
+          "main": { "code":   92, "label": "\\" }
+        }
+      },
+      "half": { "code":   92, "label": "\\", "popup": {
+          "main": { "code": 65340, "label": "＼" }
+        }
+      }
+    }
+  ],
+  [
+    { "code": 12292, "label": "〄" },
+    { "code": 12293, "label": "々" },
+    { "code": 12294, "label": "〆" },
+    { "code": 12295, "label": "〇" },
+    { "$": "kana_selector",
+      "hira": { "code": 12445, "label": "ゝ", "popup": {
+            "main": { "code": 12446, "label": "ゞ" },
+            "relevant": [
+              { "code": 12541, "label": "ヽ" },
+              { "code": 12542, "label": "ヾ" }
+            ]
+        }
+      },
+      "kata": { "code": 12541, "label": "ヽ", "popup": {
+            "main": { "code": 12542, "label": "ヾ" },
+            "relevant": [
+              { "code": 12445, "label": "ゝ" },
+              { "code": 12446, "label": "ゞ" }
+            ]
+        }
+      }
+    },
+    { "$": "char_width_selector",
+      "full": { "code": 65339, "label": "［", "popup": {
+          "main": { "code":   91, "label": "[" },
+          "relevant": [
+            { "code": 12314, "label": "〚" },
+            { "code": 12304, "label": "【" },
+            { "code": 12310, "label": "〖" }
+          ]
+        }
+      },
+      "half": { "code":   91, "label": "[", "popup": {
+          "main": { "code": 65339, "label": "［" }
+        }
+      }
+    },
+    { "$": "char_width_selector",
+      "full": { "code": 65341, "label": "］", "popup": {
+          "main": { "code":   93, "label": "]" },
+          "relevant": [
+            { "code": 12315, "label": "〛" },
+            { "code": 12305, "label": "】" },
+            { "code": 12311, "label": "〗" }
+          ]
+        }
+      },
+      "half": { "code":   93, "label": "]", "popup": {
+          "main": { "code": 65341, "label": "］" }
+        }
+      }
+    }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: sym_alt.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code": 8451, "label": "℃"},
+    { "code": 8457, "label": "℉"},
+
+    { "code": 169, "label": "©" },
+
+    { "code": 960, "label": "π", "popup": {
+      "main": { "code": 946, "label": "β" },
+      "relevant": [
+        { "code": 928, "label": "Π" },
+        { "code": 969, "label": "ω" },
+        { "code": 945, "label": "α" },
+        { "code": 937, "label": "Ω" },
+        { "code": 8710, "label": "∆" },
+        { "code": 8721, "label": "∑" },
+        { "code": 8738, "label": "∢" },
+        { "code": 8737, "label": "∡" },
+        { "code": 8736, "label": "∠" },
+        { "code": 8735, "label": "∟" },
+        { "code": 8894, "label": "⊾" },
+        { "code": 8895, "label": "⊿" }
+      ]
+    } },
+    { "code": 126, "label": "~", "popup": {
+      "main": { "code": 8750, "label": "∮" },
+      "relevant": [
+        { "code": 8920, "label": "⋘" },
+        { "code": 8921, "label": "⋙" },
+        { "code": 8744, "label": "∨" },
+        { "code": 8743, "label": "∧" },
+        { "code": 8805, "label": "≥" },
+        { "code": 8804, "label": "≤" },
+        { "code": 8912, "label": "⋐" },
+        { "code": 8913, "label": "⋑" },
+        { "code": 8801, "label": "≡" },
+        { "code": 8914, "label": "⋒" },
+        { "code": 8815, "label": "⋓" },
+        { "code": 8747, "label": "∫" },
+        { "code": 8748, "label": "∬" },
+        { "code": 8749, "label": "∭" },
+        { "code": 10764, "label": "⨌" }
+      ]
+    } },
+    { "code": 61, "label": "=", "popup": {
+      "main": { "code": 128992, "label": "🟰" },
+      "relevant": [
+        { "code": 8800, "label": "≠" },
+        { "code": 8776, "label": "≈" },
+        { "code": 8801, "label": "≡" },
+        { "code": 8802, "label": "≢" }
+      ]
+    } },
+    { "code": 247, "label": "÷", "popup": {
+      "main": { "code": 10135, "label": "➗" }
+    } },
+    { "code": 215, "label": "×" },
+    { "code": 8722, "label": "−", "popup": {
+      "main": { "code": 10134, "label": "➖" }
+    } },
+    { "code": 43, "label": "+", "popup": {
+      "main": { "code": 10133, "label": "➕" }
+    } }
+  ],
+  [
+    { "code": 181, "label": "µ", "popup": {
+      "main": { "code": 8746, "label": "∪" },
+      "relevant": [
+        { "code": 8745, "label": "∩" },
+        { "code": 8712, "label": "∈" },
+        { "code": 8715, "label": "∋" },
+        { "code": 8848, "label": "⊏" },
+        { "code": 8847, "label": "⊐" },
+        { "code": 10710, "label": "⧖" },
+        { "code": 10738, "label": "⧲" },
+        { "code": 10736, "label": "⧰" },
+        { "code": 10734, "label": "⧮" }
+      ]
+    } },
+    { "code": 8544, "label": "Ⅰ" },
+    { "code": 10152, "label": "➳" },
+    { "code": 8592, "label": "←" },
+    { "code": 8593, "label": "↑" },
+    { "code": 8595, "label": "↓" },
+    { "code": 8594, "label": "→" },
+    { "code": 10146, "label": "➢", "popup": {
+      "main": { "code": 92473, "label": "𖤹" }
+    } },
+    { "code": 10007, "label": "✗", "popup": {
+      "main": { "code": 10008, "label": "✘" },
+      "relevant": [
+        { "code": 12324, "label": "〤" },
+        { "code": 10005, "label": "✕" }
+      ]
+    } },
+    { "code": 10003, "label": "✓", "popup": {
+      "main": { "code": 43676, "label": "ꪜ" },
+      "relevant": [
+        { "code": 43318, "label": "ꤶ" },
+        { "code": 12294, "label": "〆" }
+      ]
+    } }
+  ],
+  [
+    { "code": 127399, "label": "\uD83C\uDDA7", "popup": {
+      "main": { "code": -255, "label": "ᴴᴰ" },
+      "relevant": [
+        { "code": 127403, "label": "🆫" },
+        { "code": 127389, "label": "🆝" },
+        { "code": 127390, "label": "🆞" },
+        { "code": 127391, "label": "🆟" },
+        { "code": 127400, "label": "🆨" },
+        { "code": 127395, "label": "🆣" },
+        { "code": 127396, "label": "🆤" }
+      ]
+    } },
+    { "code": 13199, "label": "㎏", "popup": {
+      "main": { "code": 13214, "label": "㎞" },
+      "relevant": [
+        { "code": 13201, "label": "㎑" },
+        { "code": 13202, "label": "㎒" },
+        { "code": 13203, "label": "㎓" },
+        { "code": 13240, "label": "㎸" },
+        { "code": 13246, "label": "㎾" },
+        { "code": 13259, "label": "㏋" },
+        { "code": 13270, "label": "㏖" },
+        { "code": 13266, "label": "㏒" },
+        { "code": 13269, "label": "㏕" },
+        { "code": 13252, "label": "㏄" },
+        { "code": 13213, "label": "㎝" },
+        { "code": 13198, "label": "㎎" },
+        { "code": 13212, "label": "㎜" },
+        { "code": 13253, "label": "㎡" },
+        { "code": 13235, "label": "㎳" },
+        { "code": 13252, "label": "㏈" },
+        { "code": 13265, "label": "㏑" }
+      ]
+    } },
+    { "code": 8734, "label": "∞", "popup": {
+      "main": { "code": 8527, "label": "⅏" },
+      "relevant": [
+        { "code": 8886, "label": "⊶" },
+        { "code": 8887, "label": "⊷" },
+        { "code": 8268, "label": "⁌" },
+        { "code": 8269, "label": "⁍" }
+      ]
+    } },
+    { "code": 12292, "label": "〄", "popup": {
+      "main": { "code": 91048, "label": "𖢨" },
+      "relevant": [
+        { "code": 9043, "label": "⌬" },
+        { "code": 9187, "label": "⏣" },
+        { "code": 9108, "label": "⎔" },
+        { "code": 10070, "label": "❖" }
+      ]
+    } },
+    { "code": 1548, "label": "۝", "popup": {
+      "main": { "code": 1769, "label": "۩" },
+      "relevant": [
+        { "code": 1758, "label": "۞" }
+      ]
+    } },
+    { "code": 91056, "label": "\uD81A\uDCB0", "popup": {
+      "main": { "code": -255, "label": "ʚĭɞ" },
+      "relevant": [
+        { "code": 91224, "label": "𖥸" },
+        { "code": 42340, "label": "ꕤ" },
+        { "code": 42341, "label": "ꕥ" }
+      ]
+    } },
+    { "code": 10041, "label": "✹", "popup": {
+      "main": { "code": 65170, "label": "" },
+      "relevant": [
+        { "code": 9733, "label": "★" },
+        { "code": 10030, "label": "✮" },
+        { "code": 10029, "label": "✭" },
+        { "code": 10028, "label": "✬" },
+        { "code": 10027, "label": "✫" },
+        { "code": 9734, "label": "☆" },
+        { "code": 10040, "label": "✸" },
+        { "code": 10037, "label": "✵" },
+        { "code": 10038, "label": "✶" },
+        { "code": 10026, "label": "✪" },
+        { "code": 10050, "label": "❂" },
+        { "code": 10049, "label": "❁" },
+        { "code": 10051, "label": "❃" },
+        { "code": 10046, "label": "✾" },
+        { "code": 10052, "label": "❅" },
+        { "code": 10043, "label": "✻" },
+        { "code": 10055, "label": "❊" },
+        { "code": 10057, "label": "❉" },
+        { "code": 10059, "label": "❋" }
+      ]
+    } },
+    { "code": 91320, "label": "𖦹", "popup": {
+      "main": { "code": 6820, "label": "᪤" },
+      "relevant": [
+        { "code": 91221, "label": "𖥕" },
+        { "code": 91226, "label": "𖥚" }
+      ]
+    } },
+    { "code": 91291, "label": "𖤛", "popup": {
+      "main": { "code": 91352, "label": "𖣘" },
+      "relevant": [
+        { "code": 91344, "label": "𖣐" },
+        { "code": 1422, "label": "֎" },
+        { "code": 1421, "label": "֍" }
+      ]
+    } },
+    { "code": 78184, "label": "𓅨", "popup": {
+      "main": { "code": 78147, "label": "𓅃" },
+      "relevant": [
+        { "code": 78163, "label": "𓅓" },
+        { "code": 78154, "label": "𓅊" },
+        { "code": 78168, "label": "𓅘" },
+        { "code": 78143, "label": "𓄿" },
+        { "code": 78160, "label": "𓅐" },
+        { "code": 78152, "label": "𓅈" },
+        { "code": 78153, "label": "𓅉" },
+        { "code": 78149, "label": "𓅅" },
+        { "code": 78150, "label": "𓅆" }
+      ]
+    } }
+  ],
+  [
+    { "code": 9758, "label": "☞", "popup": {
+      "main": { "code": 9756, "label": "☜" },
+      "relevant": [
+        { "code": 9759, "label": "☟" },
+        { "code": 9754, "label": "☚" },
+        { "code": 9755, "label": "☛" },
+        { "code": 9166, "label": "⏎" },
+        { "code": 8563, "label": "⇳" },
+        { "code": 8678, "label": "⇦" },
+        { "code": 8679, "label": "⇧" },
+        { "code": 8681, "label": "⇩" },
+        { "code": 8680, "label": "⇨" }
+      ]
+    } },
+    { "code": 12511, "label": "ミ", "popup": {
+      "main": { "code": 24417, "label": "彡" },
+      "relevant": [
+        { "code": 20040, "label": "么" },
+        { "code": 20065, "label": "乡" },
+        { "code": 20036, "label": "乄" },
+        { "code": 21435, "label": "去" },
+        { "code": 20041, "label": "义" },
+        { "code": 12522, "label": "リ" },
+        { "code": 12426, "label": "り" },
+        { "code": 12512, "label": "ム" },
+        { "code": 20034, "label": "乇" },
+        { "code": 12509, "label": "ポ" },
+        { "code": 12493, "label": "ネ" },
+        { "code": 12412, "label": "ぼ" },
+        { "code": 12414, "label": "ま" },
+        { "code": 12415, "label": "み" },
+        { "code": 12416, "label": "む" },
+        { "code": 12420, "label": "や" },
+        { "code": 12422, "label": "ゆ" }
+      ]
+    } },
+    { "code": 41735, "label": "ꌇ", "popup": {
+      "main": { "code": 41557, "label": "ꉕ" },
+      "relevant": [
+        { "code": 41212, "label": "ꃼ" },
+        { "code": 41483, "label": "ꈋ" },
+        { "code": 41372, "label": "ꆜ" },
+        { "code": 41973, "label": "ꐕ" }
+      ]
+    } },
+    { "code": 13025, "label": "㋡", "popup": {
+      "main": { "code": 13019, "label": "㋛" },
+      "relevant": [
+        { "code": 65173, "label": "" },
+        { "code": 12472, "label": "ジ" },
+        { "code": 12484, "label": "ツ" },
+        { "code": 993, "label": "ϡ" }
+      ]
+    } },
+    { "code": 12320, "label": "〠", "popup": {
+      "main": { "code": 128568, "label": "🜸" },
+      "relevant": [
+        { "code": 9178, "label": "⏚" },
+        { "code": 128527, "label": "🜏" },
+        { "code": 128530, "label": "🜒" },
+        { "code": 128524, "label": "🜌" },
+        { "code": 128546, "label": "🜢" },
+        { "code": 128543, "label": "🜟" },
+        { "code": 128539, "label": "🜛" },
+        { "code": 128566, "label": "🜶" },
+        { "code": 128521, "label": "🜉" }
+      ]
+    } },
+    { "code": 3675, "label": "๛", "popup": {
+      "main": { "code": 3572, "label": "෴" },
+      "relevant": [
+        { "code": 3898, "label": "༺" },
+        { "code": 3899, "label": "༻" },
+        { "code": 3921, "label": "ཊ" },
+        { "code": 3920, "label": "ཏ" },
+        { "code": 8880, "label": "⊰" },
+        { "code": 8881, "label": "⊱" },
+
+        { "code": 3848, "label": "༆" }
+      ]
+    } },
+    { "code": 3499, "label": "ණ", "popup": {
+      "main": { "code": 7164, "label": "᯼" },
+      "relevant": [
+        { "code": 3424, "label": "ൠ" },
+        { "code": 3349, "label": "ക" },
+        { "code": 2039, "label": "߷" },
+        { "code": 5024, "label": "Ꮬ" },
+        { "code": 9000, "label": "⌨" },
+        { "code": 9003, "label": "⌫" },
+        { "code": 9005, "label": "⌧" },
+        { "code": 9983, "label": "⛿" },
+        { "code": 9988, "label": "✄" }
+      ]
+    } }
+  ]
+]
+
+
+################################################################################
+# 7. symbols2Mod/
+################################################################################
+
+--------------------------------------------------------------------------------
+FILE: cjk.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -201, "label": "view_characters", "type": "system_gui" },
+    { "$": "char_width_selector",
+      "full": { "code": 12296, "label": "〈", "popup": {
+        "main": { "code": 12298, "label": "《" },
+        "relevant": [
+          { "code":    60, "label": "<" },
+          { "code":  8804, "label": "≤" },
+          { "code":  8249, "label": "‹" },
+          { "code": 10216, "label": "⟨" },
+          { "code": 65308, "label": "＜" }
+        ]
+      } },
+      "half": { "code":    60, "label": "<", "popup": {
+        "main": { "code": 12298, "label": "《" },
+        "relevant": [
+          { "code": 12296, "label": "〈" },
+          { "code":  8804, "label": "≤" },
+          { "code":  8249, "label": "‹" },
+          { "code": 10216, "label": "⟨" },
+          { "code": 65308, "label": "＜" }
+        ]
+      } }
+    },
+    { "code": -205, "label": "view_numeric_advanced", "type": "system_gui" },
+    { "code": 12288, "label": "空白" },
+    { "code": -9701, "label": "char_width_switcher", "type": "system_gui", "popup": {
+        "relevant": [
+          { "code": -9702, "label": "char_width_full", "type": "system_gui" },
+          { "code": -9703, "label": "char_width_half", "type": "system_gui" }
+        ]
+      }
+    },
+    { "$": "char_width_selector",
+      "full": { "code": 12297, "label": "〉", "popup": {
+        "main": { "code": 12299, "label": "》" },
+        "relevant": [
+          { "code":    62, "label": ">" },
+          { "code":  8805, "label": "≥" },
+          { "code":  8250, "label": "›" },
+          { "code": 10217, "label": "⟩" },
+          { "code": 65310, "label": "＞" }
+        ]
+      } },
+      "half": { "code":    62, "label": ">", "popup": {
+        "main": { "code": 12299, "label": "》" },
+        "relevant": [
+          { "code": 12297, "label": "〉" },
+          { "code":  8805, "label": "≥" },
+          { "code":  8250, "label": "›" },
+          { "code": 10217, "label": "⟩" },
+          { "code": 65310, "label": "＞" }
+        ]
+      } }
+    },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: default.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code": -202, "label": "view_symbols", "type": "system_gui" },
+    { "code":    0, "type": "placeholder" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code": -201, "label": "view_characters", "type": "system_gui" },
+    { "$": "layout_direction_selector",
+      "ltr": { "code":   60, "label": "<", "popup": {
+        "relevant": [
+          { "code":  171, "label": "«" },
+          { "code": 8804, "label": "≤" },
+          { "code": 8249, "label": "‹" },
+          { "code":10216, "label": "⟨" }
+        ]
+      } },
+      "rtl": { "code":   62, "label": "<", "popup": {
+        "relevant": [
+          { "code":  187, "label": "«" },
+          { "code": 8805, "label": "≤" },
+          { "code": 8250, "label": "‹" },
+          { "code":10217, "label": "⟨" }
+        ]
+      } }
+    },
+    { "code": -205, "label": "view_numeric_advanced", "type": "system_gui" },
+    { "code":   32, "label": "space" },
+    { "$": "layout_direction_selector",
+      "ltr": { "code":   62, "label": ">", "popup": {
+        "relevant": [
+          { "code":10217, "label": "⟩" },
+          { "code": 8250, "label": "›" },
+          { "code": 8805, "label": "≥" },
+          { "code":  187, "label": "»" }
+        ]
+      } },
+      "rtl": { "code":   60, "label": ">", "popup": {
+        "relevant": [
+          { "code":10216, "label": "⟩" },
+          { "code": 8249, "label": "›" },
+          { "code": 8804, "label": "≥" },
+          { "code":  171, "label": "»" }
+        ]
+      } }
+    },
+    { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+################################################################################
+# 8. numeric/
+################################################################################
+
+--------------------------------------------------------------------------------
+FILE: latin.json
+--------------------------------------------------------------------------------
+[
+  [
+
+    { "code":   49, "label": "1", "type": "numeric" },
+    { "code":   50, "label": "2", "type": "numeric" },
+    { "code":   51, "label": "3", "type": "numeric" },
+    { "code":   45, "label": "-" }
+  ],
+  [
+    { "code":   52, "label": "4", "type": "numeric" },
+    { "code":   53, "label": "5", "type": "numeric" },
+    { "code":   54, "label": "6", "type": "numeric" },
+    { "code":   46, "label": "." }
+  ],
+  [
+    { "code":   55, "label": "7", "type": "numeric" },
+    { "code":   56, "label": "8", "type": "numeric" },
+    { "code":   57, "label": "9", "type": "numeric" },
+    { "code":   -7, "label": "delete", "type": "enter_editing" }
+  ],
+  [
+    { "code":   44, "label": "," },
+    { "code":   48, "label": "0", "type": "numeric", "popup": {
+      "main": { "code":   43, "label": "+" }
+    } },
+    { "code":   32, "label": "space" },
+    { "code":   10, "label": "enter", "type": "enter_editing" }
+  ]
+]
+
+
+################################################################################
+# 9. numericAdvanced/
+################################################################################
+
+--------------------------------------------------------------------------------
+FILE: kurdi_arabi.json
+--------------------------------------------------------------------------------
+[
+    [
+      { "code":   43, "label": "+", "popup": {
+        "main": { "code":   45, "label": "-" }
+      } },
+      { "code":   1633, "label": "١", "type": "numeric" },
+      { "code":   1634, "label": "٢", "type": "numeric" },
+      { "code":   1635, "label": "٣", "type": "numeric" },
+      { "code":   1642, "label": "٪" }
+    ],
+    [
+      { "code":   40, "label": "(", "popup": {
+        "main": { "code":   91, "label": "[" }
+      } },
+      { "code":   1636, "label": "٤", "type": "numeric" },
+      { "code":   1637, "label": "٥", "type": "numeric" },
+      { "code":   1638, "label": "٦", "type": "numeric" },
+      { "code":   46, "label": "." }
+    ],
+    [
+      { "code":   41, "label": ")", "popup": {
+        "main": { "code":   93, "label": "]" }
+      } },
+      { "code":   1639, "label": "٧", "type": "numeric" },
+      { "code":   1640, "label": "٨", "type": "numeric" },
+      { "code":   1641, "label": "٩", "type": "numeric" },
+      { "code":   -7, "label": "delete", "type": "enter_editing" }
+    ],
+    [
+      { "code": -201, "label": "view_characters", "type": "system_gui" },
+      { "code": -202, "label": "view_symbols", "type": "system_gui" },
+      { "code":   1548, "label": "،" },
+      { "code":   1632, "label": "٠", "type": "numeric" },
+      { "code":   61, "label": "=" },
+      { "code":   32, "label": "space" },
+      { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: latin.json
+--------------------------------------------------------------------------------
+[
+    [
+      { "code":   43, "label": "+", "popup": {
+        "main": { "code":   45, "label": "-" }
+      } },
+      { "code":   49, "label": "1", "type": "numeric" },
+      { "code":   50, "label": "2", "type": "numeric" },
+      { "code":   51, "label": "3", "type": "numeric" },
+      { "code":   37, "label": "%" }
+    ],
+    [
+      { "code":   40, "label": "(", "popup": {
+        "main": { "code":   91, "label": "[" }
+      } },
+      { "code":   52, "label": "4", "type": "numeric" },
+      { "code":   53, "label": "5", "type": "numeric" },
+      { "code":   54, "label": "6", "type": "numeric" },
+      { "code":   46, "label": "." }
+    ],
+    [
+      { "code":   41, "label": ")", "popup": {
+        "main": { "code":   93, "label": "]" }
+      } },
+      { "code":   55, "label": "7", "type": "numeric" },
+      { "code":   56, "label": "8", "type": "numeric" },
+      { "code":   57, "label": "9", "type": "numeric" },
+      { "code":   -7, "label": "delete", "type": "enter_editing" }
+    ],
+    [
+      { "code": -201, "label": "view_characters", "type": "system_gui" },
+      { "code": -202, "label": "view_symbols", "type": "system_gui" },
+      { "code":   44, "label": "," },
+      { "code":   48, "label": "0", "type": "numeric" },
+      { "code":   61, "label": "=" },
+      { "code":   32, "label": "space" },
+      { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: urdu_farsi.json
+--------------------------------------------------------------------------------
+[
+    [
+      { "code":   43, "label": "+", "popup": {
+        "main": { "code":   45, "label": "-" }
+      } },
+      { "code":   1633, "label": "١", "type": "numeric" },
+      { "code":   1634, "label": "٢", "type": "numeric" },
+      { "code":   1635, "label": "٣", "type": "numeric" },
+      { "code":   1642, "label": "٪" }
+    ],
+    [
+      { "code":   40, "label": "(", "popup": {
+        "main": { "code":   91, "label": "[" }
+      } },
+      { "code":   1780, "label": "۴", "type": "numeric" },
+      { "code":   1781, "label": "۵", "type": "numeric" },
+      { "code":   1782, "label": "۶", "type": "numeric" },
+      { "code":   46, "label": "." }
+    ],
+    [
+      { "code":   41, "label": ")", "popup": {
+        "main": { "code":   93, "label": "]" }
+      } },
+      { "code":   1639, "label": "٧", "type": "numeric" },
+      { "code":   1640, "label": "٨", "type": "numeric" },
+      { "code":   1641, "label": "٩", "type": "numeric" },
+      { "code":   -7, "label": "delete", "type": "enter_editing" }
+    ],
+    [
+      { "code": -201, "label": "view_characters", "type": "system_gui" },
+      { "code": -202, "label": "view_symbols", "type": "system_gui" },
+      { "code":   1548, "label": "،" },
+      { "code":   1632, "label": "٠", "type": "numeric" },
+      { "code":   61, "label": "=" },
+      { "code":   32, "label": "space" },
+      { "code":   10, "label": "enter", "groupId": 3, "type": "enter_editing" }
+  ]
+]
+
+
+################################################################################
+# 10. numericRow/
+################################################################################
+
+--------------------------------------------------------------------------------
+FILE: arabi_kurdi.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code": 1633, "label": "١", "type": "numeric", "popup": {
+      "main": { "code":   49, "label": "1" }
+    } },
+    { "code": 1634, "label": "٢", "type": "numeric", "popup": {
+      "main": { "code":   50, "label": "2" }
+    } },
+    { "code": 1635, "label": "٣", "type": "numeric", "popup": {
+      "main": { "code":   51, "label": "3" }
+    } },
+    { "code": 1636, "label": "٤", "type": "numeric", "popup": {
+      "main": { "code":   52, "label": "4" }
+    } },
+    { "code": 1637, "label": "٥", "type": "numeric", "popup": {
+      "main": { "code":   53, "label": "5" }
+    } },
+    { "code": 1638, "label": "٦", "type": "numeric", "popup": {
+      "main": { "code":   54, "label": "6" }
+    } },
+    { "code": 1639, "label": "٧", "type": "numeric", "popup": {
+      "main": { "code":   55, "label": "7" }
+    } },
+    { "code": 1640, "label": "٨", "type": "numeric", "popup": {
+      "main": { "code":   56, "label": "8" }
+    } },
+    { "code": 1641, "label": "٩", "type": "numeric", "popup": {
+      "main": { "code":   57, "label": "9" }
+    } },
+    { "code": 1632, "label": "٠", "type": "numeric", "popup": {
+      "main": { "code":   48, "label": "0" }
+    } }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: cjk.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code": 19968, "label": "一", "type": "numeric", "popup": {
+      "main": { "code":   49, "label": "1" },
+      "relevant": [
+        { "code": 22769, "label": "壱" },
+        { "code": 22777, "label": "壹" },
+        { "code": 24332, "label": "弌" },
+        { "code": 65297, "label": "１" }
+      ]
+    } },
+    { "code": 20108, "label": "二", "type": "numeric", "popup": {
+      "main": { "code":   50, "label": "2" },
+      "relevant": [
+        { "code": 24336, "label": "弐" },
+        { "code": 36019, "label": "貳" },
+        { "code": 36014, "label": "貮" },
+        { "code": 65298, "label": "２" }
+      ]
+    } },
+    { "code": 19977, "label": "三", "type": "numeric", "popup": {
+      "main": { "code":   51, "label": "3" },
+      "relevant": [
+        { "code": 21442, "label": "参" },
+        { "code": 21443, "label": "參" },
+        { "code": 24334, "label": "弎" },
+        { "code": 65299, "label": "３" }
+      ]
+    } },
+    { "code": 22235, "label": "四", "type": "numeric", "popup": {
+      "main": { "code":   52, "label": "4" },
+      "relevant": [
+        { "code": 32902, "label": "肆" },
+        { "code": 18825, "label": "䦉" },
+        { "code": 20118, "label": "亖" },
+        { "code": 65300, "label": "４" }
+      ]
+    } },
+    { "code": 20116, "label": "五", "type": "numeric", "popup": {
+      "main": { "code":   53, "label": "5" },
+      "relevant": [
+        { "code": 20237, "label": "伍" },
+        { "code": 65301, "label": "５" }
+      ]
+    } },
+    { "code": 20845, "label": "六", "type": "numeric", "popup": {
+      "main": { "code":   54, "label": "6" },
+      "relevant": [
+        { "code": 38520, "label": "陸" },
+        { "code": 65302, "label": "６" }
+      ]
+    } },
+    { "code": 19971, "label": "七", "type": "numeric", "popup": {
+      "main": { "code":   55, "label": "7" },
+      "relevant": [
+        { "code": 28422, "label": "漆" },
+        { "code": 26578, "label": "柒" },
+        { "code": 65303, "label": "７" }
+      ]
+    } },
+    { "code": 20843, "label": "八", "type": "numeric", "popup": {
+      "main": { "code":   56, "label": "8" },
+      "relevant": [
+        { "code": 25420, "label": "捌" },
+        { "code": 65304, "label": "８" }
+      ]
+    } },
+    { "code": 20061, "label": "九", "type": "numeric", "popup": {
+      "main": {"code":   57, "label": "9" },
+      "relevant": [
+        { "code": 29590, "label": "玖" },
+        { "code": 65305, "label": "９" }
+      ]
+    } },
+    { "code": 38646, "label": "零", "type": "numeric", "popup": {
+      "main": { "code":   48, "label": "0" },
+      "relevant": [
+        { "code": 12295, "label": "〇" },
+        { "code": 65296, "label": "０" }
+      ]
+    } },
+    { "code": 21313, "label": "十", "type": "numeric", "popup": {
+      "main": { "code": 25342, "label": "拾" },
+      "relevant": [
+        { "code": 20160, "label": "什" }
+      ]
+    } },
+    { "code": 30334, "label": "百", "type": "numeric", "popup": {
+      "main": { "code": 20336, "label": "佰" },
+      "relevant": [
+        { "code": 38476, "label": "陌" }
+      ]
+    } },
+    { "code": 21315, "label": "千", "type": "numeric", "popup": {
+      "main": { "code": 20191, "label": "仟" },
+      "relevant": [
+        { "code": 38433, "label": "阡" }
+      ]
+    } }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: hindi.json
+--------------------------------------------------------------------------------
+[
+  [
+      { "code": 2407, "label": "१", "type": "numeric", "popup": {
+        "main": { "code":   49, "label": "1" },
+        "relevant": [
+          { "code": 8537, "label": "⅙" },
+          { "code": 8528, "label": "⅐" },
+          { "code": 8539, "label": "⅛" },
+          { "code": 8529, "label": "⅑" },
+          { "code": 8530, "label": "⅒" },
+          { "code":  185, "label": "¹" },
+          { "code":  189, "label": "½" },
+          { "code": 8531, "label": "⅓" },
+          { "code":  188, "label": "¼" },
+          { "code": 8533, "label": "⅕" }
+        ]
+      } },
+      { "code": 2408, "label": "२", "type": "numeric", "popup": {
+        "main": { "code":   50, "label": "2" },
+        "relevant": [
+          { "code": 8532, "label": "⅔" },
+          { "code":  178, "label": "²" },
+          { "code": 8534, "label": "⅖" }
+        ]
+      } },
+      { "code": 2409, "label": "३", "type": "numeric", "popup": {
+        "main": { "code":   51, "label": "3" },
+        "relevant": [
+          { "code": 8535, "label": "⅗" },
+          { "code":  190, "label": "¾" },
+          { "code":  179, "label": "³" },
+          { "code": 8540, "label": "⅜" }
+        ]
+      } },
+      { "code": 2410, "label": "४", "type": "numeric", "popup": {
+        "main": { "code":   52, "label": "4" },
+        "relevant": [
+          { "code": 8536, "label": "⅘" },
+          { "code": 8308, "label": "⁴" }
+        ]
+      } },
+      { "code": 2411, "label": "५", "type": "numeric", "popup": {
+        "main": { "code":   53, "label": "5" },
+        "relevant": [
+          { "code": 8538, "label": "⅚" },
+          { "code": 8309, "label": "⁵" },
+          { "code": 8541, "label": "⅝" }
+        ]
+      } },
+      { "code": 2412, "label": "६", "type": "numeric", "popup": {
+        "main": { "code":   54, "label": "6" },
+        "relevant": [
+          { "code": 8310, "label": "⁶" }
+        ]
+      } },
+      { "code": 2413, "label": "७", "type": "numeric", "popup": {
+        "main": { "code":   55, "label": "7" },
+        "relevant": [
+          { "code": 8542, "label": "⅞" },
+          { "code": 8311, "label": "⁷" }
+        ]
+      } },
+      { "code": 2414, "label": "८", "type": "numeric", "popup": {
+        "main": { "code":   56, "label": "8" },
+        "relevant": [
+          { "code": 8312, "label": "⁸" }
+        ]
+      } },
+      { "code": 2415, "label": "९", "type": "numeric", "popup": {
+        "main": { "code":   57, "label": "9" },
+        "relevant": [
+          { "code": 8313, "label": "⁹" }
+        ]
+      } },
+      { "code": 2406, "label": "०", "type": "numeric", "popup": {
+        "main": { "code":   48, "label": "0" },
+        "relevant": [
+          { "code": 8319, "label": "ⁿ" },
+          { "code": 8709, "label": "∅" },
+          { "code": 8304, "label": "⁰" }
+      ]
+    } }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: kurdi_hybrid.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "kana_selector",
+      "hira": { "code": 1633, "label": "١", "type": "numeric" },
+      "kata": { "code": 49, "label": "1", "type": "numeric" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1634, "label": "٢", "type": "numeric" },
+      "kata": { "code": 50, "label": "2", "type": "numeric" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1635, "label": "٣", "type": "numeric" },
+      "kata": { "code": 51, "label": "3", "type": "numeric" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1636, "label": "٤", "type": "numeric" },
+      "kata": { "code": 52, "label": "4", "type": "numeric" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1637, "label": "٥", "type": "numeric" },
+      "kata": { "code": 53, "label": "5", "type": "numeric" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1638, "label": "٦", "type": "numeric" },
+      "kata": { "code": 54, "label": "6", "type": "numeric" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1639, "label": "٧", "type": "numeric" },
+      "kata": { "code": 55, "label": "7", "type": "numeric" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1640, "label": "٨", "type": "numeric" },
+      "kata": { "code": 56, "label": "8", "type": "numeric" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1641, "label": "٩", "type": "numeric" },
+      "kata": { "code": 57, "label": "9", "type": "numeric" }
+    },
+    { "$": "kana_selector",
+      "hira": { "code": 1632, "label": "٠", "type": "numeric" },
+      "kata": { "code": 48, "label": "0", "type": "numeric" }
+    }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: latin.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "$": "shift_state_selector",
+      "shiftedManual": {
+        "code": 33, "label": "!", "type": "numeric", "popup": {
+          "main": { "code": 161, "label": "¡" }
+        }
+      },
+      "default": {
+        "code": 49, "label": "1", "type": "numeric", "popup": {
+          "main": { "code": 185, "label": "¹" }
+        }
+      }
+    },
+    { "$": "shift_state_selector",
+      "shiftedManual": { "code": 64, "label": "@", "type": "numeric" },
+      "default": {
+        "code": 50, "label": "2", "type": "numeric", "popup": {
+          "main": { "code": 178, "label": "²" }
+        }
+      }
+    },
+    { "$": "shift_state_selector",
+      "shiftedManual": {
+        "code": 35, "label": "#", "type": "numeric", "popup": {
+          "main": { "code": 8470, "label": "№" }
+        }
+      },
+      "default": {
+        "code": 51, "label": "3", "type": "numeric", "popup": {
+          "main": { "code": 179, "label": "³" }
+        }
+      }
+    },
+    { "$": "shift_state_selector",
+      "shiftedManual": {
+        "code": -801, "label": "currency_slot_1", "type": "numeric", "popup": {
+          "main": { "code": -802, "label": "currency_slot_2" }
+        }
+      },
+      "default": {
+        "code": 52, "label": "4", "type": "numeric", "popup": {
+          "main": { "code": 8308, "label": "⁴" }
+        }
+      }
+    },
+    { "$": "shift_state_selector",
+      "shiftedManual": {
+        "code": 37, "label": "%", "type": "numeric", "popup": {
+          "main": { "code": 8240, "label": "‰" }
+        }
+      },
+      "default": {
+        "code": 53, "label": "5", "type": "numeric", "popup": {
+          "main": { "code": 8309, "label": "⁵" }
+        }
+      }
+    },
+    { "$": "shift_state_selector",
+      "shiftedManual": {
+        "code": 94, "label": "^", "type": "numeric", "popup": {
+          "main": { "code": 8593, "label": "↑" }
+        }
+      },
+      "default": {
+        "code": 54, "label": "6", "type": "numeric", "popup": {
+          "main": { "code": 8310, "label": "⁶" }
+        }
+      }
+    },
+    { "$": "shift_state_selector",
+      "shiftedManual": { "code": 38, "label": "&", "type": "numeric" },
+      "default": {
+        "code": 55, "label": "7", "type": "numeric", "popup": {
+          "main": { "code": 8311, "label": "⁷" }
+        }
+      }
+    },
+    { "$": "shift_state_selector",
+      "shiftedManual": {
+        "code": 42, "label": "*", "type": "numeric", "popup": {
+          "main": { "code": 8224, "label": "†" }
+        }
+      },
+      "default": {
+        "code": 56, "label": "8", "type": "numeric", "popup": {
+          "main": { "code": 8312, "label": "⁸" }
+        }
+      }
+    },
+    { "$": "shift_state_selector",
+      "shiftedManual": {
+        "$": "layout_direction_selector",
+        "ltr": {
+          "code": 40, "label": "(", "type": "numeric", "popup": {
+            "main": { "code": 60, "label": "<" }
+          }
+        },
+        "rtl": {
+          "code": 41, "label": "(", "type": "numeric", "popup": {
+            "main": { "code": 62, "label": "<" }
+          }
+        }
+      },
+      "default": {
+        "code":   57, "label": "9", "type": "numeric", "popup": {
+          "main": { "code": 8313, "label": "⁹" }
+        }
+      }
+    },
+    { "$": "shift_state_selector",
+      "shiftedManual": {
+        "$": "layout_direction_selector",
+        "ltr": {
+          "code":   41, "label": ")", "type": "numeric", "popup": {
+            "main": { "code":   62, "label": ">" }
+          }
+        },
+        "rtl": {
+          "code":   40, "label": ")", "type": "numeric", "popup": {
+            "main": { "code":   60, "label": ">" }
+          }
+        }
+      },
+      "default": {
+        "code": 48, "label": "0", "type": "numeric", "popup": {
+          "main": { "code": 8304, "label": "⁰" }
+        }
+      }
+    }
+  ]
+]
+
+
+--------------------------------------------------------------------------------
+FILE: urdu_farsi.json
+--------------------------------------------------------------------------------
+[
+  [
+    { "code": 1777, "label": "۱", "type": "numeric", "popup": {
+      "main": { "code":   49, "label": "1" }
+    } },
+    { "code": 1778, "label": "۲", "type": "numeric", "popup": {
+      "main": { "code":   50, "label": "2" }
+    } },
+    { "code": 1779, "label": "۳", "type": "numeric", "popup": {
+      "main": { "code":   51, "label": "3" }
+    } },
+    { "code": 1780, "label": "۴", "type": "numeric", "popup": {
+      "main": { "code":   52, "label": "4" }
+    } },
+    { "code": 1781, "label": "۵", "type": "numeric", "popup": {
+      "main": { "code":   53, "label": "5" }
+    } },
+    { "code": 1782, "label": "۶", "type": "numeric", "popup": {
+      "main": { "code":   54, "label": "6" }
+    } },
+    { "code": 1783, "label": "۷", "type": "numeric", "popup": {
+      "main": { "code":   55, "label": "7" }
+    } },
+    { "code": 1784, "label": "۸", "type": "numeric", "popup": {
+      "main": { "code":   56, "label": "8" }
+    } },
+    { "code": 1785, "label": "۹", "type": "numeric", "popup": {
+      "main": { "code":   57, "label": "9" }
+    } },
+    { "code": 1776, "label": "۰", "type": "numeric", "popup": {
+      "main": { "code":   48, "label": "0" }
+    } }
+  ]
+]

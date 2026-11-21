@@ -61,6 +61,9 @@ public class KurdiKeyboardImeService extends InputMethodService {
         webView.setVerticalScrollBarEnabled(false);
         webView.setHorizontalScrollBarEnabled(false);
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        webView.setLongClickable(false);
+        webView.setHapticFeedbackEnabled(false);
+        webView.setOnLongClickListener(v -> true);
 
         WebSettings ws = webView.getSettings();
         ws.setJavaScriptEnabled(true);
@@ -68,6 +71,9 @@ public class KurdiKeyboardImeService extends InputMethodService {
         ws.setDatabaseEnabled(true);
         ws.setAllowFileAccess(false);
         ws.setMediaPlaybackRequiresUserGesture(false);
+        ws.setSupportZoom(false);
+        ws.setBuiltInZoomControls(false);
+        ws.setDisplayZoomControls(false);
         ws.setCacheMode(WebSettings.LOAD_DEFAULT);
 
         webView.addJavascriptInterface(new AndroidImeBridge(), "AndroidIME");
@@ -110,7 +116,11 @@ public class KurdiKeyboardImeService extends InputMethodService {
     private WebResourceResponse buildAssetResponse(String mimeType, InputStream stream) {
         Map<String, String> headers = new HashMap<>();
         headers.put("Access-Control-Allow-Origin", "*");
-        headers.put("Cache-Control", "no-cache");
+        if ("text/html".equals(mimeType)) {
+            headers.put("Cache-Control", "no-cache");
+        } else {
+            headers.put("Cache-Control", "public, max-age=31536000");
+        }
         return new WebResourceResponse(mimeType, "UTF-8", 200, "OK", headers, stream);
     }
 
@@ -150,15 +160,26 @@ public class KurdiKeyboardImeService extends InputMethodService {
                 .replace("\u2029", "\\u2029");
     }
 
+    private String readFastFieldTail() {
+        try {
+            InputConnection ic = getCurrentInputConnection();
+            if (ic == null) return "";
+            CharSequence before = ic.getTextBeforeCursor(240, 0);
+            return before != null ? before.toString() : "";
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
         syncLatestSystemClipboard();
-        final String currentFieldText = escapeForJsString(readCurrentFieldText(false));
+        final String currentFieldTail = escapeForJsString(readFastFieldTail());
         mainHandler.post(() -> {
             if (webView != null) {
                 webView.evaluateJavascript(
-                        "window.__onAndroidImeRefresh && window.__onAndroidImeRefresh('" + currentFieldText + "');",
+                        "window.__onAndroidImeRefresh && window.__onAndroidImeRefresh('" + currentFieldTail + "');",
                         null
                 );
             }

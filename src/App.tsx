@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import {
   AppLanguageCode,
@@ -238,6 +238,10 @@ export default function App() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imeDeckRef = useRef<HTMLDivElement>(null);
   const idbHydratedRef = useRef(false);
+  const editorTextRef = useRef<string>(editorText);
+  editorTextRef.current = editorText;
+  const lastSettingsJsonRef = useRef<string>('');
+  const lastClipboardJsonRef = useRef<string>('');
 
   const currentRoute = routeStack[routeStack.length - 1];
   const isLightApp = settings.appTheme === 'light';
@@ -301,41 +305,63 @@ export default function App() {
     }
   }, [settings.soundEnabled, settings.soundPack]);
 
-  // Persist settings, clipboard, editor text & active view to both localStorage and IndexedDB
+  // Persist settings & clipboard cleanly (skip redundant writes, debounce IndexedDB so typing stays 60fps)
   useEffect(() => {
+    let serialized = '';
     try {
-      localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
+      serialized = JSON.stringify(settings);
+      if (serialized !== lastSettingsJsonRef.current) {
+        lastSettingsJsonRef.current = serialized;
+        localStorage.setItem(STORAGE_KEY_SETTINGS, serialized);
+      }
     } catch {
       // Ignore storage quota errors
     }
-    idbSet(STORAGE_KEY_SETTINGS, settings);
+    const timer = window.setTimeout(() => {
+      idbSet(STORAGE_KEY_SETTINGS, settings);
+    }, 450);
+    return () => window.clearTimeout(timer);
   }, [settings]);
 
   useEffect(() => {
+    let serialized = '';
     try {
-      localStorage.setItem(STORAGE_KEY_CLIPBOARD, JSON.stringify(clipboardItems));
+      serialized = JSON.stringify(clipboardItems);
+      if (serialized !== lastClipboardJsonRef.current) {
+        lastClipboardJsonRef.current = serialized;
+        localStorage.setItem(STORAGE_KEY_CLIPBOARD, serialized);
+      }
     } catch {
       // Ignore storage quota errors
     }
-    idbSet(STORAGE_KEY_CLIPBOARD, clipboardItems);
+    const timer = window.setTimeout(() => {
+      idbSet(STORAGE_KEY_CLIPBOARD, clipboardItems);
+    }, 450);
+    return () => window.clearTimeout(timer);
   }, [clipboardItems]);
 
+  // NEVER block native Android IME keystrokes with localStorage/IndexedDB writes; debounce web playground persistence
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_EDITOR, editorText);
-    } catch {
-      // Ignore storage quota errors
-    }
-    idbSet(STORAGE_KEY_EDITOR, editorText);
-  }, [editorText]);
+    if (isNativeImeMode) return;
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY_EDITOR, editorText);
+      } catch {
+        // Ignore storage quota errors
+      }
+      idbSet(STORAGE_KEY_EDITOR, editorText);
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [editorText, isNativeImeMode]);
 
   useEffect(() => {
+    if (isNativeImeMode) return;
     try {
       localStorage.setItem(STORAGE_KEY_MOBILE_VIEW, mobileView);
     } catch {
       // Ignore
     }
-  }, [mobileView]);
+  }, [mobileView, isNativeImeMode]);
 
   const updateSettings = useCallback((patch: Partial<KeyboardSettings>) => {
     setSettings((prev) => ({ ...prev, ...patch }));
@@ -373,18 +399,20 @@ export default function App() {
         return;
       }
       const el = textareaRef.current;
-      setEditorText((prev) => {
-        pushUndo(prev);
-        if (!el) return prev + textToInsert;
-        const start = el.selectionStart ?? prev.length;
-        const end = el.selectionEnd ?? prev.length;
-        const next = prev.slice(0, start) + textToInsert + prev.slice(end);
-        requestAnimationFrame(() => {
-          el.focus();
-          const pos = start + textToInsert.length;
-          el.setSelectionRange(pos, pos);
-        });
-        return next;
+      const prev = editorTextRef.current;
+      pushUndo(prev);
+      if (!el) {
+        setEditorText(prev + textToInsert);
+        return;
+      }
+      const start = el.selectionStart ?? prev.length;
+      const end = el.selectionEnd ?? prev.length;
+      const next = prev.slice(0, start) + textToInsert + prev.slice(end);
+      setEditorText(next);
+      requestAnimationFrame(() => {
+        el.focus();
+        const pos = start + textToInsert.length;
+        el.setSelectionRange(pos, pos);
       });
     },
     [isNativeImeMode, pushUndo]
@@ -394,26 +422,23 @@ export default function App() {
     (nextText: string) => {
       if (isNativeImeMode && window.AndroidIME) {
         // Compute minimal suffix replacement for live shortcuts/predictions inside Android IME
-        setEditorText((prev) => {
-          let common = 0;
-          const minLen = Math.min(prev.length, nextText.length);
-          while (common < minLen && prev[common] === nextText[common]) common++;
-          const deleteCount = [...prev.slice(common)].length;
-          const insertPart = nextText.slice(common);
-          for (let i = 0; i < deleteCount; i++) {
-            window.AndroidIME?.deleteBackward();
-          }
-          if (insertPart) {
-            window.AndroidIME?.commitText(insertPart);
-          }
-          return nextText.slice(-120);
-        });
+        const prev = editorTextRef.current;
+        let common = 0;
+        const minLen = Math.min(prev.length, nextText.length);
+        while (common < minLen && prev[common] === nextText[common]) common++;
+        const deleteCount = [...prev.slice(common)].length;
+        const insertPart = nextText.slice(common);
+        for (let i = 0; i < deleteCount; i++) {
+          window.AndroidIME.deleteBackward();
+        }
+        if (insertPart) {
+          window.AndroidIME.commitText(insertPart);
+        }
+        setEditorText(nextText.slice(-120));
         return;
       }
-      setEditorText((prev) => {
-        pushUndo(prev);
-        return nextText;
-      });
+      pushUndo(editorTextRef.current);
+      setEditorText(nextText);
       requestAnimationFrame(() => {
         const el = textareaRef.current;
         if (el) {
@@ -441,6 +466,7 @@ export default function App() {
     if (isNativeImeMode && window.AndroidIME) {
       window.AndroidIME.deleteBackward();
       setEditorText((prev) => {
+        if (!prev) return prev;
         const chars = [...prev];
         chars.pop();
         return chars.join('');
@@ -448,30 +474,33 @@ export default function App() {
       return;
     }
     const el = textareaRef.current;
-    setEditorText((prev) => {
-      if (!prev) return prev;
-      pushUndo(prev);
-      if (!el) return prev.slice(0, -1);
-      const start = el.selectionStart ?? prev.length;
-      const end = el.selectionEnd ?? prev.length;
-      if (start !== end) {
-        const next = prev.slice(0, start) + prev.slice(end);
-        requestAnimationFrame(() => {
-          el.focus();
-          el.setSelectionRange(start, start);
-        });
-        return next;
-      }
-      if (start === 0) return prev;
-      const charsBefore = [...prev.slice(0, start)];
-      charsBefore.pop();
-      const rebuiltBefore = charsBefore.join('');
-      const next = rebuiltBefore + prev.slice(end);
+    const prev = editorTextRef.current;
+    if (!prev) return;
+    pushUndo(prev);
+    if (!el) {
+      setEditorText(prev.slice(0, -1));
+      return;
+    }
+    const start = el.selectionStart ?? prev.length;
+    const end = el.selectionEnd ?? prev.length;
+    if (start !== end) {
+      const next = prev.slice(0, start) + prev.slice(end);
+      setEditorText(next);
       requestAnimationFrame(() => {
         el.focus();
-        el.setSelectionRange(rebuiltBefore.length, rebuiltBefore.length);
+        el.setSelectionRange(start, start);
       });
-      return next;
+      return;
+    }
+    if (start === 0) return;
+    const charsBefore = [...prev.slice(0, start)];
+    charsBefore.pop();
+    const rebuiltBefore = charsBefore.join('');
+    const next = rebuiltBefore + prev.slice(end);
+    setEditorText(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(rebuiltBefore.length, rebuiltBefore.length);
     });
   }, [isNativeImeMode, pushUndo]);
 
@@ -481,11 +510,10 @@ export default function App() {
       setEditorText((prev) => prev.replace(/\s*\S+\s*$/, ''));
       return;
     }
-    setEditorText((prev) => {
-      if (!prev) return prev;
-      pushUndo(prev);
-      return prev.replace(/\s*\S+\s*$/, '');
-    });
+    const prev = editorTextRef.current;
+    if (!prev) return;
+    pushUndo(prev);
+    setEditorText(prev.replace(/\s*\S+\s*$/, ''));
   }, [isNativeImeMode, pushUndo]);
 
   const handleMoveCursor = useCallback((visualDelta: number) => {
@@ -701,15 +729,16 @@ export default function App() {
       return;
     }
     const el = textareaRef.current;
+    const currentText = editorTextRef.current;
     const selected =
       el && el.selectionStart !== el.selectionEnd
-        ? editorText.slice(el.selectionStart, el.selectionEnd)
-        : editorText;
+        ? currentText.slice(el.selectionStart, el.selectionEnd)
+        : currentText;
     if (!selected.trim()) return;
     saveToClipboard(selected);
     navigator.clipboard?.writeText(selected).catch(() => {});
     showToast('کۆپی کرا بۆ لەبەرگیراوەکان');
-  }, [editorText, isNativeImeMode, saveToClipboard, showToast]);
+  }, [isNativeImeMode, saveToClipboard, showToast]);
 
   const handleCut = useCallback(() => {
     if (isNativeImeMode && window.AndroidIME) {
@@ -717,21 +746,22 @@ export default function App() {
       return;
     }
     const el = textareaRef.current;
-    if (!editorText.trim()) return;
+    const currentText = editorTextRef.current;
+    if (!currentText.trim()) return;
     if (el && el.selectionStart !== el.selectionEnd) {
-      const selected = editorText.slice(el.selectionStart, el.selectionEnd);
+      const selected = currentText.slice(el.selectionStart, el.selectionEnd);
       saveToClipboard(selected);
       navigator.clipboard?.writeText(selected).catch(() => {});
       const start = el.selectionStart;
-      const next = editorText.slice(0, start) + editorText.slice(el.selectionEnd);
+      const next = currentText.slice(0, start) + currentText.slice(el.selectionEnd);
       handleReplaceText(next);
     } else {
-      saveToClipboard(editorText);
-      navigator.clipboard?.writeText(editorText).catch(() => {});
+      saveToClipboard(currentText);
+      navigator.clipboard?.writeText(currentText).catch(() => {});
       handleReplaceText('');
     }
     showToast('بڕدرا و کۆپی کرا');
-  }, [editorText, handleReplaceText, isNativeImeMode, saveToClipboard, showToast]);
+  }, [handleReplaceText, isNativeImeMode, saveToClipboard, showToast]);
 
   const handlePaste = useCallback(async () => {
     if (isNativeImeMode && window.AndroidIME) {
@@ -756,21 +786,21 @@ export default function App() {
     setUndoStack((stack) => {
       if (stack.length === 0) return stack;
       const previous = stack[stack.length - 1];
-      setRedoStack((r) => [...r, editorText]);
+      setRedoStack((r) => [...r, editorTextRef.current]);
       setEditorText(previous);
       return stack.slice(0, -1);
     });
-  }, [editorText]);
+  }, []);
 
   const handleRedo = useCallback(() => {
     setRedoStack((stack) => {
       if (stack.length === 0) return stack;
       const next = stack[stack.length - 1];
-      setUndoStack((u) => [...u, editorText]);
+      setUndoStack((u) => [...u, editorTextRef.current]);
       setEditorText(next);
       return stack.slice(0, -1);
     });
-  }, [editorText]);
+  }, []);
 
   // Physical Keyboard Sync highlight effect
   useEffect(() => {
@@ -792,7 +822,7 @@ export default function App() {
       ? 'bg-[#0C0E12] text-white'
       : 'bg-black text-white';
 
-  const renderSettingsScreen = () => {
+  const settingsScreenElement = useMemo(() => {
     switch (currentRoute) {
       case 'languages':
         return (
@@ -939,39 +969,59 @@ export default function App() {
           />
         );
     }
-  };
+  }, [currentRoute, settings, updateSettings, navigateTo, goBack, isLightApp, showToast]);
 
-  // Native Android InputMethodService (?ime=1) clipboard sync, live settings refresh & exact ResizeObserver height bridge
+  // Native Android InputMethodService (?ime=1) clipboard sync, deduplicated settings refresh & smooth ResizeObserver height bridge
   useEffect(() => {
     if (!isNativeImeMode) return;
     window.__onAndroidClipboardSync = (text: string) => {
       if (text) saveToClipboard(text);
     };
     window.__onAndroidImeRefresh = (initialText?: string) => {
-      setSettings(loadSettings());
-      setClipboardItems(loadClipboard());
+      try {
+        const rawSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
+        if (rawSettings && rawSettings !== lastSettingsJsonRef.current) {
+          lastSettingsJsonRef.current = rawSettings;
+          setSettings(hydrateSettings(JSON.parse(rawSettings)));
+        }
+        const rawClip = localStorage.getItem(STORAGE_KEY_CLIPBOARD);
+        if (rawClip && rawClip !== lastClipboardJsonRef.current) {
+          lastClipboardJsonRef.current = rawClip;
+          const parsed = JSON.parse(rawClip);
+          if (Array.isArray(parsed)) setClipboardItems(parsed);
+        }
+      } catch {
+        // Ignore storage read errors
+      }
       if (typeof initialText === 'string') {
-        setEditorText(initialText);
+        setEditorText((prev) => (prev === initialText ? prev : initialText));
       } else if (window.AndroidIME?.getEditorText) {
         try {
-          setEditorText(window.AndroidIME.getEditorText(false) || '');
+          const fieldTxt = window.AndroidIME.getEditorText(false) || '';
+          setEditorText((prev) => (prev === fieldTxt ? prev : fieldTxt));
         } catch {
           setEditorText('');
         }
       }
     };
 
+    let lastSentHeight = 0;
+    let heightRaf = 0;
     const syncExactHeight = () => {
-      const el = imeDeckRef.current;
-      if (!el) return;
-      const measured = Math.ceil(el.getBoundingClientRect().height);
-      if (measured >= 220 && measured <= 640) {
-        window.AndroidIME?.setKeyboardHeightDp(measured);
-      }
+      if (heightRaf) return;
+      heightRaf = requestAnimationFrame(() => {
+        heightRaf = 0;
+        const el = imeDeckRef.current;
+        if (!el) return;
+        const measured = Math.ceil(el.getBoundingClientRect().height);
+        if (measured >= 220 && measured <= 640 && measured !== lastSentHeight) {
+          lastSentHeight = measured;
+          window.AndroidIME?.setKeyboardHeightDp(measured);
+        }
+      });
     };
 
     syncExactHeight();
-    const rafId = requestAnimationFrame(syncExactHeight);
     let observer: ResizeObserver | null = null;
     if (typeof ResizeObserver !== 'undefined' && imeDeckRef.current) {
       observer = new ResizeObserver(syncExactHeight);
@@ -979,19 +1029,12 @@ export default function App() {
     }
 
     return () => {
-      cancelAnimationFrame(rafId);
+      if (heightRaf) cancelAnimationFrame(heightRaf);
       observer?.disconnect();
       delete window.__onAndroidClipboardSync;
       delete window.__onAndroidImeRefresh;
     };
-  }, [
-    isNativeImeMode,
-    saveToClipboard,
-    settings.activeLanguage,
-    settings.enabledLanguages,
-    settings.keyboardHeightPx,
-    settings.showTopToolbar,
-  ]);
+  }, [isNativeImeMode, saveToClipboard]);
 
   if (isNativeImeMode) {
     return (
@@ -1101,7 +1144,7 @@ export default function App() {
             isLightApp ? 'border-slate-200' : 'border-white/10'
           } ${mobileView === 'settings' ? 'block' : 'hidden lg:block'}`}
         >
-          {renderSettingsScreen()}
+          {settingsScreenElement}
 
           {/* Floating Bottom-Left Keyboard FAB matching Screenshots 17, 24, 26, 27, 28, 40 */}
           <div className="fixed lg:sticky bottom-5 left-5 lg:float-left lg:ml-4 lg:mb-4 z-30">
