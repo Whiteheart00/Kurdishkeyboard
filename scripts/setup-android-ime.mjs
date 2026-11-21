@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { execFileSync } from 'child_process';
 
 const root = process.cwd();
 const androidMain = path.join(root, 'android', 'app', 'src', 'main');
@@ -125,6 +126,111 @@ if (fs.existsSync(buildGradlePath)) {
 
   fs.writeFileSync(buildGradlePath, gradle, 'utf8');
   console.log(`Patched android/app/build.gradle (versionCode=${versionCode}, versionName=${versionName}, persistent keystore signing enabled)`);
+}
+
+// 6. Inject official KurdiKeyboard App Launcher Icon (public/app-icon.png) into Android res/
+const srcAppIcon = path.join(root, 'public', 'app-icon.png');
+if (fs.existsSync(srcAppIcon)) {
+  const resDir = path.join(androidMain, 'res');
+
+  // Ensure crisp white adaptive icon background
+  const valuesDir = path.join(resDir, 'values');
+  fs.mkdirSync(valuesDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(valuesDir, 'ic_launcher_background.xml'),
+    `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#FFFFFF</color>\n</resources>\n`,
+    'utf8'
+  );
+
+  // Remove Capacitor's default vector ic_launcher_background.xml if present to avoid conflicts
+  const oldDrawableBg = path.join(resDir, 'drawable', 'ic_launcher_background.xml');
+  if (fs.existsSync(oldDrawableBg)) fs.rmSync(oldDrawableBg, { force: true });
+  const oldDrawableV24Fg = path.join(resDir, 'drawable-v24', 'ic_launcher_foreground.xml');
+  if (fs.existsSync(oldDrawableV24Fg)) fs.rmSync(oldDrawableV24Fg, { force: true });
+
+  // Point adaptive icons (API 26+) to @color/ic_launcher_background + @mipmap/ic_launcher_foreground
+  const anydpiDir = path.join(resDir, 'mipmap-anydpi-v26');
+  fs.mkdirSync(anydpiDir, { recursive: true });
+  const adaptiveXml = `<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/ic_launcher_background" />\n    <foreground android:drawable="@mipmap/ic_launcher_foreground" />\n</adaptive-icon>\n`;
+  fs.writeFileSync(path.join(anydpiDir, 'ic_launcher.xml'), adaptiveXml, 'utf8');
+  fs.writeFileSync(path.join(anydpiDir, 'ic_launcher_round.xml'), adaptiveXml, 'utf8');
+
+  const densities = [
+    { name: 'mipmap-mdpi', legacy: 48, fg: 108 },
+    { name: 'mipmap-hdpi', legacy: 72, fg: 162 },
+    { name: 'mipmap-xhdpi', legacy: 96, fg: 216 },
+    { name: 'mipmap-xxhdpi', legacy: 144, fg: 324 },
+    { name: 'mipmap-xxxhdpi', legacy: 192, fg: 432 },
+  ];
+
+  // Check if ImageMagick `convert` is available (preinstalled on GitHub Actions ubuntu-latest)
+  let hasConvert = false;
+  try {
+    execFileSync('convert', ['-version'], { stdio: 'ignore' });
+    hasConvert = true;
+  } catch {
+    hasConvert = false;
+  }
+
+  for (const d of densities) {
+    const dir = path.join(resDir, d.name);
+    fs.mkdirSync(dir, { recursive: true });
+
+    // Remove any existing .webp launcher icons to prevent AAPT2 duplicate resource errors
+    for (const stale of ['ic_launcher.webp', 'ic_launcher_round.webp', 'ic_launcher_foreground.webp']) {
+      const p = path.join(dir, stale);
+      if (fs.existsSync(p)) fs.rmSync(p, { force: true });
+    }
+
+    const fgOut = path.join(dir, 'ic_launcher_foreground.png');
+    const legacyOut = path.join(dir, 'ic_launcher.png');
+    const roundOut = path.join(dir, 'ic_launcher_round.png');
+
+    if (hasConvert) {
+      // Adaptive foreground: fit icon cleanly inside Android's 72/108 safe zone (~74% of canvas) on transparent background
+      const fgInner = Math.round(d.fg * 0.74);
+      execFileSync('convert', [
+        srcAppIcon,
+        '-resize',
+        `${fgInner}x${fgInner}`,
+        '-background',
+        'none',
+        '-gravity',
+        'center',
+        '-extent',
+        `${d.fg}x${d.fg}`,
+        fgOut,
+      ]);
+
+      // Legacy & round icons: crisp icon centered on pure white square background
+      const legInner = Math.round(d.legacy * 0.88);
+      execFileSync('convert', [
+        srcAppIcon,
+        '-resize',
+        `${legInner}x${legInner}`,
+        '-background',
+        '#FFFFFF',
+        '-gravity',
+        'center',
+        '-extent',
+        `${d.legacy}x${d.legacy}`,
+        '-alpha',
+        'remove',
+        legacyOut,
+      ]);
+      fs.copyFileSync(legacyOut, roundOut);
+    } else {
+      fs.copyFileSync(srcAppIcon, fgOut);
+      fs.copyFileSync(srcAppIcon, legacyOut);
+      fs.copyFileSync(srcAppIcon, roundOut);
+    }
+  }
+
+  console.log(
+    `Installed official KurdiKeyboard app icon across all Android mipmap densities (ImageMagick resize=${hasConvert})`
+  );
+} else {
+  console.warn('WARNING: public/app-icon.png not found, keeping default Capacitor launcher icon.');
 }
 
 console.log('KurdiKeyboard Android IME setup completed successfully!');

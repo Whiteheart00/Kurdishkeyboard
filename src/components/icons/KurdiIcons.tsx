@@ -93,7 +93,7 @@ export const KurdiIcon: React.FC<KurdiIconProps> = ({
 
 export const KurdiLogo: React.FC<{ className?: string }> = ({ className = 'w-9 h-9' }) => (
   <img
-    src="/kurdikebord-logo.svg"
+    src="/app-icon.png"
     alt="تەختەکلیلی کوردی"
     className={`object-contain select-none ${className}`}
     draggable={false}
