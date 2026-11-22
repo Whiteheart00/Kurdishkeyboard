@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ArrowLeft,
   ArrowLeftRight,
   ArrowRight,
   ArrowUpDown,
@@ -9,14 +10,17 @@ import {
   Loader2,
   Pencil,
   Pin,
+  PinOff,
   Plus,
   RefreshCw,
   Search,
   SlidersHorizontal,
+  Trash2,
   X,
 } from 'lucide-react';
 import {
   ClipboardItem,
+  EmojiHistoryStore,
   KeyboardSettings,
   KeyboardTheme,
   SettingsRoute,
@@ -24,12 +28,18 @@ import {
 import {
   EMOJI_CATEGORIES,
   EmojiEntry,
+  getEmojiVariants,
   KAOMOJI_LIST,
-  resolveEmojiWithSkinTone,
+  resolveEmojiWithModifiers,
   searchEmojis,
   TEXT_DECORATORS,
   ZIKR_CATEGORIES,
 } from '../../data/richContent';
+import {
+  moveHistoryItem,
+  removeHistoryItem,
+  togglePinHistoryItem,
+} from '../../utils/emojiHistory';
 import { ALL_THEMES } from '../../data/themes';
 import { KurdiIcon, KurdiIconName } from '../icons/KurdiIcons';
 import { runOfflineSmartRewrite, ToneOptions } from '../../utils/kurdishSmartHelper';
@@ -51,21 +61,31 @@ export type ActiveKeyboardPanel =
   | 'snippets_calc';
 
 export type RichTab = 'emoji' | 'zikr' | 'kaomoji';
+export type RichInsertSource = 'emoji' | 'duaa' | 'quran' | 'salawat' | 'kaomoji';
 
 interface EmojiZikrKaomojiPanelProps {
   theme: KeyboardTheme;
   settings: KeyboardSettings;
+  onUpdateSettings: (patch: Partial<KeyboardSettings>) => void;
   initialTab?: RichTab;
-  onInsert: (text: string, source: 'emoji' | 'zikr' | 'kaomoji') => void;
+  onInsert: (text: string, source: RichInsertSource) => void;
   onBackspace: () => void;
   onClose: () => void;
   onOpenSettings: (route: SettingsRoute) => void;
   onStartEmojiSearch?: () => void;
 }
 
+interface HistoryActionTarget {
+  section: RichInsertSource;
+  bucket: 'pinned' | 'recent';
+  value: string;
+  label?: string;
+}
+
 export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
   theme,
   settings,
+  onUpdateSettings,
   initialTab = 'emoji',
   onInsert,
   onBackspace,
@@ -73,14 +93,48 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
   onOpenSettings,
   onStartEmojiSearch,
 }) => {
+  const orderedEnabledCategories = useMemo(() => {
+    const disabled = new Set(settings.emojiDisabledCategories || []);
+    const order = settings.emojiCategoryOrder || [];
+    const byId = new Map(EMOJI_CATEGORIES.map((c) => [c.id, c]));
+    const result = [];
+    for (const id of order) {
+      const cat = byId.get(id);
+      if (cat && !disabled.has(cat.id)) {
+        result.push(cat);
+        byId.delete(id);
+      }
+    }
+    for (const cat of byId.values()) {
+      if (!disabled.has(cat.id)) result.push(cat);
+    }
+    return result.length > 0 ? result : EMOJI_CATEGORIES;
+  }, [settings.emojiCategoryOrder, settings.emojiDisabledCategories]);
+
+  const computeInitialEmojiCat = () => {
+    if (settings.emojiInitialTab === 'recent' && settings.emojiHistoryEnabled) {
+      return 'recent';
+    }
+    const last = settings.emojiLastUsedCategory;
+    if (last === 'recent' && settings.emojiHistoryEnabled) return 'recent';
+    if (orderedEnabledCategories.some((c) => c.id === last)) return last;
+    return orderedEnabledCategories[0]?.id || 'smileys_emotion';
+  };
+
   const [activeTab, setActiveTab] = useState<RichTab>(initialTab);
-  const [emojiCat, setEmojiCat] = useState<string>(EMOJI_CATEGORIES[0]?.id || 'smileys');
+  const [emojiCat, setEmojiCat] = useState<string>(computeInitialEmojiCat);
   const [emojiSearch, setEmojiSearch] = useState<string>('');
-  const [variantPopup, setVariantPopup] = useState<{ base: string; variants: string[] } | null>(null);
+  const [variantPopup, setVariantPopup] = useState<{
+    base: string;
+    rendered: string;
+    variants: string[];
+  } | null>(null);
+  const [historyAction, setHistoryAction] = useState<HistoryActionTarget | null>(null);
   const [zikrCat, setZikrCat] = useState<'recent' | 'duaa' | 'quran' | 'salawat'>('duaa');
   const [kaomojiCat, setKaomojiCat] = useState<'recent' | 'all'>('all');
 
   const pressTimerRef = useRef<number | null>(null);
+  const longPressTriggeredRef = useRef<boolean>(false);
   const mountedAtRef = useRef<number>(Date.now());
   const hasSeenPointerDownRef = useRef(false);
 
@@ -90,42 +144,184 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
   const mainText = isLight ? 'text-slate-900' : 'text-white';
   const pillBg = isLight ? 'bg-slate-200/80' : 'bg-zinc-800/80';
   const activePillBg = isLight ? 'bg-blue-100 text-blue-700' : 'bg-[#17283D] text-[#74B3FF]';
+  const subheaderBg = isLight
+    ? 'bg-gradient-to-l from-slate-200/90 via-slate-200/50 to-transparent text-slate-700'
+    : 'bg-gradient-to-l from-white/[0.08] via-white/[0.04] to-transparent text-zinc-300';
+
+  const emojiFontClass = `emoji-style-${settings.emojiStyle || 'system'}`;
+  const emojiFontSize = Math.max(18, Math.min(36, settings.emojiFontSizePx || 24));
+  const emojiCellHeight = Math.max(38, Math.round(emojiFontSize * 1.75));
+  const zikrFontSize = Math.max(10, Math.min(18, settings.zikrFontSizePx || 12));
+  const isManualSort =
+    settings.emojiHistoryUpdateStrategy === 'manual_prepend' ||
+    settings.emojiHistoryUpdateStrategy === 'manual_append';
+
+  const selectEmojiCat = (nextCat: string) => {
+    setEmojiSearch('');
+    setEmojiCat(nextCat);
+    if (settings.emojiLastUsedCategory !== nextCat) {
+      onUpdateSettings({ emojiLastUsedCategory: nextCat });
+    }
+  };
+
+  const getStoreForSection = (section: RichInsertSource): EmojiHistoryStore => {
+    if (section === 'emoji') {
+      return {
+        pinned: settings.emojiPinned || [],
+        recent: settings.recentEmojis || [],
+      };
+    }
+    if (section === 'kaomoji') {
+      return {
+        pinned: settings.kaomojiPinned || [],
+        recent: settings.recentKaomoji || [],
+      };
+    }
+    const zh = settings.zikrHistories?.[section];
+    return {
+      pinned: zh?.pinned || [],
+      recent: zh?.recent || [],
+    };
+  };
+
+  const saveStoreForSection = (section: RichInsertSource, next: EmojiHistoryStore) => {
+    if (section === 'emoji') {
+      onUpdateSettings({ emojiPinned: next.pinned, recentEmojis: next.recent });
+      return;
+    }
+    if (section === 'kaomoji') {
+      onUpdateSettings({ kaomojiPinned: next.pinned, recentKaomoji: next.recent });
+      return;
+    }
+    const currentAll = settings.zikrHistories || {
+      duaa: { pinned: [], recent: [] },
+      quran: { pinned: [], recent: [] },
+      salawat: { pinned: [], recent: [] },
+    };
+    const nextHistories = {
+      ...currentAll,
+      [section]: next,
+    };
+    const combinedRecent = Array.from(
+      new Set([
+        ...nextHistories.duaa.pinned,
+        ...nextHistories.quran.pinned,
+        ...nextHistories.salawat.pinned,
+        ...nextHistories.duaa.recent,
+        ...nextHistories.quran.recent,
+        ...nextHistories.salawat.recent,
+      ])
+    ).slice(0, settings.emojiHistoryRecentMaxSize || 40);
+    onUpdateSettings({ zikrHistories: nextHistories, recentZikr: combinedRecent });
+  };
 
   const displayedEmojis = useMemo<EmojiEntry[]>(() => {
     if (emojiSearch.trim()) {
       return searchEmojis(emojiSearch, 84);
     }
     if (emojiCat === 'recent') {
-      return settings.recentEmojis.map((c) => ({ c }));
+      return [];
     }
     return EMOJI_CATEGORIES.find((c) => c.id === emojiCat)?.items || [];
-  }, [emojiSearch, emojiCat, settings.recentEmojis]);
+  }, [emojiSearch, emojiCat]);
 
-  const startEmojiHold = (entry: EmojiEntry) => {
-    if (!entry.v || entry.v.length === 0) return;
-    if (pressTimerRef.current) window.clearTimeout(pressTimerRef.current);
-    pressTimerRef.current = window.setTimeout(() => {
-      setVariantPopup({ base: entry.c, variants: [entry.c, ...(entry.v || [])] });
-    }, 380);
-  };
-
-  const clearEmojiHold = () => {
+  const clearHold = () => {
     if (pressTimerRef.current) {
       window.clearTimeout(pressTimerRef.current);
       pressTimerRef.current = null;
     }
   };
 
+  const startEmojiHold = (entry: EmojiEntry, rendered: string) => {
+    longPressTriggeredRef.current = false;
+    clearHold();
+    const variants = getEmojiVariants(entry, settings.emojiSkinTone);
+    pressTimerRef.current = window.setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setHistoryAction(null);
+      setVariantPopup({
+        base: entry.c,
+        rendered,
+        variants: variants.length > 1 ? variants : [rendered],
+      });
+    }, 360);
+  };
+
+  const startHistoryHold = (target: HistoryActionTarget) => {
+    longPressTriggeredRef.current = false;
+    clearHold();
+    pressTimerRef.current = window.setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setVariantPopup(null);
+      setHistoryAction(target);
+    }, 340);
+  };
+
+  const handleTogglePin = (section: RichInsertSource, value: string) => {
+    const store = getStoreForSection(section);
+    const next = togglePinHistoryItem(
+      store,
+      value,
+      settings.emojiHistoryPinnedMaxSize || 24,
+      settings.emojiHistoryRecentMaxSize || 40
+    );
+    saveStoreForSection(section, next);
+  };
+
+  const handleMoveHistory = (
+    section: RichInsertSource,
+    bucket: 'pinned' | 'recent',
+    value: string,
+    delta: -1 | 1
+  ) => {
+    const store = getStoreForSection(section);
+    const next = moveHistoryItem(store, value, bucket, delta);
+    saveStoreForSection(section, next);
+  };
+
+  const handleRemoveHistory = (section: RichInsertSource, value: string) => {
+    const store = getStoreForSection(section);
+    const next = removeHistoryItem(store, value);
+    saveStoreForSection(section, next);
+  };
+
+  const emojiStore = getStoreForSection('emoji');
+  const kaomojiStore = getStoreForSection('kaomoji');
+  const duaaStore = getStoreForSection('duaa');
+  const quranStore = getStoreForSection('quran');
+  const salawatStore = getStoreForSection('salawat');
+
+  const zikrSubTabs: { id: 'recent' | 'duaa' | 'quran' | 'salawat'; label: string; icon: KurdiIconName }[] = [
+    { id: 'recent', label: 'دوایینەکان', icon: 'ic_history1' },
+    { id: 'duaa', label: 'دوعا و زیکر', icon: 'ic_zikr' },
+    { id: 'quran', label: 'قورئانی', icon: 'ic_ayat' },
+    { id: 'salawat', label: 'سەڵاوات', icon: 'ic_tasbih1' },
+  ];
+
+  const renderSubheader = (title: string, count?: number, isPinnedSection?: boolean) => (
+    <div
+      className={`flex items-center justify-between px-2.5 py-1 rounded-xl ${subheaderBg}`}
+      dir="rtl"
+    >
+      <span className="text-[11px] font-bold flex items-center gap-1.5">
+        {isPinnedSection && <Pin className="w-3 h-3 text-[#74B3FF]" />}
+        <span>{title}</span>
+      </span>
+      {typeof count === 'number' && (
+        <span className={`text-[10px] font-mono tabular-nums ${mutedText}`}>{count}</span>
+      )}
+    </div>
+  );
+
   return (
     <div
       className="flex flex-col w-full kb-noselect relative"
-      style={{ backgroundColor: panelBg, height: `${Math.max(settings.keyboardHeightPx + 44, 325)}px` }}
+      style={{ backgroundColor: panelBg, height: `${Math.max(settings.keyboardHeightPx + 44, 332)}px` }}
       dir="ltr"
       onPointerDownCapture={() => {
         hasSeenPointerDownRef.current = true;
       }}
       onClickCapture={(e) => {
-        // Ignore synthetic ghost click from the keyboard Emoji key tap that mounted this panel
         if (!hasSeenPointerDownRef.current && Date.now() - mountedAtRef.current < 450) {
           e.preventDefault();
           e.stopPropagation();
@@ -133,110 +329,103 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
       }}
       onClick={() => {
         if (variantPopup) setVariantPopup(null);
+        if (historyAction) setHistoryAction(null);
       }}
     >
-      {/* Top Sub-Category Bar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 shrink-0 gap-1">
+      {/* Top Expanding Category Tab Bar (Matching original ck.java expanding active tab!) */}
+      <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-white/5 shrink-0 gap-1">
         {activeTab === 'emoji' && (
-          <div className="flex items-center gap-1 overflow-x-auto custom-scroll flex-1">
-            <button
-              type="button"
-              onClick={() => {
-                setEmojiSearch('');
-                setEmojiCat('recent');
-              }}
-              className={`min-w-[38px] h-9 px-2 rounded-full flex items-center justify-center transition-colors ${
-                emojiCat === 'recent' && !emojiSearch ? activePillBg : mutedText
-              }`}
-              title="دوایینەکان"
-            >
-              <KurdiIcon name="ic_history1" className="w-4 h-4" />
-            </button>
-            {EMOJI_CATEGORIES.map((cat) => (
+          <div className="flex items-center gap-1 overflow-x-auto custom-scroll flex-1 py-0.5">
+            {settings.emojiHistoryEnabled && (
               <button
-                key={cat.id}
                 type="button"
-                onClick={() => {
-                  setEmojiSearch('');
-                  setEmojiCat(cat.id);
-                }}
-                className={`min-w-[38px] h-9 px-2 rounded-full flex items-center justify-center text-base transition-colors ${
-                  emojiCat === cat.id && !emojiSearch ? activePillBg : 'opacity-70 hover:opacity-100'
+                onClick={() => selectEmojiCat('recent')}
+                className={`h-9 rounded-full flex items-center justify-center gap-1.5 transition-all shrink-0 whitespace-nowrap ${
+                  emojiCat === 'recent' && !emojiSearch
+                    ? `${activePillBg} px-3 font-bold`
+                    : `${mutedText} w-9 hover:bg-white/5`
                 }`}
-                title={cat.label}
+                title="دوایینەکان"
               >
-                {cat.icon}
+                <KurdiIcon name="ic_history1" className="w-4 h-4 shrink-0" />
+                {emojiCat === 'recent' && !emojiSearch && (
+                  <span className="text-[11px]">دوایینەکان</span>
+                )}
               </button>
-            ))}
+            )}
+            {orderedEnabledCategories.map((cat) => {
+              const active = emojiCat === cat.id && !emojiSearch;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => selectEmojiCat(cat.id)}
+                  className={`h-9 rounded-full flex items-center justify-center gap-1.5 transition-all shrink-0 whitespace-nowrap ${
+                    active
+                      ? `${activePillBg} px-3 font-bold`
+                      : 'w-9 opacity-75 hover:opacity-100 hover:bg-white/5'
+                  }`}
+                  title={cat.label}
+                >
+                  <span className={`text-base leading-none ${emojiFontClass}`}>{cat.icon}</span>
+                  {active && <span className="text-[11px]">{cat.label}</span>}
+                </button>
+              );
+            })}
           </div>
         )}
 
         {activeTab === 'zikr' && (
-          <div className="flex items-center justify-around flex-1 gap-1">
-            <button
-              type="button"
-              onClick={() => setZikrCat('recent')}
-              className={`h-9 px-4 rounded-full flex items-center justify-center transition-colors ${
-                zikrCat === 'recent' ? activePillBg : mainText
-              }`}
-              title="دوایین زیکرەکان"
-            >
-              <KurdiIcon name="ic_history1" className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setZikrCat('duaa')}
-              className={`h-9 px-5 rounded-full flex items-center justify-center transition-colors ${
-                zikrCat === 'duaa' ? activePillBg : mainText
-              }`}
-              title="دوعا و زیکر"
-            >
-              <KurdiIcon name="ic_zikr" className="w-[18px] h-[18px]" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setZikrCat('quran')}
-              className={`h-9 px-5 rounded-full flex items-center justify-center transition-colors ${
-                zikrCat === 'quran' ? activePillBg : mainText
-              }`}
-              title="دوعا قورئانییەکان"
-            >
-              <KurdiIcon name="ic_ayat" className="w-[18px] h-[18px]" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setZikrCat('salawat')}
-              className={`h-9 px-5 rounded-full flex items-center justify-center transition-colors ${
-                zikrCat === 'salawat' ? activePillBg : mainText
-              }`}
-              title="سەڵاوات"
-            >
-              <KurdiIcon name="ic_tasbih1" className="w-[18px] h-[18px]" />
-            </button>
+          <div className="flex items-center gap-1.5 overflow-x-auto custom-scroll flex-1 py-0.5">
+            {zikrSubTabs.map((tab) => {
+              const active = zikrCat === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setZikrCat(tab.id)}
+                  className={`h-9 rounded-full flex items-center justify-center gap-1.5 transition-all shrink-0 whitespace-nowrap ${
+                    active
+                      ? `${activePillBg} px-3.5 font-bold`
+                      : `${mainText} px-3 opacity-75 hover:opacity-100 hover:bg-white/5`
+                  }`}
+                  title={tab.label}
+                >
+                  <KurdiIcon name={tab.icon} className="w-4 h-4 shrink-0" />
+                  {active && <span className="text-[11px]">{tab.label}</span>}
+                </button>
+              );
+            })}
           </div>
         )}
 
         {activeTab === 'kaomoji' && (
-          <div className="flex items-center gap-3 flex-1">
+          <div className="flex items-center gap-2 flex-1 py-0.5">
             <button
               type="button"
               onClick={() => setKaomojiCat('recent')}
-              className={`h-9 px-4 rounded-full flex items-center justify-center transition-colors ${
-                kaomojiCat === 'recent' ? activePillBg : mainText
+              className={`h-9 rounded-full flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${
+                kaomojiCat === 'recent'
+                  ? `${activePillBg} px-3.5 font-bold`
+                  : `${mainText} px-3 opacity-75 hover:opacity-100`
               }`}
               title="دوایینەکان"
             >
-              <KurdiIcon name="ic_history1" className="w-4 h-4" />
+              <KurdiIcon name="ic_history1" className="w-4 h-4 shrink-0" />
+              {kaomojiCat === 'recent' && <span className="text-[11px]">دوایینەکان</span>}
             </button>
             <button
               type="button"
               onClick={() => setKaomojiCat('all')}
-              className={`h-9 px-5 rounded-full flex items-center justify-center transition-colors ${
-                kaomojiCat === 'all' ? activePillBg : mainText
+              className={`h-9 rounded-full flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${
+                kaomojiCat === 'all'
+                  ? `${activePillBg} px-3.5 font-bold`
+                  : `${mainText} px-3 opacity-75 hover:opacity-100`
               }`}
               title="کاومۆجی"
             >
-              <KurdiIcon name="ic_kaomoji" className="w-5 h-5" />
+              <KurdiIcon name="ic_kaomoji" className="w-5 h-5 shrink-0" />
+              {kaomojiCat === 'all' && <span className="text-[11px]">کاومۆجی</span>}
             </button>
           </div>
         )}
@@ -299,45 +488,249 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
         </div>
       )}
 
-      {/* Skin-Tone Variant Picker Overlay */}
+      {/* Skin-Tone / Hair-Style Variant + Quick Pin Overlay */}
       {variantPopup && (
         <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 px-2.5 py-2 rounded-2xl shadow-2xl border border-white/15 flex items-center gap-1.5"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 max-w-[92%] px-3 py-2.5 rounded-2xl shadow-2xl border border-white/15 flex flex-col gap-2"
           style={{ backgroundColor: theme.popupBg || (isLight ? '#FFFFFF' : '#1B1E26') }}
           onClick={(e) => e.stopPropagation()}
         >
-          {variantPopup.variants.map((v, i) => (
+          <div className="flex items-center flex-wrap justify-center gap-1">
+            {variantPopup.variants.map((v, i) => (
+              <button
+                key={`${v}_${i}`}
+                type="button"
+                onClick={() => {
+                  onInsert(v, 'emoji');
+                  setVariantPopup(null);
+                }}
+                className={`w-10 h-10 rounded-xl text-2xl flex items-center justify-center hover:bg-sky-500/20 active:scale-90 transition-transform ${emojiFontClass}`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-white/10" dir="rtl">
             <button
-              key={`${v}_${i}`}
               type="button"
               onClick={() => {
-                onInsert(v, 'emoji');
+                handleTogglePin('emoji', variantPopup.rendered);
                 setVariantPopup(null);
               }}
-              className="w-10 h-10 rounded-xl text-2xl flex items-center justify-center hover:bg-sky-500/20 active:scale-90 transition-transform"
+              className="flex-1 h-8 px-3 rounded-xl bg-sky-500/20 text-[#8EC2FF] text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-sky-500/30"
             >
-              {v}
+              {emojiStore.pinned.includes(variantPopup.rendered) ? (
+                <>
+                  <PinOff className="w-3.5 h-3.5" />
+                  <span>لابردنی پین</span>
+                </>
+              ) : (
+                <>
+                  <Pin className="w-3.5 h-3.5" />
+                  <span>پینکردن</span>
+                </>
+              )}
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setVariantPopup(null)}
+              className="h-8 w-8 rounded-xl bg-white/10 text-zinc-300 flex items-center justify-center"
+              aria-label="داخستن"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Long-Press History & Pinned Item Action Popup (Pin/Unpin, Move Left/Right, Remove) */}
+      {historyAction && (
+        <div
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[88%] max-w-[320px] p-3 rounded-2xl shadow-2xl border border-white/15 space-y-2.5"
+          style={{ backgroundColor: theme.popupBg || (isLight ? '#FFFFFF' : '#1B1E26') }}
+          onClick={(e) => e.stopPropagation()}
+          dir="rtl"
+        >
+          <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
+            <span className={`text-sm font-bold truncate ${mainText} ${historyAction.section === 'emoji' ? emojiFontClass : ''}`}>
+              {historyAction.label || historyAction.value}
+            </span>
+            <button
+              type="button"
+              onClick={() => setHistoryAction(null)}
+              className="w-7 h-7 rounded-lg bg-white/10 text-zinc-300 flex items-center justify-center shrink-0"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                handleTogglePin(historyAction.section, historyAction.value);
+                setHistoryAction(null);
+              }}
+              className="h-9 px-2.5 rounded-xl bg-sky-500/20 text-[#8EC2FF] text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-sky-500/30"
+            >
+              {historyAction.bucket === 'pinned' ? (
+                <>
+                  <PinOff className="w-3.5 h-3.5" />
+                  <span>لابردنی پین</span>
+                </>
+              ) : (
+                <>
+                  <Pin className="w-3.5 h-3.5" />
+                  <span>پینکردن</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                handleRemoveHistory(historyAction.section, historyAction.value);
+                setHistoryAction(null);
+              }}
+              className="h-9 px-2.5 rounded-xl bg-rose-500/20 text-rose-300 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-rose-500/30"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>سڕینەوە</span>
+            </button>
+
+            {(historyAction.bucket === 'pinned' || isManualSort) && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleMoveHistory(
+                      historyAction.section,
+                      historyAction.bucket,
+                      historyAction.value,
+                      -1
+                    );
+                  }}
+                  className="h-9 px-2.5 rounded-xl bg-white/10 text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-white/15"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>جووڵاندن بۆ پێش</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleMoveHistory(
+                      historyAction.section,
+                      historyAction.bucket,
+                      historyAction.value,
+                      1
+                    );
+                  }}
+                  className="h-9 px-2.5 rounded-xl bg-white/10 text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-white/15"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>جووڵاندن بۆ دواوە</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
       {/* Main Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto custom-scroll px-2 py-1.5">
-        {activeTab === 'emoji' && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between px-1.5" dir="rtl">
-              <span className={`text-[11px] font-bold ${mutedText}`}>
-                {emojiSearch.trim()
-                  ? `ئەنجامی گەڕان بۆ «${emojiSearch}»`
-                  : emojiCat === 'recent'
-                  ? 'دوایین ئیمۆجییەکان'
-                  : EMOJI_CATEGORIES.find((c) => c.id === emojiCat)?.label || 'خەندەکان'}
-              </span>
-              <span className={`text-[10px] font-mono tabular-nums ${mutedText}`}>
-                {displayedEmojis.length}
-              </span>
+        {activeTab === 'emoji' && emojiCat === 'recent' && !emojiSearch.trim() && (
+          <div className="space-y-2.5">
+            {emojiStore.pinned.length > 0 && (
+              <div className="space-y-1.5">
+                {renderSubheader('ئیمۆجییە پینکراوەکان', emojiStore.pinned.length, true)}
+                <div
+                  className="grid gap-1"
+                  style={{ gridTemplateColumns: `repeat(${settings.emojiColumns}, minmax(0, 1fr))` }}
+                >
+                  {emojiStore.pinned.map((char, idx) => (
+                    <button
+                      key={`pin_em_${char}_${idx}`}
+                      type="button"
+                      onPointerDown={() =>
+                        startHistoryHold({ section: 'emoji', bucket: 'pinned', value: char })
+                      }
+                      onPointerUp={clearHold}
+                      onPointerLeave={clearHold}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setHistoryAction({ section: 'emoji', bucket: 'pinned', value: char });
+                      }}
+                      onClick={() => {
+                        if (longPressTriggeredRef.current) {
+                          longPressTriggeredRef.current = false;
+                          return;
+                        }
+                        onInsert(char, 'emoji');
+                      }}
+                      style={{ height: `${emojiCellHeight}px`, fontSize: `${emojiFontSize}px` }}
+                      className={`relative rounded-xl flex items-center justify-center hover:bg-white/10 active:scale-90 transition-transform ${emojiFontClass}`}
+                      title="دەستڕاگرتن بۆ بەڕێوەبردن"
+                    >
+                      {char}
+                      <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#74B3FF]" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              {renderSubheader('دوایین بەکارهاتووەکان', emojiStore.recent.length)}
+              {emojiStore.recent.length === 0 && emojiStore.pinned.length === 0 ? (
+                <div className="py-8 text-center text-xs text-zinc-500" dir="rtl">
+                  هێشتا هیچ ئیمۆجییەکت بەکارنەهێناوە · دەستڕاگرتن لەسەر هەر ئیمۆجییەک پینی دەکات
+                </div>
+              ) : (
+                <div
+                  className="grid gap-1"
+                  style={{ gridTemplateColumns: `repeat(${settings.emojiColumns}, minmax(0, 1fr))` }}
+                >
+                  {emojiStore.recent.map((char, idx) => (
+                    <button
+                      key={`rec_em_${char}_${idx}`}
+                      type="button"
+                      onPointerDown={() =>
+                        startHistoryHold({ section: 'emoji', bucket: 'recent', value: char })
+                      }
+                      onPointerUp={clearHold}
+                      onPointerLeave={clearHold}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setHistoryAction({ section: 'emoji', bucket: 'recent', value: char });
+                      }}
+                      onClick={() => {
+                        if (longPressTriggeredRef.current) {
+                          longPressTriggeredRef.current = false;
+                          return;
+                        }
+                        onInsert(char, 'emoji');
+                      }}
+                      style={{ height: `${emojiCellHeight}px`, fontSize: `${emojiFontSize}px` }}
+                      className={`relative rounded-xl flex items-center justify-center hover:bg-white/10 active:scale-90 transition-transform ${emojiFontClass}`}
+                      title="دەستڕاگرتن بۆ پینکردن یان سڕینەوە"
+                    >
+                      {char}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'emoji' && (emojiCat !== 'recent' || emojiSearch.trim()) && (
+          <div className="space-y-1.5">
+            {renderSubheader(
+              emojiSearch.trim()
+                ? `ئەنجامی گەڕان بۆ «${emojiSearch}»`
+                : EMOJI_CATEGORIES.find((c) => c.id === emojiCat)?.label || 'خەندەکان',
+              displayedEmojis.length
+            )}
 
             {displayedEmojis.length === 0 ? (
               <div className="py-10 text-center text-xs text-zinc-500" dir="rtl">
@@ -349,28 +742,46 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
                 style={{ gridTemplateColumns: `repeat(${settings.emojiColumns}, minmax(0, 1fr))` }}
               >
                 {displayedEmojis.map((entry, i) => {
-                  const rendered = resolveEmojiWithSkinTone(entry, settings.emojiSkinTone);
+                  const rendered = resolveEmojiWithModifiers(
+                    entry,
+                    settings.emojiSkinTone,
+                    settings.emojiHairStyle
+                  );
                   const hasVariants = Boolean(entry.v && entry.v.length > 0);
+                  const isPinned = emojiStore.pinned.includes(rendered);
                   return (
                     <button
                       key={`${entry.c}_${i}`}
                       type="button"
-                      onPointerDown={() => startEmojiHold(entry)}
-                      onPointerUp={clearEmojiHold}
-                      onPointerLeave={clearEmojiHold}
+                      onPointerDown={() => startEmojiHold(entry, rendered)}
+                      onPointerUp={clearHold}
+                      onPointerLeave={clearHold}
                       onContextMenu={(e) => {
-                        if (hasVariants) {
-                          e.preventDefault();
-                          setVariantPopup({ base: entry.c, variants: [entry.c, ...(entry.v || [])] });
-                        }
+                        e.preventDefault();
+                        const variants = getEmojiVariants(entry, settings.emojiSkinTone);
+                        setVariantPopup({
+                          base: entry.c,
+                          rendered,
+                          variants: variants.length > 1 ? variants : [rendered],
+                        });
                       }}
-                      onClick={() => onInsert(rendered, 'emoji')}
-                      className="relative h-10 rounded-xl flex items-center justify-center text-2xl hover:bg-white/10 active:scale-90 transition-transform"
+                      onClick={() => {
+                        if (longPressTriggeredRef.current) {
+                          longPressTriggeredRef.current = false;
+                          return;
+                        }
+                        onInsert(rendered, 'emoji');
+                      }}
+                      style={{ height: `${emojiCellHeight}px`, fontSize: `${emojiFontSize}px` }}
+                      className={`relative rounded-xl flex items-center justify-center hover:bg-white/10 active:scale-90 transition-transform ${emojiFontClass}`}
                       title={entry.k || entry.e || entry.c}
                     >
                       {rendered}
                       {hasVariants && (
                         <span className="absolute bottom-1 right-1 w-1 h-1 rounded-full bg-zinc-500/70" />
+                      )}
+                      {isPinned && (
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#74B3FF]" />
                       )}
                     </button>
                   );
@@ -381,50 +792,341 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
         )}
 
         {activeTab === 'zikr' && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5" dir="rtl">
-            {zikrCat === 'recent'
-              ? settings.recentZikr.map((phrase, idx) => (
-                  <button
-                    key={`rec_${idx}`}
-                    type="button"
-                    onClick={() => onInsert(`${phrase} `, 'zikr')}
-                    className={`min-h-[48px] px-2.5 py-2 rounded-xl text-center leading-snug text-[11.5px] font-medium hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center ${mainText}`}
-                    style={{
-                      backgroundColor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)',
-                    }}
-                  >
-                    <span className="line-clamp-2">{phrase}</span>
-                  </button>
-                ))
-              : ZIKR_CATEGORIES[zikrCat].map((entry, idx) => (
-                  <button
-                    key={`${zikrCat}_${idx}`}
-                    type="button"
-                    onClick={() => onInsert(`${entry.v} `, 'zikr')}
-                    className={`min-h-[48px] px-2.5 py-2 rounded-xl text-center leading-snug text-[11.5px] font-medium hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center ${mainText}`}
-                    style={{
-                      backgroundColor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)',
-                    }}
-                    title={entry.v}
-                  >
-                    <span className="line-clamp-2">{entry.d}</span>
-                  </button>
-                ))}
+          <div className="space-y-2.5" dir="rtl">
+            {zikrCat === 'recent' ? (
+              <>
+                {(
+                  [
+                    { key: 'duaa' as const, title: 'دوعا و زیکر', store: duaaStore },
+                    { key: 'quran' as const, title: 'دوعا قورئانییەکان', store: quranStore },
+                    { key: 'salawat' as const, title: 'سەڵاوات', store: salawatStore },
+                  ] as const
+                ).map((group) => {
+                  const total = group.store.pinned.length + group.store.recent.length;
+                  if (total === 0) return null;
+                  return (
+                    <div key={group.key} className="space-y-1.5">
+                      {renderSubheader(group.title, total, group.store.pinned.length > 0)}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                        {group.store.pinned.map((phrase, idx) => (
+                          <button
+                            key={`zp_${group.key}_${idx}`}
+                            type="button"
+                            onPointerDown={() =>
+                              startHistoryHold({
+                                section: group.key,
+                                bucket: 'pinned',
+                                value: phrase,
+                              })
+                            }
+                            onPointerUp={clearHold}
+                            onPointerLeave={clearHold}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              setHistoryAction({
+                                section: group.key,
+                                bucket: 'pinned',
+                                value: phrase,
+                              });
+                            }}
+                            onClick={() => {
+                              if (longPressTriggeredRef.current) {
+                                longPressTriggeredRef.current = false;
+                                return;
+                              }
+                              onInsert(`${phrase} `, group.key);
+                            }}
+                            style={{
+                              fontSize: `${zikrFontSize}px`,
+                              backgroundColor: isLight
+                                ? 'rgba(14,165,233,0.1)'
+                                : 'rgba(56,189,248,0.12)',
+                            }}
+                            className={`relative min-h-[48px] px-2.5 py-2 rounded-xl text-center leading-snug font-medium border border-sky-400/25 active:scale-95 transition-all flex items-center justify-center ${mainText}`}
+                          >
+                            <span className="line-clamp-2">{phrase}</span>
+                            <Pin className="w-2.5 h-2.5 text-[#74B3FF] absolute top-1.5 left-1.5" />
+                          </button>
+                        ))}
+                        {group.store.recent.map((phrase, idx) => (
+                          <button
+                            key={`zr_${group.key}_${idx}`}
+                            type="button"
+                            onPointerDown={() =>
+                              startHistoryHold({
+                                section: group.key,
+                                bucket: 'recent',
+                                value: phrase,
+                              })
+                            }
+                            onPointerUp={clearHold}
+                            onPointerLeave={clearHold}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              setHistoryAction({
+                                section: group.key,
+                                bucket: 'recent',
+                                value: phrase,
+                              });
+                            }}
+                            onClick={() => {
+                              if (longPressTriggeredRef.current) {
+                                longPressTriggeredRef.current = false;
+                                return;
+                              }
+                              onInsert(`${phrase} `, group.key);
+                            }}
+                            style={{
+                              fontSize: `${zikrFontSize}px`,
+                              backgroundColor: isLight
+                                ? 'rgba(0,0,0,0.03)'
+                                : 'rgba(255,255,255,0.04)',
+                            }}
+                            className={`min-h-[48px] px-2.5 py-2 rounded-xl text-center leading-snug font-medium hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center ${mainText}`}
+                          >
+                            <span className="line-clamp-2">{phrase}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {duaaStore.pinned.length +
+                  duaaStore.recent.length +
+                  quranStore.pinned.length +
+                  quranStore.recent.length +
+                  salawatStore.pinned.length +
+                  salawatStore.recent.length ===
+                  0 && (
+                  <div className="py-10 text-center text-xs text-zinc-500">
+                    هیچ زیکرێک لە مێژوودا نییە
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {getStoreForSection(zikrCat).pinned.length > 0 && (
+                  <div className="space-y-1.5">
+                    {renderSubheader(
+                      'پینکراوەکانی ئەم بەشە',
+                      getStoreForSection(zikrCat).pinned.length,
+                      true
+                    )}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                      {getStoreForSection(zikrCat).pinned.map((phrase, idx) => (
+                        <button
+                          key={`zpin_${zikrCat}_${idx}`}
+                          type="button"
+                          onPointerDown={() =>
+                            startHistoryHold({
+                              section: zikrCat,
+                              bucket: 'pinned',
+                              value: phrase,
+                            })
+                          }
+                          onPointerUp={clearHold}
+                          onPointerLeave={clearHold}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            setHistoryAction({
+                              section: zikrCat,
+                              bucket: 'pinned',
+                              value: phrase,
+                            });
+                          }}
+                          onClick={() => {
+                            if (longPressTriggeredRef.current) {
+                              longPressTriggeredRef.current = false;
+                              return;
+                            }
+                            onInsert(`${phrase} `, zikrCat);
+                          }}
+                          style={{
+                            fontSize: `${zikrFontSize}px`,
+                            backgroundColor: isLight
+                              ? 'rgba(14,165,233,0.1)'
+                              : 'rgba(56,189,248,0.12)',
+                          }}
+                          className={`relative min-h-[48px] px-2.5 py-2 rounded-xl text-center leading-snug font-medium border border-sky-400/25 active:scale-95 transition-all flex items-center justify-center ${mainText}`}
+                        >
+                          <span className="line-clamp-2">{phrase}</span>
+                          <Pin className="w-2.5 h-2.5 text-[#74B3FF] absolute top-1.5 left-1.5" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  {renderSubheader(
+                    zikrSubTabs.find((t) => t.id === zikrCat)?.label || 'زیکر',
+                    ZIKR_CATEGORIES[zikrCat].length
+                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    {ZIKR_CATEGORIES[zikrCat].map((entry, idx) => (
+                      <button
+                        key={`${zikrCat}_${idx}`}
+                        type="button"
+                        onPointerDown={() =>
+                          startHistoryHold({
+                            section: zikrCat,
+                            bucket: getStoreForSection(zikrCat).pinned.includes(entry.v.trim())
+                              ? 'pinned'
+                              : 'recent',
+                            value: entry.v.trim(),
+                            label: entry.d,
+                          })
+                        }
+                        onPointerUp={clearHold}
+                        onPointerLeave={clearHold}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setHistoryAction({
+                            section: zikrCat,
+                            bucket: getStoreForSection(zikrCat).pinned.includes(entry.v.trim())
+                              ? 'pinned'
+                              : 'recent',
+                            value: entry.v.trim(),
+                            label: entry.d,
+                          });
+                        }}
+                        onClick={() => {
+                          if (longPressTriggeredRef.current) {
+                            longPressTriggeredRef.current = false;
+                            return;
+                          }
+                          onInsert(`${entry.v} `, zikrCat);
+                        }}
+                        style={{
+                          fontSize: `${zikrFontSize}px`,
+                          backgroundColor: isLight
+                            ? 'rgba(0,0,0,0.03)'
+                            : 'rgba(255,255,255,0.04)',
+                        }}
+                        className={`min-h-[48px] px-2.5 py-2 rounded-xl text-center leading-snug font-medium hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center ${mainText}`}
+                        title={entry.v}
+                      >
+                        <span className="line-clamp-2">{entry.d}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
         {activeTab === 'kaomoji' && (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
-            {(kaomojiCat === 'recent' ? settings.recentKaomoji : KAOMOJI_LIST).map((k, idx) => (
-              <button
-                key={`${k}_${idx}`}
-                type="button"
-                onClick={() => onInsert(`${k} `, 'kaomoji')}
-                className={`min-h-[44px] px-1.5 py-2 rounded-xl text-center text-[13px] font-semibold tracking-tight hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center whitespace-nowrap ${mainText}`}
-              >
-                {k}
-              </button>
-            ))}
+          <div className="space-y-2.5">
+            {kaomojiCat === 'recent' ? (
+              <>
+                {kaomojiStore.pinned.length > 0 && (
+                  <div className="space-y-1.5">
+                    {renderSubheader('کاومۆجی پینکراوەکان', kaomojiStore.pinned.length, true)}
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                      {kaomojiStore.pinned.map((k, idx) => (
+                        <button
+                          key={`kp_${k}_${idx}`}
+                          type="button"
+                          onPointerDown={() =>
+                            startHistoryHold({ section: 'kaomoji', bucket: 'pinned', value: k })
+                          }
+                          onPointerUp={clearHold}
+                          onPointerLeave={clearHold}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            setHistoryAction({ section: 'kaomoji', bucket: 'pinned', value: k });
+                          }}
+                          onClick={() => {
+                            if (longPressTriggeredRef.current) {
+                              longPressTriggeredRef.current = false;
+                              return;
+                            }
+                            onInsert(`${k} `, 'kaomoji');
+                          }}
+                          style={{ fontSize: `${Math.max(11, zikrFontSize + 1)}px` }}
+                          className={`relative min-h-[44px] px-1.5 py-2 rounded-xl text-center font-semibold tracking-tight border border-sky-400/25 bg-sky-500/10 active:scale-95 transition-all flex items-center justify-center whitespace-nowrap ${mainText}`}
+                        >
+                          {k}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  {renderSubheader('دوایین کاومۆجییەکان', kaomojiStore.recent.length)}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                    {kaomojiStore.recent.map((k, idx) => (
+                      <button
+                        key={`kr_${k}_${idx}`}
+                        type="button"
+                        onPointerDown={() =>
+                          startHistoryHold({ section: 'kaomoji', bucket: 'recent', value: k })
+                        }
+                        onPointerUp={clearHold}
+                        onPointerLeave={clearHold}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setHistoryAction({ section: 'kaomoji', bucket: 'recent', value: k });
+                        }}
+                        onClick={() => {
+                          if (longPressTriggeredRef.current) {
+                            longPressTriggeredRef.current = false;
+                            return;
+                          }
+                          onInsert(`${k} `, 'kaomoji');
+                        }}
+                        style={{ fontSize: `${Math.max(11, zikrFontSize + 1)}px` }}
+                        className={`min-h-[44px] px-1.5 py-2 rounded-xl text-center font-semibold tracking-tight hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center whitespace-nowrap ${mainText}`}
+                      >
+                        {k}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-1.5">
+                {renderSubheader('کاومۆجی', KAOMOJI_LIST.length)}
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                  {KAOMOJI_LIST.map((k, idx) => (
+                    <button
+                      key={`${k}_${idx}`}
+                      type="button"
+                      onPointerDown={() =>
+                        startHistoryHold({
+                          section: 'kaomoji',
+                          bucket: kaomojiStore.pinned.includes(k) ? 'pinned' : 'recent',
+                          value: k,
+                        })
+                      }
+                      onPointerUp={clearHold}
+                      onPointerLeave={clearHold}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setHistoryAction({
+                          section: 'kaomoji',
+                          bucket: kaomojiStore.pinned.includes(k) ? 'pinned' : 'recent',
+                          value: k,
+                        });
+                      }}
+                      onClick={() => {
+                        if (longPressTriggeredRef.current) {
+                          longPressTriggeredRef.current = false;
+                          return;
+                        }
+                        onInsert(`${k} `, 'kaomoji');
+                      }}
+                      style={{ fontSize: `${Math.max(11, zikrFontSize + 1)}px` }}
+                      className={`min-h-[44px] px-1.5 py-2 rounded-xl text-center font-semibold tracking-tight hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center whitespace-nowrap ${mainText}`}
+                    >
+                      {k}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

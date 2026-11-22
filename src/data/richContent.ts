@@ -40,11 +40,45 @@ export const EMOJI_SKIN_TONES = [
   { id: 'dark', label: 'تۆخ', sample: '👋🏿', mod: '🏿', index: 4 },
 ];
 
+export const EMOJI_HAIR_STYLES = [
+  { id: 'default', label: 'بنەڕەتی', sampleBase: '🧑', mod: '' },
+  { id: 'red', label: 'قژی سوور', sampleBase: '🧑', mod: '\u{1F9B0}' },
+  { id: 'curly', label: 'قژی لوول', sampleBase: '🧑', mod: '\u{1F9B1}' },
+  { id: 'white', label: 'قژی سپی', sampleBase: '🧑', mod: '\u{1F9B3}' },
+  { id: 'bald', label: 'سەر ڕووتاوە', sampleBase: '🧑', mod: '\u{1F9B2}' },
+];
+
+const HAIR_COMPATIBLE_BASES = new Set(['👨', '👩', '🧑']);
+
 export const EMOJI_CATEGORIES: EmojiCategory[] = richData.emojiCategories;
 export const ALL_EMOJI_ENTRIES: EmojiEntry[] = EMOJI_CATEGORIES.flatMap((cat) => cat.items);
 
+export const EMOJI_NAME_LOOKUP: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  for (const entry of ALL_EMOJI_ENTRIES) {
+    const label = entry.k || entry.e;
+    if (label) {
+      map[entry.c] = label;
+      if (entry.v) {
+        for (const variant of entry.v) {
+          map[variant] = label;
+        }
+      }
+    }
+  }
+  return map;
+})();
+
 export const ZIKR_CATEGORIES = richData.zikrData;
 export const KAOMOJI_LIST: string[] = richData.kaomojiList;
+
+export function composePersonEmoji(base: string, skinToneMod: string, hairStyleMod: string): string {
+  const withSkin = skinToneMod ? `${base}${skinToneMod}` : base;
+  if (hairStyleMod && HAIR_COMPATIBLE_BASES.has(base)) {
+    return `${withSkin}\u200D${hairStyleMod}`;
+  }
+  return withSkin;
+}
 
 export function resolveEmojiWithSkinTone(entry: EmojiEntry, skinToneMod: string): string {
   if (!skinToneMod || !entry.v || entry.v.length === 0) return entry.c;
@@ -54,6 +88,31 @@ export function resolveEmojiWithSkinTone(entry: EmojiEntry, skinToneMod: string)
   }
   const match = entry.v.find((variant) => variant.includes(skinToneMod));
   return match || entry.c;
+}
+
+export function resolveEmojiWithModifiers(
+  entry: EmojiEntry,
+  skinToneMod: string,
+  hairStyleMod = ''
+): string {
+  if (hairStyleMod && HAIR_COMPATIBLE_BASES.has(entry.c)) {
+    return composePersonEmoji(entry.c, skinToneMod, hairStyleMod);
+  }
+  return resolveEmojiWithSkinTone(entry, skinToneMod);
+}
+
+export function getEmojiVariants(entry: EmojiEntry, skinToneMod: string): string[] {
+  const list: string[] = [entry.c, ...(entry.v || [])];
+  if (HAIR_COMPATIBLE_BASES.has(entry.c)) {
+    for (const hs of EMOJI_HAIR_STYLES) {
+      if (!hs.mod) continue;
+      const composed = composePersonEmoji(entry.c, skinToneMod, hs.mod);
+      if (!list.includes(composed)) {
+        list.push(composed);
+      }
+    }
+  }
+  return Array.from(new Set(list));
 }
 
 export function searchEmojis(query: string, limit = 70): EmojiEntry[] {

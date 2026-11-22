@@ -32,9 +32,11 @@ import { composeHangul, EMAIL_DOMAIN_POPUP_OPTIONS, resolveLayoutRows } from '..
 import {
   EMOJI_CATEGORIES,
   EMOJI_KEYWORD_MAP,
+  EMOJI_NAME_LOOKUP,
   searchEmojis,
   TEXT_DECORATORS,
 } from '../../data/richContent';
+import { recordHistoryUsage } from '../../utils/emojiHistory';
 import {
   buildIndexedDictionary,
   getBaseDictionaryForLang,
@@ -54,6 +56,7 @@ import {
   EmojiZikrKaomojiPanel,
   QuickThemesPanel,
   ResizePanel,
+  RichInsertSource,
   RichTab,
   SmartAIPanel,
   TextDecoratorPanel,
@@ -446,9 +449,17 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 
   const suggestions = useMemo(() => {
     const shortcutsEnabled = settings.textShortcutsEnabled ?? true;
-    if (!settings.wordSuggestions && !shortcutsEnabled) return [];
+    if (!settings.wordSuggestions && !shortcutsEnabled && !settings.emojiSuggestions) return [];
 
-    const results: { value: string; isShortcut?: boolean; shortcutKey?: string; isEmail?: boolean }[] = [];
+    const results: {
+      value: string;
+      displayLabel?: string;
+      isShortcut?: boolean;
+      shortcutKey?: string;
+      isEmail?: boolean;
+      isEmoji?: boolean;
+      replaceLength?: number;
+    }[] = [];
     const seen = new Set<string>();
 
     // 0. Live Email Domain Suggestions when typing after "@" (e.g. "name@" or "name@g")
@@ -466,6 +477,37 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
         }
       }
       if (results.length > 0) return results;
+    }
+
+    // 0.5 Leading-Colon Emoji Suggestions (e.g. ":دڵ" or ":heart")
+    if (settings.emojiSuggestions && settings.emojiSuggestionType === 'leading_colon') {
+      const colonMatch = editorTail.match(/:([^\s:]{1,24})$/);
+      const minLen = Math.max(1, settings.emojiSuggestionQueryMinLength || 2);
+      if (colonMatch && colonMatch[1].length >= minLen) {
+        const q = colonMatch[1];
+        const maxEmoji = Math.max(1, Math.min(5, settings.emojiSuggestionMaxCount || 3));
+        const directHits =
+          EMOJI_KEYWORD_MAP[q.toLowerCase()] ||
+          EMOJI_KEYWORD_MAP[q] ||
+          EMOJI_KEYWORD_MAP[normalizeForPrediction(q)] ||
+          [];
+        const fallbackHits =
+          directHits.length < maxEmoji ? searchEmojis(q, maxEmoji + 2).map((e) => e.c) : [];
+        const combined = Array.from(new Set([...directHits, ...fallbackHits])).slice(0, maxEmoji);
+        for (const em of combined) {
+          if (!seen.has(em)) {
+            seen.add(em);
+            const name = settings.emojiSuggestionShowName ? EMOJI_NAME_LOOKUP[em] : undefined;
+            results.push({
+              value: em,
+              displayLabel: name ? `${em} ${name}` : em,
+              isEmoji: true,
+              replaceLength: colonMatch[0].length,
+            });
+          }
+        }
+        if (results.length > 0) return results;
+      }
     }
 
     // 1. Custom Text Shortcuts (Exact match first, then prefix match)
@@ -502,17 +544,28 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       return results;
     }
 
-    // 2. Emoji suggestions for current word
-    if (settings.emojiSuggestions && currentWord) {
+    // 2. Inline-Text Emoji suggestions for current word
+    if (
+      settings.emojiSuggestions &&
+      (settings.emojiSuggestionType || 'inline_text') === 'inline_text' &&
+      currentWord &&
+      currentWord.length >= Math.max(1, settings.emojiSuggestionQueryMinLength || 2)
+    ) {
+      const maxEmoji = Math.max(1, Math.min(5, settings.emojiSuggestionMaxCount || 3));
       const emojiHits =
         EMOJI_KEYWORD_MAP[currentWord.toLowerCase()] ||
         EMOJI_KEYWORD_MAP[currentWord] ||
         EMOJI_KEYWORD_MAP[normalizeForPrediction(currentWord)];
       if (emojiHits) {
-        for (const em of emojiHits.slice(0, 2)) {
+        for (const em of emojiHits.slice(0, maxEmoji)) {
           if (!seen.has(em)) {
             seen.add(em);
-            results.push({ value: em });
+            const name = settings.emojiSuggestionShowName ? EMOJI_NAME_LOOKUP[em] : undefined;
+            results.push({
+              value: em,
+              displayLabel: name ? `${em} ${name}` : em,
+              isEmoji: true,
+            });
           }
         }
       }
@@ -566,6 +619,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     settings.textShortcutsEnabled,
     settings.textShortcuts,
     settings.emojiSuggestions,
+    settings.emojiSuggestionType,
+    settings.emojiSuggestionQueryMinLength,
+    settings.emojiSuggestionMaxCount,
+    settings.emojiSuggestionShowName,
     indexedDictionaryPool,
     isLatinLike,
   ]);
@@ -801,7 +858,12 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     }
   };
 
-  const handleSuggestionTap = (word: string, isEmail?: boolean) => {
+  const handleSuggestionTap = (
+    word: string,
+    isEmail?: boolean,
+    isEmoji?: boolean,
+    replaceLength?: number
+  ) => {
     triggerSound('char');
     if (isEmail && word.startsWith('@')) {
       const emailMatch = editorText.match(/@[a-zA-Z0-9.-]*$/);
@@ -813,12 +875,28 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       onInsertText(word);
       return;
     }
-    if (!currentWord) {
-      onInsertText(`${word} `);
+    const looksLikeEmoji =
+      isEmoji || (/^\p{Emoji}/u.test(word) && !/[a-zA-Z0-9\u0600-\u06FF]/.test(word));
+    if (looksLikeEmoji) {
+      if (replaceLength && replaceLength > 0) {
+        const replaced = editorText.slice(0, Math.max(0, editorText.length - replaceLength)) + `${word} `;
+        onReplaceText(replaced);
+      } else {
+        onInsertText(` ${word} `);
+      }
+      if (settings.emojiHistoryEnabled && settings.emojiSuggestionUpdateHistory !== false) {
+        const nextStore = recordHistoryUsage(
+          { pinned: settings.emojiPinned || [], recent: settings.recentEmojis || [] },
+          word,
+          settings.emojiHistoryUpdateStrategy || 'auto_prepend',
+          settings.emojiHistoryRecentMaxSize || 40
+        );
+        onUpdateSettings({ emojiPinned: nextStore.pinned, recentEmojis: nextStore.recent });
+      }
       return;
     }
-    if (/^\p{Emoji}/u.test(word) && !/[a-zA-Z0-9\u0600-\u06FF]/.test(word)) {
-      onInsertText(` ${word} `);
+    if (!currentWord) {
+      onInsertText(`${word} `);
       return;
     }
     recordFinishedWord(word);
@@ -1332,21 +1410,51 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     }
   };
 
-  const handleRichInsert = (text: string, source: 'emoji' | 'zikr' | 'kaomoji') => {
+  const handleRichInsert = (text: string, source: RichInsertSource) => {
     triggerSound('char');
     onInsertText(text);
     if (!settings.emojiHistoryEnabled) return;
+    const strategy = settings.emojiHistoryUpdateStrategy || 'auto_prepend';
+    const maxRecent = settings.emojiHistoryRecentMaxSize || 40;
+    const clean = text.trim();
+    if (!clean) return;
+
     if (source === 'emoji') {
-      const next = [text, ...settings.recentEmojis.filter((e) => e !== text)].slice(0, 28);
-      onUpdateSettings({ recentEmojis: next });
-    } else if (source === 'zikr') {
-      const clean = text.trim();
-      const next = [clean, ...settings.recentZikr.filter((e) => e !== clean)].slice(0, 16);
-      onUpdateSettings({ recentZikr: next });
+      const next = recordHistoryUsage(
+        { pinned: settings.emojiPinned || [], recent: settings.recentEmojis || [] },
+        clean,
+        strategy,
+        maxRecent
+      );
+      onUpdateSettings({ emojiPinned: next.pinned, recentEmojis: next.recent });
+    } else if (source === 'kaomoji') {
+      const next = recordHistoryUsage(
+        { pinned: settings.kaomojiPinned || [], recent: settings.recentKaomoji || [] },
+        clean,
+        strategy,
+        maxRecent
+      );
+      onUpdateSettings({ kaomojiPinned: next.pinned, recentKaomoji: next.recent });
     } else {
-      const clean = text.trim();
-      const next = [clean, ...settings.recentKaomoji.filter((e) => e !== clean)].slice(0, 16);
-      onUpdateSettings({ recentKaomoji: next });
+      const currentAll = settings.zikrHistories || {
+        duaa: { pinned: [], recent: [] },
+        quran: { pinned: [], recent: [] },
+        salawat: { pinned: [], recent: [] },
+      };
+      const sectionStore = currentAll[source] || { pinned: [], recent: [] };
+      const nextSection = recordHistoryUsage(sectionStore, clean, strategy, maxRecent);
+      const nextHistories = { ...currentAll, [source]: nextSection };
+      const combinedRecent = Array.from(
+        new Set([
+          ...nextHistories.duaa.pinned,
+          ...nextHistories.quran.pinned,
+          ...nextHistories.salawat.pinned,
+          ...nextHistories.duaa.recent,
+          ...nextHistories.quran.recent,
+          ...nextHistories.salawat.recent,
+        ])
+      ).slice(0, maxRecent);
+      onUpdateSettings({ zikrHistories: nextHistories, recentZikr: combinedRecent });
     }
   };
 
@@ -2246,6 +2354,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
         <EmojiZikrKaomojiPanel
           theme={theme}
           settings={settings}
+          onUpdateSettings={onUpdateSettings}
           initialTab={richInitialTab}
           onInsert={handleRichInsert}
           onBackspace={onBackspace}
@@ -2726,11 +2835,15 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 <button
                   key={`${item.value}_${idx}`}
                   type="button"
-                  onClick={() => handleSuggestionTap(item.value, item.isEmail)}
-                  title={item.isShortcut ? `${item.shortcutKey} : ${item.value}` : item.value}
+                  onClick={() =>
+                    handleSuggestionTap(item.value, item.isEmail, item.isEmoji, item.replaceLength)
+                  }
+                  title={item.isShortcut ? `${item.shortcutKey} : ${item.value}` : item.displayLabel || item.value}
                   dir={item.isEmail ? 'ltr' : 'auto'}
                   style={item.isEmail ? { unicodeBidi: 'isolate' } : undefined}
                   className={`h-7 px-2.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-colors flex items-center gap-1.5 ${
+                    item.isEmoji ? `emoji-style-${settings.emojiStyle || 'system'}` : ''
+                  } ${
                     item.isEmail
                       ? isLight
                         ? 'bg-sky-100 text-sky-900 border border-sky-300 font-semibold'
@@ -2748,7 +2861,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       : 'text-zinc-300 hover:bg-white/10'
                   }`}
                 >
-                  <span className="truncate">{item.value}</span>
+                  <span className="truncate">{item.displayLabel || item.value}</span>
                 </button>
               ))}
             </div>

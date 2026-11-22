@@ -78,6 +78,7 @@ interface AndroidAppSetupBridge {
   isImeSelected: () => boolean;
   openImeSettings: () => void;
   openImePicker: () => void;
+  openNativeTestBox?: (initialText: string, isLightTheme: boolean) => void;
 }
 
 declare global {
@@ -88,6 +89,7 @@ declare global {
     __onAndroidImeRefresh?: (initialText?: string) => void;
     __onAndroidEditorTail?: (tail: string) => void;
     __onAndroidImeStatusChanged?: () => void;
+    __onNativeTestBoxClosed?: (finalText: string) => void;
   }
 }
 
@@ -193,6 +195,37 @@ function hydrateSettings(partial: Partial<KeyboardSettings>): KeyboardSettings {
   if (typeof merged.swipeVelocityThreshold !== 'number' || merged.swipeVelocityThreshold < 50) {
     merged.swipeVelocityThreshold = DEFAULT_SETTINGS.swipeVelocityThreshold;
   }
+  // Hydrate upgraded emoji system settings safely for existing users
+  if (typeof merged.emojiHairStyle !== 'string') {
+    merged.emojiHairStyle = DEFAULT_SETTINGS.emojiHairStyle;
+  }
+  if (typeof merged.emojiFontSizePx !== 'number' || merged.emojiFontSizePx < 16) {
+    merged.emojiFontSizePx = DEFAULT_SETTINGS.emojiFontSizePx;
+  }
+  if (typeof merged.zikrFontSizePx !== 'number' || merged.zikrFontSizePx < 9) {
+    merged.zikrFontSizePx = DEFAULT_SETTINGS.zikrFontSizePx;
+  }
+  if (!Array.isArray(merged.emojiCategoryOrder) || merged.emojiCategoryOrder.length === 0) {
+    merged.emojiCategoryOrder = DEFAULT_SETTINGS.emojiCategoryOrder;
+  }
+  if (!Array.isArray(merged.emojiDisabledCategories)) {
+    merged.emojiDisabledCategories = [];
+  }
+  if (!Array.isArray(merged.emojiPinned)) {
+    merged.emojiPinned = DEFAULT_SETTINGS.emojiPinned;
+  }
+  if (!Array.isArray(merged.kaomojiPinned)) {
+    merged.kaomojiPinned = DEFAULT_SETTINGS.kaomojiPinned;
+  }
+  if (!merged.zikrHistories || typeof merged.zikrHistories !== 'object') {
+    merged.zikrHistories = DEFAULT_SETTINGS.zikrHistories;
+  } else {
+    merged.zikrHistories = {
+      duaa: merged.zikrHistories.duaa || DEFAULT_SETTINGS.zikrHistories.duaa,
+      quran: merged.zikrHistories.quran || DEFAULT_SETTINGS.zikrHistories.quran,
+      salawat: merged.zikrHistories.salawat || DEFAULT_SETTINGS.zikrHistories.salawat,
+    };
+  }
   return merged;
 }
 
@@ -286,6 +319,27 @@ export default function App() {
     mq.addEventListener?.('change', onChange);
     return () => mq.removeEventListener?.('change', onChange);
   }, [isNativeImeMode]);
+
+  // Receive final text cleanly when the zero-lag native Android EditText test screen closes
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isAndroidApk) return;
+    window.__onNativeTestBoxClosed = (finalText: string) => {
+      if (typeof finalText === 'string') {
+        editorTextRef.current = finalText;
+        if (textareaRef.current) {
+          textareaRef.current.value = finalText;
+        }
+        try {
+          localStorage.setItem(STORAGE_KEY_EDITOR, finalText);
+        } catch {
+          // ignore
+        }
+      }
+    };
+    return () => {
+      delete window.__onNativeTestBoxClosed;
+    };
+  }, [isAndroidApk]);
 
   // Request browser persistent storage and recover from IndexedDB if localStorage was cleared after restart
   useEffect(() => {
@@ -1236,6 +1290,10 @@ export default function App() {
           <button
             type="button"
             onClick={() => {
+              if (isAndroidApk && window.AndroidAppSetup?.openNativeTestBox) {
+                window.AndroidAppSetup.openNativeTestBox(editorTextRef.current, isLightApp);
+                return;
+              }
               setMobileView('keyboard');
               if (isAndroidApk) {
                 requestAnimationFrame(() => textareaRef.current?.focus());
@@ -1280,6 +1338,10 @@ export default function App() {
             <div className="fixed lg:sticky bottom-5 left-5 lg:float-left lg:ml-4 lg:mb-4 z-30">
               <FloatingKeyboardFAB
                 onClick={() => {
+                  if (isAndroidApk && window.AndroidAppSetup?.openNativeTestBox) {
+                    window.AndroidAppSetup.openNativeTestBox(editorTextRef.current, isLightApp);
+                    return;
+                  }
                   setMobileView('keyboard');
                   requestAnimationFrame(() => textareaRef.current?.focus());
                 }}
@@ -1308,7 +1370,19 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {isAndroidApk && window.AndroidAppSetup?.openNativeTestBox && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.AndroidAppSetup?.openNativeTestBox?.(editorTextRef.current, isLightApp)
+                    }
+                    className="h-9 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+                  >
+                    <KurdiIcon name="ic_keyboards" className="w-3.5 h-3.5" />
+                    <span>تاقیکردنەوەی خێرا (بێ لاگ)</span>
+                  </button>
+                )}
                 {isAndroidApk && (
                   <button
                     type="button"

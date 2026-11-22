@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
+  ArrowDown,
   ArrowLeftRight,
+  ArrowUp,
+  ChevronDown,
   Clock,
-  Download,
+  Eye,
+  EyeOff,
   Globe,
   Hash,
   Keyboard as KeyboardIcon,
@@ -10,13 +14,26 @@ import {
   LayoutGrid,
   List,
   MoveVertical,
+  RotateCcw,
   Smile,
   Sparkles,
+  Trash2,
   Type,
 } from 'lucide-react';
-import { EmojiStyleMode, KeyboardSettings } from '../../types/keyboard';
+import {
+  EmojiHistoryUpdateStrategy,
+  EmojiInitialTabMode,
+  EmojiStyleMode,
+  EmojiSuggestionTypeMode,
+  KeyboardSettings,
+} from '../../types/keyboard';
 import { BOTTOM_ROW_PRESETS, NUMBER_STYLE_OPTIONS } from '../../data/layouts';
-import { EMOJI_SKIN_TONES } from '../../data/richContent';
+import {
+  composePersonEmoji,
+  EMOJI_CATEGORIES,
+  EMOJI_HAIR_STYLES,
+  EMOJI_SKIN_TONES,
+} from '../../data/richContent';
 import { AppToggle, NotificationBanner, ProBadge, SubPageHeader } from './SettingsUI';
 
 interface KeyboardPrefsScreenProps {
@@ -331,11 +348,18 @@ interface EmojiSettingsScreenProps {
   isLightApp: boolean;
 }
 
-const EMOJI_STYLES: { id: EmojiStyleMode; label: string }[] = [
-  { id: 'system', label: 'System' },
-  { id: 'rounded', label: 'Rounded' },
-  { id: 'minimal', label: 'Minimal' },
-  { id: 'classic', label: 'Classic' },
+const EMOJI_STYLES: { id: EmojiStyleMode; label: string; desc: string }[] = [
+  { id: 'system', label: 'فۆنتی سیستەم', desc: 'بنەڕەتی مۆبایل' },
+  { id: 'twemoji', label: 'تەخت و ڕوون', desc: 'ڕەنگی زیندوو و سووک' },
+  { id: 'rounded', label: 'نەرم و خڕ', desc: 'سێبەری سووک' },
+  { id: 'classic', label: 'کلاسیک', desc: 'گەرم و کلاسیکی' },
+];
+
+const HISTORY_STRATEGIES: { id: EmojiHistoryUpdateStrategy; label: string }[] = [
+  { id: 'auto_prepend', label: 'خۆکار (سەرەتا)' },
+  { id: 'auto_append', label: 'خۆکار (کۆتایی)' },
+  { id: 'manual_prepend', label: 'دەستی (سەرەتا)' },
+  { id: 'manual_append', label: 'دەستی (کۆتایی)' },
 ];
 
 export const EmojiSettingsScreen: React.FC<EmojiSettingsScreenProps> = ({
@@ -344,20 +368,97 @@ export const EmojiSettingsScreen: React.FC<EmojiSettingsScreenProps> = ({
   onBack,
   isLightApp,
 }) => {
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [clearedToast, setClearedToast] = useState(false);
+
   const cardBg = isLightApp
     ? 'bg-white border-slate-200 text-slate-900'
     : 'bg-[#17181B] border-white/[0.06] text-white';
 
-  const cycleStyle = () => {
-    const idx = EMOJI_STYLES.findIndex((s) => s.id === settings.emojiStyle);
-    const next = EMOJI_STYLES[(idx + 1) % EMOJI_STYLES.length];
-    onUpdate({ emojiStyle: next.id });
+  const subtleBtn = isLightApp
+    ? 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+    : 'bg-white/[0.04] border-white/10 text-zinc-300 hover:bg-white/[0.08]';
+
+  const activeBtn = isLightApp
+    ? 'bg-sky-100 border-sky-400 text-sky-900 font-bold'
+    : 'bg-sky-500/20 border-sky-400 text-sky-200 font-bold';
+
+  const emojiFontClass = `emoji-style-${settings.emojiStyle || 'system'}`;
+  const personPreview = composePersonEmoji('🧑', settings.emojiSkinTone, settings.emojiHairStyle);
+  const handPreview = settings.emojiSkinTone ? `👋${settings.emojiSkinTone}` : '👋';
+
+  const orderedCategories = useMemo(() => {
+    const order = settings.emojiCategoryOrder || [];
+    const byId = new Map(EMOJI_CATEGORIES.map((c) => [c.id, c]));
+    const list = [];
+    for (const id of order) {
+      const cat = byId.get(id);
+      if (cat) {
+        list.push(cat);
+        byId.delete(id);
+      }
+    }
+    for (const cat of byId.values()) list.push(cat);
+    return list;
+  }, [settings.emojiCategoryOrder]);
+
+  const disabledSet = useMemo(
+    () => new Set(settings.emojiDisabledCategories || []),
+    [settings.emojiDisabledCategories]
+  );
+
+  const moveCategory = (index: number, delta: -1 | 1) => {
+    const nextIndex = index + delta;
+    if (nextIndex < 0 || nextIndex >= orderedCategories.length) return;
+    const ids = orderedCategories.map((c) => c.id);
+    const [moved] = ids.splice(index, 1);
+    ids.splice(nextIndex, 0, moved);
+    onUpdate({ emojiCategoryOrder: ids });
+  };
+
+  const toggleCategoryEnabled = (id: string) => {
+    const next = new Set(disabledSet);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      // Always keep at least 1 category enabled
+      if (orderedCategories.length - next.size <= 1) return;
+      next.add(id);
+    }
+    onUpdate({ emojiDisabledCategories: Array.from(next) });
+  };
+
+  const resetCategories = () => {
+    onUpdate({
+      emojiCategoryOrder: EMOJI_CATEGORIES.map((c) => c.id),
+      emojiDisabledCategories: [],
+    });
+  };
+
+  const clearRecentHistory = () => {
+    const zh = settings.zikrHistories || {
+      duaa: { pinned: [], recent: [] },
+      quran: { pinned: [], recent: [] },
+      salawat: { pinned: [], recent: [] },
+    };
+    onUpdate({
+      recentEmojis: [],
+      recentKaomoji: [],
+      recentZikr: [...zh.duaa.pinned, ...zh.quran.pinned, ...zh.salawat.pinned],
+      zikrHistories: {
+        duaa: { pinned: zh.duaa.pinned, recent: [] },
+        quran: { pinned: zh.quran.pinned, recent: [] },
+        salawat: { pinned: zh.salawat.pinned, recent: [] },
+      },
+    });
+    setClearedToast(true);
+    window.setTimeout(() => setClearedToast(false), 2200);
   };
 
   return (
     <div className="min-h-full flex flex-col pb-24" dir="rtl">
       <SubPageHeader
-        title="شێوەی خەندەکان، مێژووی پیشاندان و ڕەنگ"
+        title="ڕێکخستنەکانی ئیمۆجی، زیکر و کاومۆجی"
         onBack={onBack}
         isLightApp={isLightApp}
       />
@@ -368,113 +469,140 @@ export const EmojiSettingsScreen: React.FC<EmojiSettingsScreenProps> = ({
           onEnable={() => onUpdate({ notificationsEnabled: true })}
         />
 
-        {/* Emoji Live Preview Card matching Screenshot 26 */}
+        {/* Live Preview Card */}
         <div className={`rounded-3xl p-5 border text-center space-y-3 ${cardBg}`}>
-          <div className="text-xs font-bold text-[#9AC5FF]">نمونەی شێوەی ئیمۆجی ئێستا</div>
-          <div className="grid grid-cols-3 gap-4 max-w-[200px] mx-auto text-4xl py-1">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-[#9AC5FF]">پێشبینینی ڕاستەوخۆ</span>
+            <span className="text-zinc-400 tabular-nums">
+              {settings.emojiFontSizePx || 24}px · {settings.emojiColumns} ستوون
+            </span>
+          </div>
+          <div
+            className={`grid grid-cols-6 gap-2 items-center justify-items-center py-1 ${emojiFontClass}`}
+            style={{ fontSize: `${Math.max(18, Math.min(36, settings.emojiFontSizePx || 24))}px` }}
+          >
             <span>😍</span>
-            <span>🫠</span>
-            <span>🥹</span>
-            <span>🙄</span>
             <span>😂</span>
-            <span>😳</span>
+            <span>{personPreview}</span>
+            <span>{handPreview}</span>
+            <span>🥹</span>
+            <span>🔥</span>
+          </div>
+          <div
+            className={`pt-2 border-t text-center leading-relaxed ${
+              isLightApp ? 'border-slate-200 text-slate-700' : 'border-white/10 text-zinc-300'
+            }`}
+            style={{ fontSize: `${Math.max(10, Math.min(18, settings.zikrFontSizePx || 12))}px` }}
+          >
+            بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ · ¯\_(ツ)_/¯
           </div>
         </div>
 
-        {/* 2x2 Cards matching Screenshots 26 & 28 */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={cycleStyle}
-            className={`rounded-3xl p-4 border text-right space-y-1.5 ${cardBg}`}
-          >
-            <Smile className="w-6 h-6 text-[#8EC2FF]" />
-            <div className="text-sm font-bold">شێوەی ئیمۆجی</div>
-            <div className="text-xs text-zinc-400">
-              {EMOJI_STYLES.find((s) => s.id === settings.emojiStyle)?.label || 'System'}
+        {/* Lightweight Emoji Style Switcher */}
+        <div className={`rounded-3xl p-4 border space-y-3 ${cardBg}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Smile className="w-4 h-4 text-[#8EC2FF]" />
+              <span className="text-sm font-bold">شێوازی فۆنتی ئیمۆجی (سووک و بێ ئینتەرنێت)</span>
             </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={cycleStyle}
-            className={`rounded-3xl p-4 border text-right space-y-1.5 ${cardBg}`}
-          >
-            <Download className="w-6 h-6 text-[#8EC2FF]" />
-            <div className="text-sm font-bold">گۆڕینی شێوە</div>
-            <div className="text-xs text-zinc-400">شێوازە بەردەستەکان</div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              onUpdate({
-                emojiColumns: settings.emojiColumns === 8 ? 6 : settings.emojiColumns + 1,
-              })
-            }
-            className={`rounded-3xl p-4 border text-right space-y-1.5 relative ${cardBg}`}
-          >
-            <div className="absolute top-3 left-3">
-              <ProBadge unlocked={settings.proUnlocked} />
-            </div>
-            <Clock className="w-6 h-6 text-[#8EC2FF]" />
-            <div className="text-sm font-bold">ڕێژەی پیشاندان</div>
-            <div className="text-xs text-zinc-400">{settings.emojiColumns} خەندە لە هەر ڕیزێکدا</div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onUpdate({ recentEmojis: ['😂', '❤️', '🙏', '😍', '🔥', '🥹', '👋'] })}
-            className={`rounded-3xl p-4 border text-right space-y-1.5 ${cardBg}`}
-          >
-            <LayoutGrid className="w-6 h-6 text-[#8EC2FF]" />
-            <div className="text-sm font-bold">گۆڕینی شوێنی بەشەکان</div>
-            <div className="text-xs text-zinc-400">ڕێکخستنی خەندە، زیکر و کاومۆجی</div>
-          </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {EMOJI_STYLES.map((st) => {
+              const active =
+                settings.emojiStyle === st.id ||
+                (st.id === 'twemoji' && settings.emojiStyle === 'minimal');
+              return (
+                <button
+                  key={st.id}
+                  type="button"
+                  onClick={() => onUpdate({ emojiStyle: st.id })}
+                  className={`min-h-[54px] px-3 py-2 rounded-2xl border text-right transition-all flex items-center justify-between gap-2 ${
+                    active ? activeBtn : subtleBtn
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold truncate">{st.label}</div>
+                    <div className="text-[10.5px] opacity-75 truncate mt-0.5">{st.desc}</div>
+                  </div>
+                  <span className={`text-xl shrink-0 emoji-style-${st.id}`}>😍</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Toggles matching Screenshot 28 */}
-        <div className="space-y-4 pt-2">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-sm font-bold flex items-center gap-2">
-                <span>پێشنیارکردنی خەندەکان</span>
-                <ProBadge unlocked={settings.proUnlocked} />
-              </div>
-              <div className="text-xs text-zinc-400 mt-0.5">
-                پیشاندانی خەندە و کاردانەوەکان لەکاتی نووسیندا
-              </div>
+        {/* Independent Emoji & Zikr Font Sizes + Grid Columns */}
+        <div className={`rounded-3xl p-4 border space-y-4 ${cardBg}`}>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span>قەبارەی ئیمۆجییەکان</span>
+              <span className="text-[#9AC5FF] font-mono tabular-nums">
+                {settings.emojiFontSizePx || 24} px
+              </span>
             </div>
-            <AppToggle
-              checked={settings.emojiSuggestions}
-              onChange={(v) => onUpdate({ emojiSuggestions: v })}
-              label="پێشنیارکردنی خەندەکان"
+            <input
+              type="range"
+              min={18}
+              max={36}
+              step={1}
+              value={settings.emojiFontSizePx || 24}
+              onChange={(e) => onUpdate({ emojiFontSizePx: Number(e.target.value) })}
+              className="w-full accent-[#A4C9FF] cursor-pointer"
             />
           </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-sm font-bold">مێژووی ئیمۆجی</div>
-              <div className="text-xs text-zinc-400 mt-0.5">
-                هێشتنەوەی دوایین ئیمۆجییە بەکارهێندراوەکان بۆ ئاسانکاری
-              </div>
+          <div className="space-y-2 pt-2 border-t border-white/5">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span>قەبارەی دەقی زیکر و کاومۆجی</span>
+              <span className="text-[#9AC5FF] font-mono tabular-nums">
+                {settings.zikrFontSizePx || 12} px
+              </span>
             </div>
-            <AppToggle
-              checked={settings.emojiHistoryEnabled}
-              onChange={(v) => onUpdate({ emojiHistoryEnabled: v })}
-              label="مێژووی ئیمۆجی"
+            <input
+              type="range"
+              min={10}
+              max={18}
+              step={1}
+              value={settings.zikrFontSizePx || 12}
+              onChange={(e) => onUpdate({ zikrFontSizePx: Number(e.target.value) })}
+              className="w-full accent-[#A4C9FF] cursor-pointer"
             />
           </div>
 
-          {/* Skin Tone Selector matching Screenshot 28 bottom */}
-          <div className={`rounded-3xl p-4 border space-y-3 ${cardBg}`}>
+          <div className="space-y-2 pt-2 border-t border-white/5">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span>ژمارەی ئیمۆجی لە هەر ڕیزێکدا</span>
+              <span className="text-[#9AC5FF] font-mono tabular-nums">
+                {settings.emojiColumns} ستوون
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[6, 7, 8, 9].map((cols) => (
+                <button
+                  key={cols}
+                  type="button"
+                  onClick={() => onUpdate({ emojiColumns: cols })}
+                  className={`h-10 rounded-xl border text-xs font-bold tabular-nums transition-colors ${
+                    settings.emojiColumns === cols ? activeBtn : subtleBtn
+                  }`}
+                >
+                  {cols}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Skin Tone & Hair Style Pickers */}
+        <div className={`rounded-3xl p-4 border space-y-4 ${cardBg}`}>
+          <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold">ڕەنگی خەندەکان</span>
+              <span className="text-sm font-bold">ڕەنگی پێستی خەندەکان</span>
               <span className="text-xs text-zinc-400">
                 {EMOJI_SKIN_TONES.find((t) => t.mod === settings.emojiSkinTone)?.label || 'بنەڕەتی'}
               </span>
             </div>
-            <div className="grid grid-cols-6 gap-2">
+            <div className="grid grid-cols-6 gap-1.5">
               {EMOJI_SKIN_TONES.map((tone) => {
                 const active = settings.emojiSkinTone === tone.mod;
                 return (
@@ -482,7 +610,7 @@ export const EmojiSettingsScreen: React.FC<EmojiSettingsScreenProps> = ({
                     key={tone.id}
                     type="button"
                     onClick={() => onUpdate({ emojiSkinTone: tone.mod })}
-                    className={`h-11 rounded-2xl text-2xl flex items-center justify-center border transition-all ${
+                    className={`h-11 rounded-2xl text-2xl flex items-center justify-center border transition-all ${emojiFontClass} ${
                       active
                         ? 'border-[#9AC5FF] bg-sky-500/20 scale-105'
                         : 'border-white/5 hover:bg-white/5'
@@ -495,6 +623,359 @@ export const EmojiSettingsScreen: React.FC<EmojiSettingsScreenProps> = ({
               })}
             </div>
           </div>
+
+          <div className="space-y-2.5 pt-3 border-t border-white/5">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold">شێوازی قژ</span>
+              <span className="text-xs text-zinc-400">
+                {EMOJI_HAIR_STYLES.find((h) => h.mod === (settings.emojiHairStyle || ''))?.label ||
+                  'بنەڕەتی'}
+              </span>
+            </div>
+            <div className="grid grid-cols-5 gap-1.5">
+              {EMOJI_HAIR_STYLES.map((hair) => {
+                const active = (settings.emojiHairStyle || '') === hair.mod;
+                const sample = composePersonEmoji('🧑', settings.emojiSkinTone, hair.mod);
+                return (
+                  <button
+                    key={hair.id}
+                    type="button"
+                    onClick={() => onUpdate({ emojiHairStyle: hair.mod })}
+                    className={`min-h-[56px] px-1 py-1.5 rounded-2xl flex flex-col items-center justify-center gap-0.5 border transition-all ${
+                      active
+                        ? 'border-[#9AC5FF] bg-sky-500/20'
+                        : 'border-white/5 hover:bg-white/5'
+                    }`}
+                    title={hair.label}
+                  >
+                    <span className={`text-2xl leading-none ${emojiFontClass}`}>{sample}</span>
+                    <span className="text-[10px] text-zinc-400 truncate max-w-full">
+                      {hair.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Category Reorder & Enable/Disable Manager */}
+        <div className={`rounded-3xl border overflow-hidden ${cardBg}`}>
+          <button
+            type="button"
+            onClick={() => setShowCategoryManager((v) => !v)}
+            className="w-full p-4 flex items-center justify-between text-right"
+          >
+            <div className="flex items-center gap-3">
+              <LayoutGrid className="w-5 h-5 text-[#8EC2FF] shrink-0" />
+              <div>
+                <div className="text-sm font-bold">ڕیزکردن و شاردنەوەی پۆلەکانی ئیمۆجی</div>
+                <div className="text-xs text-zinc-400 mt-0.5">
+                  {orderedCategories.length - disabledSet.size} پۆل چالاکە لە{' '}
+                  {orderedCategories.length} پۆل
+                </div>
+              </div>
+            </div>
+            <ChevronDown
+              className={`w-4 h-4 text-zinc-400 transition-transform ${
+                showCategoryManager ? 'rotate-180 text-[#9AC5FF]' : ''
+              }`}
+            />
+          </button>
+
+          {showCategoryManager && (
+            <div className="px-4 pb-4 space-y-2 border-t border-white/5 pt-3">
+              {orderedCategories.map((cat, idx) => {
+                const isDisabled = disabledSet.has(cat.id);
+                return (
+                  <div
+                    key={cat.id}
+                    className={`flex items-center justify-between gap-2 px-3 py-2 rounded-2xl border ${
+                      isDisabled ? 'opacity-55' : ''
+                    } ${isLightApp ? 'bg-slate-50 border-slate-200' : 'bg-white/[0.03] border-white/[0.07]'}`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <span className={`text-lg shrink-0 ${emojiFontClass}`}>{cat.icon}</span>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold truncate">{cat.label}</div>
+                        <div className="text-[10px] text-zinc-400 tabular-nums">
+                          {cat.items.length} ئیمۆجی
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveCategory(idx, -1)}
+                        className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 flex items-center justify-center"
+                        title="بردنە سەرەوە"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === orderedCategories.length - 1}
+                        onClick={() => moveCategory(idx, 1)}
+                        className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 flex items-center justify-center"
+                        title="بردنە خوارەوە"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleCategoryEnabled(cat.id)}
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                          isDisabled
+                            ? 'bg-rose-500/15 text-rose-400'
+                            : 'bg-sky-500/15 text-[#8EC2FF]'
+                        }`}
+                        title={isDisabled ? 'پیشاندانی پۆل' : 'شاردنەوەی پۆل'}
+                      >
+                        {isDisabled ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={resetCategories}
+                className={`w-full h-10 mt-1 rounded-2xl border text-xs font-bold flex items-center justify-center gap-1.5 ${subtleBtn}`}
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>گەڕاندنەوە بۆ ڕیزبەندی بنەڕەتی</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* History, Startup Tab & Sort Strategy Settings */}
+        <div className={`rounded-3xl p-4 border space-y-4 ${cardBg}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-bold">مێژووی ئیمۆجی، زیکر و کاومۆجی</div>
+              <div className="text-xs text-zinc-400 mt-0.5">
+                هەڵگرتنی دوایین بەکارهاتووەکان و پینکراوەکان بە جیا بۆ هەر بەشێک
+              </div>
+            </div>
+            <AppToggle
+              checked={settings.emojiHistoryEnabled}
+              onChange={(v) => onUpdate({ emojiHistoryEnabled: v })}
+              label="مێژووی ئیمۆجی"
+            />
+          </div>
+
+          <div className="space-y-2 pt-2 border-t border-white/5">
+            <div className="text-xs font-bold">تابی سەرەتایی لەکاتی کردنەوەی پانێڵی ئیمۆجی</div>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { id: 'recent' as EmojiInitialTabMode, label: 'دوایینەکان' },
+                  { id: 'last_used' as EmojiInitialTabMode, label: 'دوایین پۆلی داخراو' },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onUpdate({ emojiInitialTab: opt.id })}
+                  className={`h-10 rounded-xl border text-xs font-bold transition-colors ${
+                    (settings.emojiInitialTab || 'last_used') === opt.id ? activeBtn : subtleBtn
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-2 border-t border-white/5">
+            <div className="text-xs font-bold">شێوازی ڕیزکردنی مێژوو</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {HISTORY_STRATEGIES.map((st) => (
+                <button
+                  key={st.id}
+                  type="button"
+                  onClick={() => onUpdate({ emojiHistoryUpdateStrategy: st.id })}
+                  className={`h-9 px-2 rounded-xl border text-xs transition-colors ${
+                    (settings.emojiHistoryUpdateStrategy || 'auto_prepend') === st.id
+                      ? activeBtn
+                      : subtleBtn
+                  }`}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+            <div className="space-y-1.5">
+              <div className="text-[11px] font-bold text-zinc-400">زۆرترین پینکراو</div>
+              <div className="grid grid-cols-2 gap-1">
+                {[12, 24, 36, 50].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => onUpdate({ emojiHistoryPinnedMaxSize: n })}
+                    className={`h-8 rounded-lg border text-xs tabular-nums ${
+                      (settings.emojiHistoryPinnedMaxSize || 24) === n ? activeBtn : subtleBtn
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="text-[11px] font-bold text-zinc-400">زۆرترین دوایینەکان</div>
+              <div className="grid grid-cols-2 gap-1">
+                {[20, 40, 60, 80].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => onUpdate({ emojiHistoryRecentMaxSize: n })}
+                    className={`h-8 rounded-lg border text-xs tabular-nums ${
+                      (settings.emojiHistoryRecentMaxSize || 40) === n ? activeBtn : subtleBtn
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={clearRecentHistory}
+            className="w-full h-10 rounded-2xl border border-rose-500/25 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>
+              {clearedToast
+                ? 'مێژووی دوایینەکان پاککرایەوە (پینکراوەکان پارێزراون)'
+                : 'پاککردنەوەی مێژووی دوایینەکان'}
+            </span>
+          </button>
+        </div>
+
+        {/* Emoji Suggestions Settings */}
+        <div className={`rounded-3xl p-4 border space-y-4 ${cardBg}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-bold flex items-center gap-2">
+                <span>پێشنیارکردنی خەندەکان</span>
+                <ProBadge unlocked={settings.proUnlocked} />
+              </div>
+              <div className="text-xs text-zinc-400 mt-0.5">
+                پیشاندانی خەندەی گونجاو لە شریتی پێشنیارەکاندا لەکاتی نووسین
+              </div>
+            </div>
+            <AppToggle
+              checked={settings.emojiSuggestions}
+              onChange={(v) => onUpdate({ emojiSuggestions: v })}
+              label="پێشنیارکردنی خەندەکان"
+            />
+          </div>
+
+          {settings.emojiSuggestions && (
+            <div className="space-y-3 pt-2 border-t border-white/5">
+              <div className="space-y-1.5">
+                <div className="text-xs font-bold">شێوازی چالاکبوونی پێشنیار</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      { id: 'inline_text' as EmojiSuggestionTypeMode, label: 'ڕاستەوخۆ لەناو دەق' },
+                      { id: 'leading_colon' as EmojiSuggestionTypeMode, label: 'بە جووتخاڵ (:دڵ)' },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => onUpdate({ emojiSuggestionType: opt.id })}
+                      className={`h-10 rounded-xl border text-xs font-bold transition-colors ${
+                        (settings.emojiSuggestionType || 'inline_text') === opt.id
+                          ? activeBtn
+                          : subtleBtn
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <div className="text-[11px] font-bold text-zinc-400">کەمترین پیت بۆ گەڕان</div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[1, 2, 3].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => onUpdate({ emojiSuggestionQueryMinLength: n })}
+                        className={`h-8 rounded-lg border text-xs tabular-nums ${
+                          (settings.emojiSuggestionQueryMinLength || 2) === n
+                            ? activeBtn
+                            : subtleBtn
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="text-[11px] font-bold text-zinc-400">زۆرترین پێشنیار</div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[1, 2, 3, 4].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => onUpdate({ emojiSuggestionMaxCount: n })}
+                        className={`h-8 rounded-lg border text-xs tabular-nums ${
+                          (settings.emojiSuggestionMaxCount || 3) === n ? activeBtn : subtleBtn
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <div>
+                  <div className="text-xs font-bold">پیشاندانی ناوی ئیمۆجی</div>
+                  <div className="text-[11px] text-zinc-400">ناوی کوردی/ئینگلیزی لە تەنیشت خەندە</div>
+                </div>
+                <AppToggle
+                  checked={Boolean(settings.emojiSuggestionShowName)}
+                  onChange={(v) => onUpdate({ emojiSuggestionShowName: v })}
+                  label="پیشاندانی ناوی ئیمۆجی"
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-xs font-bold">نوێکردنەوەی مێژوو لە پێشنیار</div>
+                  <div className="text-[11px] text-zinc-400">
+                    زیادکردنی خەندە هەڵبژێردراوەکان بۆ دوایینەکان
+                  </div>
+                </div>
+                <AppToggle
+                  checked={settings.emojiSuggestionUpdateHistory !== false}
+                  onChange={(v) => onUpdate({ emojiSuggestionUpdateHistory: v })}
+                  label="نوێکردنەوەی مێژوو"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

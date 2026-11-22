@@ -156,3 +156,22 @@
   -webkit-user-select: none;
   touch-action: manipulation;
 }
+
+/* Lightweight offline-safe emoji visual presets */
+.emoji-style-system {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+}
+.emoji-style-twemoji,
+.emoji-style-minimal {
+  font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+  filter: saturate(1.22) contrast(1.06);
+}
+.emoji-style-rounded {
+  font-family: 'Apple Color Emoji', 'Noto Color Emoji', 'Segoe UI Emoji', sans-serif;
+  filter: saturate(1.1) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.22));
+}
+.emoji-style-classic {
+  font-family: 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
+  filter: sepia(0.16) contrast(1.12);
+}
+

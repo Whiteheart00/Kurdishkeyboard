@@ -90,7 +90,20 @@ export type KeyboardThemeMode = 'dark' | 'light' | 'auto';
 export type TranslationEngine = 'google_fast' | 'ai_fluent';
 export type SpacebarLabelMode = 'language' | 'none' | 'custom';
 export type OneHandedMode = 'off' | 'left' | 'right';
-export type EmojiStyleMode = 'system' | 'rounded' | 'minimal' | 'classic';
+export type EmojiStyleMode = 'system' | 'twemoji' | 'rounded' | 'classic' | 'minimal';
+export type EmojiHistoryUpdateStrategy =
+  | 'auto_prepend'
+  | 'auto_append'
+  | 'manual_prepend'
+  | 'manual_append';
+export type EmojiInitialTabMode = 'recent' | 'last_used';
+export type EmojiSuggestionTypeMode = 'inline_text' | 'leading_colon';
+
+export interface EmojiHistoryStore {
+  pinned: string[];
+  recent: string[];
+}
+
 export type SoundPackId = 'modern' | 'blip' | 'surface' | 'traditional' | 'synth';
 export type BottomRowPresetId =
   | 'auto'
@@ -281,11 +294,29 @@ export interface KeyboardSettings {
   // Emoji & Zikr
   emojiStyle: EmojiStyleMode;
   emojiSkinTone: string;
+  emojiHairStyle: string;
+  emojiFontSizePx: number;
+  zikrFontSizePx: number;
   emojiSuggestions: boolean;
+  emojiSuggestionType: EmojiSuggestionTypeMode;
+  emojiSuggestionQueryMinLength: number;
+  emojiSuggestionMaxCount: number;
+  emojiSuggestionShowName: boolean;
+  emojiSuggestionUpdateHistory: boolean;
   emojiHistoryEnabled: boolean;
+  emojiHistoryUpdateStrategy: EmojiHistoryUpdateStrategy;
+  emojiHistoryPinnedMaxSize: number;
+  emojiHistoryRecentMaxSize: number;
+  emojiInitialTab: EmojiInitialTabMode;
+  emojiLastUsedCategory: string;
+  emojiCategoryOrder: string[];
+  emojiDisabledCategories: string[];
   emojiColumns: number;
+  emojiPinned: string[];
   recentEmojis: string[];
+  zikrHistories: Record<'duaa' | 'quran' | 'salawat', EmojiHistoryStore>;
   recentZikr: string[];
+  kaomojiPinned: string[];
   recentKaomoji: string[];
 
   // Clipboard

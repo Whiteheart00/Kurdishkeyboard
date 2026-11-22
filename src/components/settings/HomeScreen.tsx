@@ -221,6 +221,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <ChevronLeft className="w-4 h-4 shrink-0" />
               )}
             </button>
+
+            <button
+              type="button"
+              onClick={() => window.AndroidAppSetup?.openNativeTestBox?.('', isLightApp)}
+              className="w-full h-11 px-3.5 rounded-2xl text-xs font-extrabold flex items-center justify-between transition-all active:scale-[0.98] bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-md"
+            >
+              <span>٣. تاقیکردنەوەی خێرای تەختەکلیل (بێ لاگ)</span>
+              <ChevronLeft className="w-4 h-4 shrink-0" />
+            </button>
           </div>
         </div>
       )}
