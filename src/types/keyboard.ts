@@ -90,7 +90,7 @@ export type KeyboardThemeMode = 'dark' | 'light' | 'auto';
 export type TranslationEngine = 'google_fast' | 'ai_fluent';
 export type SpacebarLabelMode = 'language' | 'none' | 'custom';
 export type OneHandedMode = 'off' | 'left' | 'right';
-export type EmojiStyleMode = 'system' | 'twemoji' | 'rounded' | 'classic' | 'minimal';
+export type EmojiStyleMode = 'system' | 'facebook' | 'twemoji' | 'rounded' | 'classic' | 'minimal';
 export type EmojiHistoryUpdateStrategy =
   | 'auto_prepend'
   | 'auto_append'

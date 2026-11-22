@@ -46,6 +46,7 @@ import { runOfflineSmartRewrite, ToneOptions } from '../../utils/kurdishSmartHel
 import { resolveAiServer } from '../../utils/aiServer';
 import { getTranslationLang } from '../../data/translationLanguages';
 import { TranslationLanguagePicker } from './TranslationLanguagePicker';
+import { EmojiGlyph } from './EmojiGlyph';
 
 export type ActiveKeyboardPanel =
   | 'keys'
@@ -139,11 +140,18 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
   const hasSeenPointerDownRef = useRef(false);
 
   const isLight = Boolean(theme.isLight);
+  const isMessengerStyle = settings.emojiStyle === 'facebook';
   const panelBg = theme.bg;
   const mutedText = isLight ? 'text-slate-500' : 'text-zinc-400';
   const mainText = isLight ? 'text-slate-900' : 'text-white';
   const pillBg = isLight ? 'bg-slate-200/80' : 'bg-zinc-800/80';
-  const activePillBg = isLight ? 'bg-blue-100 text-blue-700' : 'bg-[#17283D] text-[#74B3FF]';
+  const activePillBg = isMessengerStyle
+    ? isLight
+      ? 'bg-[#0084FF]/15 text-[#0084FF]'
+      : 'bg-[#0084FF]/25 text-[#4AA8FF]'
+    : isLight
+    ? 'bg-blue-100 text-blue-700'
+    : 'bg-[#17283D] text-[#74B3FF]';
   const subheaderBg = isLight
     ? 'bg-gradient-to-l from-slate-200/90 via-slate-200/50 to-transparent text-slate-700'
     : 'bg-gradient-to-l from-white/[0.08] via-white/[0.04] to-transparent text-zinc-300';
@@ -367,7 +375,7 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
                   }`}
                   title={cat.label}
                 >
-                  <span className={`text-base leading-none ${emojiFontClass}`}>{cat.icon}</span>
+                  <EmojiGlyph emoji={cat.icon} styleMode={settings.emojiStyle} sizePx={18} />
                   {active && <span className="text-[11px]">{cat.label}</span>}
                 </button>
               );
@@ -504,9 +512,9 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
                   onInsert(v, 'emoji');
                   setVariantPopup(null);
                 }}
-                className={`w-10 h-10 rounded-xl text-2xl flex items-center justify-center hover:bg-sky-500/20 active:scale-90 transition-transform ${emojiFontClass}`}
+                className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-sky-500/20 active:scale-90 transition-transform"
               >
-                {v}
+                <EmojiGlyph emoji={v} styleMode={settings.emojiStyle} sizePx={26} />
               </button>
             ))}
           </div>
@@ -552,8 +560,16 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
           dir="rtl"
         >
           <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
-            <span className={`text-sm font-bold truncate ${mainText} ${historyAction.section === 'emoji' ? emojiFontClass : ''}`}>
-              {historyAction.label || historyAction.value}
+            <span className={`text-sm font-bold truncate flex items-center gap-2 ${mainText}`}>
+              {historyAction.section === 'emoji' ? (
+                <EmojiGlyph
+                  emoji={historyAction.value}
+                  styleMode={settings.emojiStyle}
+                  sizePx={24}
+                />
+              ) : (
+                historyAction.label || historyAction.value
+              )}
             </span>
             <button
               type="button"
@@ -667,11 +683,15 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
                         }
                         onInsert(char, 'emoji');
                       }}
-                      style={{ height: `${emojiCellHeight}px`, fontSize: `${emojiFontSize}px` }}
-                      className={`relative rounded-xl flex items-center justify-center hover:bg-white/10 active:scale-90 transition-transform ${emojiFontClass}`}
+                      style={{ height: `${emojiCellHeight}px` }}
+                      className="relative rounded-xl flex items-center justify-center hover:bg-white/10 active:scale-90 transition-transform"
                       title="دەستڕاگرتن بۆ بەڕێوەبردن"
                     >
-                      {char}
+                      <EmojiGlyph
+                        emoji={char}
+                        styleMode={settings.emojiStyle}
+                        sizePx={emojiFontSize}
+                      />
                       <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#74B3FF]" />
                     </button>
                   ))}
@@ -710,11 +730,15 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
                         }
                         onInsert(char, 'emoji');
                       }}
-                      style={{ height: `${emojiCellHeight}px`, fontSize: `${emojiFontSize}px` }}
-                      className={`relative rounded-xl flex items-center justify-center hover:bg-white/10 active:scale-90 transition-transform ${emojiFontClass}`}
+                      style={{ height: `${emojiCellHeight}px` }}
+                      className="relative rounded-xl flex items-center justify-center hover:bg-white/10 active:scale-90 transition-transform"
                       title="دەستڕاگرتن بۆ پینکردن یان سڕینەوە"
                     >
-                      {char}
+                      <EmojiGlyph
+                        emoji={char}
+                        styleMode={settings.emojiStyle}
+                        sizePx={emojiFontSize}
+                      />
                     </button>
                   ))}
                 </div>
@@ -772,11 +796,15 @@ export const EmojiZikrKaomojiPanel: React.FC<EmojiZikrKaomojiPanelProps> = ({
                         }
                         onInsert(rendered, 'emoji');
                       }}
-                      style={{ height: `${emojiCellHeight}px`, fontSize: `${emojiFontSize}px` }}
-                      className={`relative rounded-xl flex items-center justify-center hover:bg-white/10 active:scale-90 transition-transform ${emojiFontClass}`}
+                      style={{ height: `${emojiCellHeight}px` }}
+                      className="relative rounded-xl flex items-center justify-center hover:bg-white/10 active:scale-90 transition-transform"
                       title={entry.k || entry.e || entry.c}
                     >
-                      {rendered}
+                      <EmojiGlyph
+                        emoji={rendered}
+                        styleMode={settings.emojiStyle}
+                        sizePx={emojiFontSize}
+                      />
                       {hasVariants && (
                         <span className="absolute bottom-1 right-1 w-1 h-1 rounded-full bg-zinc-500/70" />
                       )}

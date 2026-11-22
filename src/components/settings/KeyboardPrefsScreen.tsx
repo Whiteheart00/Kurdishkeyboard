@@ -34,6 +34,7 @@ import {
   EMOJI_HAIR_STYLES,
   EMOJI_SKIN_TONES,
 } from '../../data/richContent';
+import { EmojiGlyph } from '../keyboard/EmojiGlyph';
 import { AppToggle, NotificationBanner, ProBadge, SubPageHeader } from './SettingsUI';
 
 interface KeyboardPrefsScreenProps {
@@ -349,6 +350,7 @@ interface EmojiSettingsScreenProps {
 }
 
 const EMOJI_STYLES: { id: EmojiStyleMode; label: string; desc: string }[] = [
+  { id: 'facebook', label: 'فەیسبووک / مەسنجەر', desc: 'شێوازی فەرمی مەسنجەر' },
   { id: 'system', label: 'فۆنتی سیستەم', desc: 'بنەڕەتی مۆبایل' },
   { id: 'twemoji', label: 'تەخت و ڕوون', desc: 'ڕەنگی زیندوو و سووک' },
   { id: 'rounded', label: 'نەرم و خڕ', desc: 'سێبەری سووک' },
@@ -474,19 +476,19 @@ export const EmojiSettingsScreen: React.FC<EmojiSettingsScreenProps> = ({
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-[#9AC5FF]">پێشبینینی ڕاستەوخۆ</span>
             <span className="text-zinc-400 tabular-nums">
-              {settings.emojiFontSizePx || 24}px · {settings.emojiColumns} ستوون
+              {EMOJI_STYLES.find((s) => s.id === settings.emojiStyle)?.label || 'فۆنتی سیستەم'} ·{' '}
+              {settings.emojiFontSizePx || 24}px
             </span>
           </div>
-          <div
-            className={`grid grid-cols-6 gap-2 items-center justify-items-center py-1 ${emojiFontClass}`}
-            style={{ fontSize: `${Math.max(18, Math.min(36, settings.emojiFontSizePx || 24))}px` }}
-          >
-            <span>😍</span>
-            <span>😂</span>
-            <span>{personPreview}</span>
-            <span>{handPreview}</span>
-            <span>🥹</span>
-            <span>🔥</span>
+          <div className="grid grid-cols-6 gap-2 items-center justify-items-center py-1">
+            {['😍', '😂', personPreview, handPreview, '🥹', '🔥'].map((sampleEm, idx) => (
+              <EmojiGlyph
+                key={`prev_${idx}_${settings.emojiStyle}`}
+                emoji={sampleEm}
+                styleMode={settings.emojiStyle}
+                sizePx={Math.max(18, Math.min(36, settings.emojiFontSizePx || 24))}
+              />
+            ))}
           </div>
           <div
             className={`pt-2 border-t text-center leading-relaxed ${
@@ -498,33 +500,50 @@ export const EmojiSettingsScreen: React.FC<EmojiSettingsScreenProps> = ({
           </div>
         </div>
 
-        {/* Lightweight Emoji Style Switcher */}
+        {/* Emoji Style Switcher (Includes Real Facebook / Messenger Style) */}
         <div className={`rounded-3xl p-4 border space-y-3 ${cardBg}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Smile className="w-4 h-4 text-[#8EC2FF]" />
-              <span className="text-sm font-bold">شێوازی فۆنتی ئیمۆجی (سووک و بێ ئینتەرنێت)</span>
+              <span className="text-sm font-bold">شێوازی ئیمۆجی (مەسنجەر، سیستەم و زیاتر)</span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {EMOJI_STYLES.map((st) => {
+            {EMOJI_STYLES.map((st, idx) => {
               const active =
                 settings.emojiStyle === st.id ||
                 (st.id === 'twemoji' && settings.emojiStyle === 'minimal');
+              const isFacebook = st.id === 'facebook';
               return (
                 <button
                   key={st.id}
                   type="button"
                   onClick={() => onUpdate({ emojiStyle: st.id })}
                   className={`min-h-[54px] px-3 py-2 rounded-2xl border text-right transition-all flex items-center justify-between gap-2 ${
-                    active ? activeBtn : subtleBtn
+                    idx === 0 ? 'col-span-2' : ''
+                  } ${
+                    active
+                      ? isFacebook
+                        ? 'bg-[#0084FF]/20 border-[#0084FF] text-[#8EC2FF] font-bold'
+                        : activeBtn
+                      : subtleBtn
                   }`}
                 >
                   <div className="min-w-0">
                     <div className="text-xs font-bold truncate">{st.label}</div>
                     <div className="text-[10.5px] opacity-75 truncate mt-0.5">{st.desc}</div>
                   </div>
-                  <span className={`text-xl shrink-0 emoji-style-${st.id}`}>😍</span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {isFacebook ? (
+                      <>
+                        <EmojiGlyph emoji="😍" styleMode="facebook" sizePx={22} />
+                        <EmojiGlyph emoji="😂" styleMode="facebook" sizePx={22} />
+                        <EmojiGlyph emoji="❤️" styleMode="facebook" sizePx={22} />
+                      </>
+                    ) : (
+                      <EmojiGlyph emoji="😍" styleMode={st.id} sizePx={22} />
+                    )}
+                  </div>
                 </button>
               );
             })}
@@ -610,14 +629,14 @@ export const EmojiSettingsScreen: React.FC<EmojiSettingsScreenProps> = ({
                     key={tone.id}
                     type="button"
                     onClick={() => onUpdate({ emojiSkinTone: tone.mod })}
-                    className={`h-11 rounded-2xl text-2xl flex items-center justify-center border transition-all ${emojiFontClass} ${
+                    className={`h-11 rounded-2xl flex items-center justify-center border transition-all ${
                       active
                         ? 'border-[#9AC5FF] bg-sky-500/20 scale-105'
                         : 'border-white/5 hover:bg-white/5'
                     }`}
                     title={tone.label}
                   >
-                    {tone.sample}
+                    <EmojiGlyph emoji={tone.sample} styleMode={settings.emojiStyle} sizePx={24} />
                   </button>
                 );
               })}
@@ -641,14 +660,14 @@ export const EmojiSettingsScreen: React.FC<EmojiSettingsScreenProps> = ({
                     key={hair.id}
                     type="button"
                     onClick={() => onUpdate({ emojiHairStyle: hair.mod })}
-                    className={`min-h-[56px] px-1 py-1.5 rounded-2xl flex flex-col items-center justify-center gap-0.5 border transition-all ${
+                    className={`min-h-[56px] px-1 py-1.5 rounded-2xl flex flex-col items-center justify-center gap-1 border transition-all ${
                       active
                         ? 'border-[#9AC5FF] bg-sky-500/20'
                         : 'border-white/5 hover:bg-white/5'
                     }`}
                     title={hair.label}
                   >
-                    <span className={`text-2xl leading-none ${emojiFontClass}`}>{sample}</span>
+                    <EmojiGlyph emoji={sample} styleMode={settings.emojiStyle} sizePx={24} />
                     <span className="text-[10px] text-zinc-400 truncate max-w-full">
                       {hair.label}
                     </span>
@@ -695,7 +714,7 @@ export const EmojiSettingsScreen: React.FC<EmojiSettingsScreenProps> = ({
                     } ${isLightApp ? 'bg-slate-50 border-slate-200' : 'bg-white/[0.03] border-white/[0.07]'}`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <span className={`text-lg shrink-0 ${emojiFontClass}`}>{cat.icon}</span>
+                      <EmojiGlyph emoji={cat.icon} styleMode={settings.emojiStyle} sizePx={20} className="shrink-0" />
                       <div className="min-w-0">
                         <div className="text-xs font-bold truncate">{cat.label}</div>
                         <div className="text-[10px] text-zinc-400 tabular-nums">

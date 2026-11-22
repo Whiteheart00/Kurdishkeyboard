@@ -66,6 +66,7 @@ import {
 import { CursorControlPanel, SnippetsCalcPanel } from './PowerPanels';
 import { getTranslationLang } from '../../data/translationLanguages';
 import { TranslationLanguagePicker } from './TranslationLanguagePicker';
+import { EmojiGlyph } from './EmojiGlyph';
 
 const readSavedTranslateLang = (key: string, fallback: string) => {
   try {
@@ -2727,9 +2728,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       key={`${em}_${i}`}
                       type="button"
                       onClick={() => handleRichInsert(em, 'emoji')}
-                      className="w-10 h-9 rounded-xl flex items-center justify-center text-2xl shrink-0 hover:bg-white/10 active:scale-90 transition-transform"
+                      className="w-10 h-9 rounded-xl flex items-center justify-center shrink-0 hover:bg-white/10 active:scale-90 transition-transform"
                     >
-                      {em}
+                      <EmojiGlyph emoji={em} styleMode={settings.emojiStyle} sizePx={24} />
                     </button>
                   ))
                 ) : (
@@ -2861,7 +2862,22 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       : 'text-zinc-300 hover:bg-white/10'
                   }`}
                 >
-                  <span className="truncate">{item.displayLabel || item.value}</span>
+                  <span className="truncate flex items-center gap-1">
+                    {item.isEmoji ? (
+                      <>
+                        <EmojiGlyph
+                          emoji={item.value}
+                          styleMode={settings.emojiStyle}
+                          sizePx={18}
+                        />
+                        {settings.emojiSuggestionShowName && EMOJI_NAME_LOOKUP[item.value] && (
+                          <span>{EMOJI_NAME_LOOKUP[item.value]}</span>
+                        )}
+                      </>
+                    ) : (
+                      item.displayLabel || item.value
+                    )}
+                  </span>
                 </button>
               ))}
             </div>
