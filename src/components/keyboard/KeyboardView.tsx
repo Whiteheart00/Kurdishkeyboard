@@ -1909,7 +1909,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 
       return (
         <div
-          key={`row_${rIdx}`}
+          key={`${activeLangConfig?.code || 'ckb'}_${activeLangConfig?.characterLayoutId || 'def'}_${viewMode}_row_${rIdx}`}
           className={`${isNumTopRow ? 'flex-[0.76]' : 'flex-1'} w-full min-w-0 flex items-stretch ${isCompactMidRow ? 'px-3.5' : ''}`}
           style={{ gap: `${effectiveRowHGap}px` }}
         >
@@ -2543,10 +2543,45 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     settings.showSecondaryHints,
     settings.enabledLanguages,
     settings.activeLanguage,
+    activeLangConfig?.code,
+    activeLangConfig?.characterLayoutId,
     showLangPicker,
     keyContentScale,
     iconSize,
     letterFontSize,
+  ]);
+
+  // Force immediate WebView compositor paint after language/layout/mode/panel switch (prevents stale previous-language frame on Android WebView)
+  useEffect(() => {
+    const el = deckContainerRef.current;
+    let raf1 = 0;
+    let raf2 = 0;
+    if (el) {
+      el.style.transform = 'translate3d(0, 0, 0)';
+      raf1 = requestAnimationFrame(() => {
+        raf1 = 0;
+        window.AndroidIME?.requestRepaint?.();
+        raf2 = requestAnimationFrame(() => {
+          raf2 = 0;
+          if (deckContainerRef.current) {
+            deckContainerRef.current.style.transform = '';
+          }
+        });
+      });
+    } else {
+      window.AndroidIME?.requestRepaint?.();
+    }
+    return () => {
+      if (raf1) cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, [
+    settings.activeLanguage,
+    activeLangConfig?.characterLayoutId,
+    viewMode,
+    activePanel,
+    shiftState,
+    kanaMode,
   ]);
 
   return (

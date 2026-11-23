@@ -73,6 +73,7 @@ interface AndroidImeBridge {
   replaceSurroundingText?: (deleteBefore: number, insertText: string) => void;
   moveCursorEx?: (dx: number, dy: number, select: boolean) => void;
   moveLineEdge?: (toEnd: boolean, select: boolean) => void;
+  requestRepaint?: () => void;
 }
 
 interface AndroidAppSetupBridge {
@@ -94,6 +95,7 @@ declare global {
     AndroidAppSetup?: AndroidAppSetupBridge;
     __onAndroidClipboardSync?: (text: string) => void;
     __onAndroidImeRefresh?: (initialText?: string) => void;
+    __onAndroidImeForceRepaint?: () => void;
     __onAndroidEditorTail?: (tail: string) => void;
     __onAndroidImeStatusChanged?: () => void;
     __onNativeTestBoxClosed?: (finalText: string) => void;
@@ -1296,13 +1298,39 @@ export default function App() {
     }
   }, [currentRoute, settings, updateSettings, navigateTo, goBack, isLightApp, showToast]);
 
-  // Native Android InputMethodService (?ime=1) clipboard sync, deduplicated settings refresh & smooth ResizeObserver height bridge
+  // Native Android InputMethodService (?ime=1) clipboard sync, deduplicated settings refresh, GPU repaint wake-up & ResizeObserver height bridge
   useEffect(() => {
     if (!isNativeImeMode) return;
+    let repaintRaf1 = 0;
+    let repaintRaf2 = 0;
+    const triggerCompositorRepaint = () => {
+      if (repaintRaf1) cancelAnimationFrame(repaintRaf1);
+      if (repaintRaf2) cancelAnimationFrame(repaintRaf2);
+      const el = imeDeckRef.current;
+      if (!el) return;
+      // Nudge Chromium WebView GPU compositor cleanly so evicted IME surfaces immediately rasterize (no black frame)
+      el.style.transform = 'translate3d(0, 0, 0)';
+      el.style.opacity = '0.999';
+      void el.offsetHeight;
+      repaintRaf1 = requestAnimationFrame(() => {
+        repaintRaf1 = 0;
+        if (!imeDeckRef.current) return;
+        imeDeckRef.current.style.opacity = '1';
+        repaintRaf2 = requestAnimationFrame(() => {
+          repaintRaf2 = 0;
+          if (!imeDeckRef.current) return;
+          imeDeckRef.current.style.transform = '';
+          imeDeckRef.current.style.opacity = '';
+        });
+      });
+    };
+
+    window.__onAndroidImeForceRepaint = triggerCompositorRepaint;
     window.__onAndroidClipboardSync = (text: string) => {
       if (text) saveToClipboard(text);
     };
     window.__onAndroidImeRefresh = (initialText?: string) => {
+      triggerCompositorRepaint();
       try {
         const rawSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
         if (rawSettings && rawSettings !== lastSettingsJsonRef.current) {
@@ -1336,6 +1364,14 @@ export default function App() {
       }
     };
 
+    const onVisibilityRepaint = () => {
+      if (document.visibilityState === 'visible') {
+        triggerCompositorRepaint();
+        window.AndroidIME?.requestRepaint?.();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityRepaint);
+
     let lastSentHeight = 0;
     let heightRaf = 0;
     const syncExactHeight = () => {
@@ -1361,9 +1397,13 @@ export default function App() {
 
     return () => {
       if (heightRaf) cancelAnimationFrame(heightRaf);
+      if (repaintRaf1) cancelAnimationFrame(repaintRaf1);
+      if (repaintRaf2) cancelAnimationFrame(repaintRaf2);
+      document.removeEventListener('visibilitychange', onVisibilityRepaint);
       observer?.disconnect();
       delete window.__onAndroidClipboardSync;
       delete window.__onAndroidImeRefresh;
+      delete window.__onAndroidImeForceRepaint;
       delete window.__onAndroidEditorTail;
     };
   }, [isNativeImeMode, saveToClipboard]);

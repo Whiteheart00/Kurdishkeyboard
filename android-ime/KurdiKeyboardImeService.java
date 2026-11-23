@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class KurdiKeyboardImeService extends InputMethodService {
     private static final String VIRTUAL_HOST = "localhost";
+    private FrameLayout rootContainer;
     private WebView webView;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private int keyboardHeightDp = 390;
@@ -59,10 +60,51 @@ public class KurdiKeyboardImeService extends InputMethodService {
                 null
         );
     };
+    private final Runnable delayedRepaintRunnable = () -> {
+        if (webView == null) return;
+        try {
+            webView.onResume();
+            webView.resumeTimers();
+            webView.invalidate();
+            webView.postInvalidateOnAnimation();
+            if (rootContainer != null) {
+                rootContainer.invalidate();
+            }
+            webView.evaluateJavascript(
+                    "window.__onAndroidImeForceRepaint && window.__onAndroidImeForceRepaint();",
+                    null
+            );
+        } catch (Exception ignored) {
+        }
+    };
 
     private void scheduleSyncEditorTail(long delayMs) {
         mainHandler.removeCallbacks(syncTailRunnable);
         mainHandler.postDelayed(syncTailRunnable, delayMs);
+    }
+
+    private void forceWebViewRepaint() {
+        mainHandler.post(() -> {
+            if (webView == null) return;
+            try {
+                webView.onResume();
+                webView.resumeTimers();
+                webView.setVisibility(View.VISIBLE);
+                webView.invalidate();
+                webView.postInvalidateOnAnimation();
+                if (rootContainer != null) {
+                    rootContainer.invalidate();
+                }
+                webView.evaluateJavascript(
+                        "window.__onAndroidImeForceRepaint && window.__onAndroidImeForceRepaint();",
+                        null
+                );
+            } catch (Exception ignored) {
+            }
+        });
+        // Second compositor kick after IME slide-in window surface finishes attaching
+        mainHandler.removeCallbacks(delayedRepaintRunnable);
+        mainHandler.postDelayed(delayedRepaintRunnable, 70);
     }
 
     @Override
@@ -71,21 +113,25 @@ public class KurdiKeyboardImeService extends InputMethodService {
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    @Override
-    public View onCreateInputView() {
-        FrameLayout container = new FrameLayout(this);
-        container.setBackgroundColor(Color.BLACK);
+    private WebView createConfiguredWebView() {
+        WebView wv = new WebView(this);
+        wv.setBackgroundColor(Color.BLACK);
+        wv.setVerticalScrollBarEnabled(false);
+        wv.setHorizontalScrollBarEnabled(false);
+        wv.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        wv.setLongClickable(false);
+        wv.setHapticFeedbackEnabled(false);
+        wv.setOnLongClickListener(v -> true);
 
-        webView = new WebView(this);
-        webView.setBackgroundColor(Color.BLACK);
-        webView.setVerticalScrollBarEnabled(false);
-        webView.setHorizontalScrollBarEnabled(false);
-        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        webView.setLongClickable(false);
-        webView.setHapticFeedbackEnabled(false);
-        webView.setOnLongClickListener(v -> true);
+        // Keep IME renderer high priority even while hidden so Android 14–16 does not evict GPU surfaces
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            try {
+                wv.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
+            } catch (Exception ignored) {
+            }
+        }
 
-        WebSettings ws = webView.getSettings();
+        WebSettings ws = wv.getSettings();
         ws.setJavaScriptEnabled(true);
         ws.setDomStorageEnabled(true);
         ws.setDatabaseEnabled(true);
@@ -96,8 +142,8 @@ public class KurdiKeyboardImeService extends InputMethodService {
         ws.setDisplayZoomControls(false);
         ws.setCacheMode(WebSettings.LOAD_DEFAULT);
 
-        webView.addJavascriptInterface(new AndroidImeBridge(), "AndroidIME");
-        webView.setWebViewClient(new WebViewClient() {
+        wv.addJavascriptInterface(new AndroidImeBridge(), "AndroidIME");
+        wv.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
@@ -187,18 +233,50 @@ public class KurdiKeyboardImeService extends InputMethodService {
                     );
                 } catch (Exception ignored) {
                 }
-                return super.onRenderProcessGone(view, detail);
+                // Self-heal if Android killed the WebView renderer process so the keyboard never stays black
+                mainHandler.post(() -> {
+                    try {
+                        if (rootContainer != null) {
+                            rootContainer.removeAllViews();
+                            if (webView != null) {
+                                try {
+                                    webView.destroy();
+                                } catch (Exception ignored2) {
+                                }
+                            }
+                            webView = createConfiguredWebView();
+                            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    dpToPx(keyboardHeightDp)
+                            );
+                            rootContainer.addView(webView, lp);
+                            webView.loadUrl("https://" + VIRTUAL_HOST + "/index.html?ime=1");
+                        }
+                    } catch (Exception ignored2) {
+                    }
+                });
+                return true;
             }
         });
+        return wv;
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    @Override
+    public View onCreateInputView() {
+        rootContainer = new FrameLayout(this);
+        rootContainer.setBackgroundColor(Color.BLACK);
+
+        webView = createConfiguredWebView();
 
         int heightPx = dpToPx(keyboardHeightDp);
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 heightPx
         );
-        container.addView(webView, lp);
+        rootContainer.addView(webView, lp);
         webView.loadUrl("https://" + VIRTUAL_HOST + "/index.html?ime=1");
-        return container;
+        return rootContainer;
     }
 
     private WebResourceResponse buildAssetResponse(String mimeType, InputStream stream) {
@@ -260,8 +338,15 @@ public class KurdiKeyboardImeService extends InputMethodService {
     }
 
     @Override
+    public void onWindowShown() {
+        super.onWindowShown();
+        forceWebViewRepaint();
+    }
+
+    @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
+        forceWebViewRepaint();
         syncLatestSystemClipboard();
         final String rawTail = readFastFieldTail();
         lastSyncedTail = rawTail;
@@ -608,6 +693,23 @@ public class KurdiKeyboardImeService extends InputMethodService {
         }
 
         @JavascriptInterface
+        public void requestRepaint() {
+            mainHandler.post(() -> {
+                if (webView == null) return;
+                try {
+                    webView.onResume();
+                    webView.resumeTimers();
+                    webView.invalidate();
+                    webView.postInvalidateOnAnimation();
+                    if (rootContainer != null) {
+                        rootContainer.invalidate();
+                    }
+                } catch (Exception ignored) {
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void setKeyboardHeightDp(final int dp) {
             mainHandler.post(() -> {
                 if (webView != null && dp >= 210 && dp <= 720 && dp != keyboardHeightDp) {
@@ -616,6 +718,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
                     if (lp != null) {
                         lp.height = dpToPx(dp);
                         webView.setLayoutParams(lp);
+                        webView.postInvalidateOnAnimation();
                     }
                 }
             });
