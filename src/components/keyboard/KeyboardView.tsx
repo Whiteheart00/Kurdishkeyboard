@@ -1910,7 +1910,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       return (
         <div
           key={`row_${rIdx}`}
-          className={`${isNumTopRow ? 'flex-[0.76]' : 'flex-1'} flex items-stretch ${isCompactMidRow ? 'px-3.5' : ''}`}
+          className={`${isNumTopRow ? 'flex-[0.76]' : 'flex-1'} w-full min-w-0 flex items-stretch ${isCompactMidRow ? 'px-3.5' : ''}`}
           style={{ gap: `${effectiveRowHGap}px` }}
         >
           {row.map((key) => {
@@ -2564,7 +2564,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       dir="ltr"
     >
       <div
-        className={`overflow-visible mx-auto transition-[border-radius] duration-150 ${
+        className={`max-w-full overflow-visible mx-auto transition-[border-radius] duration-150 ${
           kbWidthPct < 100 || kbBottomOffsetPx > 0 ? 'rounded-2xl shadow-2xl' : ''
         }`}
         style={{
@@ -2871,7 +2871,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           />
         </div>
       ) : (
-        <div className="flex flex-col w-full kb-noselect">
+        <div className="flex flex-col w-full min-w-0 max-w-full kb-noselect">
           {/* Inline Gboard-style Live Translate Bar OR Emoji Search Bar (types directly with the keyboard below!) */}
           {liveTranslateMode ? (
             <div className="flex flex-col border-b border-white/10 px-2 pt-1.5 pb-1.5 gap-1.5" dir="rtl">
@@ -3232,9 +3232,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           )}
 
           {/* One-handed wrapper */}
-          <div className="flex w-full items-stretch relative">
+          <div className="flex w-full min-w-0 items-stretch relative">
             {settings.oneHandedMode === 'right' && (
-              <div className="w-12 flex flex-col items-center justify-center gap-3 px-1">
+              <div className="w-12 shrink-0 flex flex-col items-center justify-center gap-3 px-1">
                 <button
                   type="button"
                   onClick={() => onUpdateSettings({ oneHandedMode: 'left' })}
@@ -3257,7 +3257,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             {/* Key Rows Container (Main + Modifier Bottom Row rendered authentically from FlorisBoard JSON) */}
             <div
               ref={deckContainerRef}
-              className={`flex-1 flex flex-col relative touch-none select-none ${
+              className={`flex-1 min-w-0 w-full flex flex-col relative touch-none select-none ${
                 viewMode === 'numeric_advanced' ? 'px-1.5 pt-1.5 pb-2' : 'px-[3px] pt-1 pb-1.5'
               }`}
               style={{
@@ -3742,46 +3742,57 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 </div>
               )}
 
-              {viewMode === 'numeric_advanced' && (
-                <div
-                  className="flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 pb-0.5"
-                  style={{ height: '40px' }}
-                  dir="ltr"
-                >
-                  {(settings.numberStyle === 'kurdish'
-                    ? ['١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩', '٠', '(', ')', '-', '×', '÷', '^', '°']
+              {viewMode === 'numeric_advanced' && (() => {
+                const effectiveNumScript =
+                  settings.numberStyle === 'kurdish'
+                    ? 'kurdi_arabi'
                     : settings.numberStyle === 'urdu_farsi'
+                    ? 'urdu_farsi'
+                    : activeLangConfig?.numericAdvancedId || 'latin';
+                const quickSyms =
+                  effectiveNumScript === 'kurdi_arabi'
+                    ? ['١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩', '٠', '(', ')', '-', '×', '÷', '^', '°']
+                    : effectiveNumScript === 'urdu_farsi'
                     ? ['۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹', '۰', '(', ')', '-', '×', '÷', '^', '°']
-                    : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '(', ')', '-', '×', '÷', '^', '°']
-                  ).map((sym) => (
-                    <button
-                      key={`num_quick_${sym}`}
-                      type="button"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        triggerSound('char');
-                        commitCharacter(sym);
-                      }}
-                      className="h-full min-w-[36px] flex-1 shrink-0 rounded-lg font-bold text-lg flex items-center justify-center active:scale-95 transition-transform select-none"
-                      style={{
-                        backgroundColor: theme.keyBg,
-                        color: theme.keyText,
-                        border: keyBorderCss,
-                        boxShadow: keyShadowCss,
-                      }}
-                    >
-                      {sym}
-                    </button>
-                  ))}
-                </div>
-              )}
+                    : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '(', ')', '-', '×', '÷', '^', '°'];
+                return (
+                  <div
+                    className="w-full min-w-0 max-w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 pb-0.5"
+                    style={{
+                      height: '38px',
+                      touchAction: 'pan-x',
+                      WebkitOverflowScrolling: 'touch',
+                    }}
+                    dir="ltr"
+                  >
+                    {quickSyms.map((sym) => (
+                      <button
+                        key={`num_quick_${sym}`}
+                        type="button"
+                        onClick={() => {
+                          triggerSound('char');
+                          commitCharacter(sym);
+                        }}
+                        className="h-full w-[35px] shrink-0 rounded-lg font-bold text-[17px] flex items-center justify-center active:scale-95 transition-transform select-none"
+                        style={{
+                          backgroundColor: theme.keyBg,
+                          color: theme.keyText,
+                          border: keyBorderCss,
+                          boxShadow: keyShadowCss,
+                        }}
+                      >
+                        {sym}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {memoizedKeyRows}
             </div>
 
             {settings.oneHandedMode === 'left' && (
-              <div className="w-12 flex flex-col items-center justify-center gap-3 px-1">
+              <div className="w-12 shrink-0 flex flex-col items-center justify-center gap-3 px-1">
                 <button
                   type="button"
                   onClick={() => onUpdateSettings({ oneHandedMode: 'right' })}
