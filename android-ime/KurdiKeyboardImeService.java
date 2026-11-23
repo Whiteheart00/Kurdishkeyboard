@@ -19,6 +19,8 @@ import android.view.inputmethod.ExtractedText;
 import android.view.inputmethod.ExtractedTextRequest;
 import android.view.inputmethod.InputConnection;
 import android.webkit.JavascriptInterface;
+import android.webkit.RenderProcessGoneDetail;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -118,6 +120,68 @@ public class KurdiKeyboardImeService extends InputMethodService {
                     }
                 }
                 return super.shouldInterceptRequest(view, request);
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                super.onReceivedError(view, request, error);
+                try {
+                    String path = (request != null && request.getUrl() != null) ? request.getUrl().getPath() : "unknown";
+                    CharSequence desc = error != null ? error.getDescription() : "WebView resource error";
+                    MainActivity.recordNativeEvent(
+                            KurdiKeyboardImeService.this,
+                            "ERRORS",
+                            "ERROR",
+                            "IME WebView Resource Error",
+                            "WebView error on " + path + ": " + desc,
+                            "KurdiKeyboardImeService",
+                            "onReceivedError",
+                            "FAILED",
+                            null
+                    );
+                } catch (Exception ignored) {
+                }
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                super.onReceivedHttpError(view, request, errorResponse);
+                try {
+                    String path = (request != null && request.getUrl() != null) ? request.getUrl().getPath() : "unknown";
+                    int status = errorResponse != null ? errorResponse.getStatusCode() : 0;
+                    MainActivity.recordNativeEvent(
+                            KurdiKeyboardImeService.this,
+                            "NETWORK",
+                            status >= 500 ? "ERROR" : "WARNING",
+                            "IME WebView HTTP " + status,
+                            "WebView HTTP error " + status + " for " + path,
+                            "KurdiKeyboardImeService",
+                            "onReceivedHttpError",
+                            "FAILED",
+                            null
+                    );
+                } catch (Exception ignored) {
+                }
+            }
+
+            @Override
+            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                try {
+                    boolean crashed = detail != null && detail.didCrash();
+                    MainActivity.recordNativeEvent(
+                            KurdiKeyboardImeService.this,
+                            "CRASHES",
+                            "CRITICAL",
+                            "IME WebView Render Process Gone",
+                            crashed ? "IME WebView renderer crashed unexpectedly." : "IME WebView renderer killed by OS under memory pressure.",
+                            "KurdiKeyboardImeService",
+                            "onRenderProcessGone",
+                            "FAILED",
+                            null
+                    );
+                } catch (Exception ignored) {
+                }
+                return super.onRenderProcessGone(view, detail);
             }
         });
 

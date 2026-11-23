@@ -25,6 +25,7 @@ import {
   KeyboardTheme,
   SettingsRoute,
 } from '../../types/keyboard';
+import { logEvent, startOperation } from '../../utils/activityLogger';
 import {
   EMOJI_CATEGORIES,
   EmojiEntry,
@@ -1742,139 +1743,152 @@ export const ClipboardPanel: React.FC<ClipboardPanelProps> = ({
       )}
 
       {sorted.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 text-xs gap-2">
+        <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-zinc-500 text-xs gap-2">
           <KurdiIcon name="ic_clipboards" className="w-7 h-7 opacity-40" />
           <span>هیچ دەقێکی لەبەرگیراو نییە</span>
         </div>
       ) : (
         <div
-          className={`grid ${
-            settings.clipboardGridColumns === 1 ? 'grid-cols-1' : 'grid-cols-2'
-          } gap-2 overflow-y-auto custom-scroll pb-1 flex-1 content-start`}
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scroll pb-2 pl-0.5"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
+          }}
         >
-          {sorted.map((item) => {
-            const isSelected = selectedIds.includes(item.id);
-            const activeSwipe = swipeState?.id === item.id ? swipeState : null;
-            const dx = activeSwipe?.dx ?? 0;
-            const threshold = activeSwipe?.threshold ?? 54;
-            const isSwipingLeft = dx < -4;
-            const isSwipingRight = dx > 4;
-            const isReady = Math.abs(dx) >= threshold;
+          <div
+            className={`grid ${
+              settings.clipboardGridColumns === 1 ? 'grid-cols-1' : 'grid-cols-2'
+            } gap-2 auto-rows-max items-stretch w-full`}
+          >
+            {sorted.map((item) => {
+              const isSelected = selectedIds.includes(item.id);
+              const activeSwipe = swipeState?.id === item.id ? swipeState : null;
+              const dx = activeSwipe?.dx ?? 0;
+              const threshold = activeSwipe?.threshold ?? 54;
+              const isSwipingLeft = dx < -4;
+              const isSwipingRight = dx > 4;
+              const isReady = Math.abs(dx) >= threshold;
 
-            return (
-              <div key={item.id} className="relative rounded-2xl overflow-hidden">
-                {/* Swipe Action Underlay: Left = Delete (Red), Right = Pin/Unpin (Orange) */}
-                {(isSwipingLeft || isSwipingRight) && (
-                  <div
-                    className={`absolute inset-0 flex items-center px-3.5 transition-colors ${
-                      isSwipingLeft
-                        ? isReady
-                          ? 'bg-rose-600 text-white justify-end'
-                          : 'bg-rose-600/75 text-white/90 justify-end'
-                        : isReady
-                        ? 'bg-[#FF7A00] text-[#111318] justify-start'
-                        : 'bg-[#FF7A00]/75 text-[#111318]/90 justify-start'
-                    }`}
-                    dir="ltr"
-                  >
-                    {isSwipingLeft ? (
-                      <div
-                        className={`flex items-center gap-1.5 font-extrabold text-xs transition-transform ${
-                          isReady ? 'scale-110' : 'scale-95'
-                        }`}
-                      >
-                        <span>سڕینەوە</span>
-                        <Trash2 className="w-4 h-4 shrink-0" />
-                      </div>
-                    ) : (
-                      <div
-                        className={`flex items-center gap-1.5 font-extrabold text-xs transition-transform ${
-                          isReady ? 'scale-110' : 'scale-95'
-                        }`}
-                      >
-                        {item.pinned ? (
-                          <PinOff className="w-4 h-4 shrink-0" />
-                        ) : (
-                          <Pin className="w-4 h-4 shrink-0" />
-                        )}
-                        <span>{item.pinned ? 'لابردنی پین' : 'پینکردن'}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
+              return (
                 <div
-                  role="button"
-                  tabIndex={0}
-                  onPointerDown={(e) => handleCardPointerDown(item, e)}
-                  onPointerMove={handleCardPointerMove}
-                  onPointerUp={(e) => handleCardPointerEnd(item, e)}
-                  onPointerCancel={handleCardPointerCancel}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    clearHoldTimer();
-                    setMenuItem(item);
-                  }}
-                  onClick={() => handleCardClick(item)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleCardClick(item);
-                    }
-                  }}
-                  style={{
-                    transform: dx !== 0 ? `translateX(${dx}px)` : undefined,
-                    transition: activeSwipe
-                      ? 'none'
-                      : 'transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
-                    touchAction: 'pan-y',
-                  }}
-                  className={`relative z-10 rounded-2xl p-3 border flex flex-col justify-between gap-2.5 cursor-pointer select-none ${
-                    isSelected
-                      ? 'border-[#FF7A00] bg-[#FF7A00]/15'
-                      : isLight
-                      ? 'bg-white border-slate-200 text-slate-900 hover:border-slate-300'
-                      : 'bg-[#16171C] border-white/[0.06] text-white hover:bg-[#1C1E25]'
+                  key={item.id}
+                  className={`relative min-w-0 w-full rounded-2xl overflow-hidden shrink-0 ${
+                    settings.clipboardGridColumns === 1 ? 'min-h-[70px]' : 'min-h-[88px]'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-1.5">
-                    <p className="text-right text-xs leading-relaxed line-clamp-3 flex-1 break-words">
-                      {item.text}
-                    </p>
-                    {selectMode && (
-                      <span
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
-                          isSelected
-                            ? 'bg-[#FF7A00] border-[#FF7A00] text-white'
-                            : 'border-zinc-500'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                      </span>
-                    )}
-                  </div>
+                  {/* Swipe Action Underlay: Left = Delete (Red), Right = Pin/Unpin (Orange) */}
+                  {(isSwipingLeft || isSwipingRight) && (
+                    <div
+                      className={`absolute inset-0 flex items-center px-3.5 transition-colors ${
+                        isSwipingLeft
+                          ? isReady
+                            ? 'bg-rose-600 text-white justify-end'
+                            : 'bg-rose-600/75 text-white/90 justify-end'
+                          : isReady
+                          ? 'bg-[#FF7A00] text-[#111318] justify-start'
+                          : 'bg-[#FF7A00]/75 text-[#111318]/90 justify-start'
+                      }`}
+                      dir="ltr"
+                    >
+                      {isSwipingLeft ? (
+                        <div
+                          className={`flex items-center gap-1.5 font-extrabold text-xs transition-transform ${
+                            isReady ? 'scale-110' : 'scale-95'
+                          }`}
+                        >
+                          <span>سڕینەوە</span>
+                          <Trash2 className="w-4 h-4 shrink-0" />
+                        </div>
+                      ) : (
+                        <div
+                          className={`flex items-center gap-1.5 font-extrabold text-xs transition-transform ${
+                            isReady ? 'scale-110' : 'scale-95'
+                          }`}
+                        >
+                          {item.pinned ? (
+                            <PinOff className="w-4 h-4 shrink-0" />
+                          ) : (
+                            <Pin className="w-4 h-4 shrink-0" />
+                          )}
+                          <span>{item.pinned ? 'لابردنی پین' : 'پینکردن'}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                  {/* Permanent status pill (nothing auto-deletes) */}
                   <div
-                    className={`w-full rounded-xl px-2.5 py-1 text-[10px] font-semibold flex items-center justify-center gap-1 ${
-                      item.pinned
-                        ? isLight
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-[#FF7A00]/15 text-[#FF9A3D]'
+                    role="button"
+                    tabIndex={0}
+                    onPointerDown={(e) => handleCardPointerDown(item, e)}
+                    onPointerMove={handleCardPointerMove}
+                    onPointerUp={(e) => handleCardPointerEnd(item, e)}
+                    onPointerCancel={handleCardPointerCancel}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      clearHoldTimer();
+                      setMenuItem(item);
+                    }}
+                    onClick={() => handleCardClick(item)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleCardClick(item);
+                      }
+                    }}
+                    style={{
+                      transform: dx !== 0 ? `translateX(${dx}px)` : undefined,
+                      transition: activeSwipe
+                        ? 'none'
+                        : 'transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
+                      touchAction: 'pan-y',
+                    }}
+                    className={`relative z-10 h-full w-full min-w-0 rounded-2xl p-3 border flex flex-col justify-between gap-2 cursor-pointer select-none overflow-hidden ${
+                      isSelected
+                        ? 'border-[#FF7A00] bg-[#FF7A00]/15'
                         : isLight
-                        ? 'bg-slate-100 text-slate-500'
-                        : 'bg-[#22242C] text-zinc-400'
+                        ? 'bg-white border-slate-200 text-slate-900 hover:border-slate-300'
+                        : 'bg-[#16171C] border-white/[0.06] text-white hover:bg-[#1C1E25]'
                     }`}
                   >
-                    {item.pinned && <Pin className="w-2.5 h-2.5 shrink-0" />}
-                    <span className="truncate">
-                      {item.pinned ? 'جێگیرکراوە · پارێزراوە' : 'هەمیشەیی پارێزراوە'}
-                    </span>
+                    <div className="flex items-start justify-between gap-1.5 min-w-0 w-full">
+                      <p className="text-right text-xs leading-relaxed line-clamp-3 flex-1 min-w-0 break-words [overflow-wrap:anywhere] overflow-hidden">
+                        {item.text}
+                      </p>
+                      {selectMode && (
+                        <span
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                            isSelected
+                              ? 'bg-[#FF7A00] border-[#FF7A00] text-white'
+                              : 'border-zinc-500'
+                          }`}
+                        >
+                          {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Permanent status pill (nothing auto-deletes) */}
+                    <div
+                      className={`w-full shrink-0 rounded-xl px-2.5 py-1 text-[10px] font-semibold flex items-center justify-center gap-1 ${
+                        item.pinned
+                          ? isLight
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-[#FF7A00]/15 text-[#FF9A3D]'
+                          : isLight
+                          ? 'bg-slate-100 text-slate-500'
+                          : 'bg-[#22242C] text-zinc-400'
+                      }`}
+                    >
+                      {item.pinned && <Pin className="w-2.5 h-2.5 shrink-0" />}
+                      <span className="truncate">
+                        {item.pinned ? 'جێگیرکراوە · پارێزراوە' : 'هەمیشەیی پارێزراوە'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -2569,6 +2583,20 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
     setError(null);
 
     const resolved = resolveAiServer(settings.aiServerUrl);
+    const op = startOperation({
+      category: 'USER_OPERATIONS',
+      title: 'Text Translation Requested',
+      description: `Translating ${textToTranslate.length} chars from ${sourceLang} to ${targetLang} (${engine}).`,
+      component: 'TranslatePanel',
+      operation: 'translate_text',
+      metadata: {
+        engine,
+        sourceLang,
+        targetLang,
+        charCount: textToTranslate.length,
+        aiServerSource: resolved.source,
+      },
+    });
 
     const translateGoogleDirect = async (): Promise<string> => {
       const sl = sourceLang || 'auto';
@@ -2618,14 +2646,37 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
           const fastResult = await translateGoogleDirect();
           setBoundedCache(translateCache, cacheKey, fastResult);
           setOutput(fastResult);
+          op.complete({
+            description: `Translated ${sourceLang} -> ${targetLang} via Google Fast.`,
+            metadata: { engine: 'google_fast', sourceLang, targetLang, outputChars: fastResult.length },
+          });
           return;
         } catch (googleErr: unknown) {
-          if (controller.signal.aborted) return;
+          if (controller.signal.aborted) {
+            op.cancel('Translation request was superseded or cancelled.');
+            return;
+          }
           if (resolved.source !== 'none') {
+            logEvent({
+              category: 'NETWORK',
+              severity: 'WARNING',
+              title: 'Translation Fallback to AI Server',
+              description: 'Google Fast translation failed; retrying via configured AI server.',
+              component: 'TranslatePanel',
+              operation: 'translate_text',
+              status: 'RETRIED',
+              operationId: op.operationId,
+              error: googleErr,
+              metadata: { sourceLang, targetLang },
+            });
             const aiFallback = await translateWithGeminiServer();
             if (aiFallback) {
               setBoundedCache(translateCache, cacheKey, aiFallback);
               setOutput(aiFallback);
+              op.complete({
+                description: `Translated ${sourceLang} -> ${targetLang} via AI server fallback.`,
+                metadata: { engine: 'ai_fallback', sourceLang, targetLang, outputChars: aiFallback.length },
+              });
               return;
             }
           }
@@ -2639,6 +2690,10 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
         if (streamed) {
           setBoundedCache(translateCache, cacheKey, streamed);
           setOutput(streamed);
+          op.complete({
+            description: `Translated ${sourceLang} -> ${targetLang} via Gemini AI server.`,
+            metadata: { engine: 'ai_fluent', sourceLang, targetLang, outputChars: streamed.length },
+          });
           return;
         }
       }
@@ -2646,8 +2701,19 @@ export const TranslatePanel: React.FC<TranslatePanelProps> = ({
       const fallbackTranslated = await translateGoogleDirect();
       setBoundedCache(translateCache, cacheKey, fallbackTranslated);
       setOutput(fallbackTranslated);
+      op.complete({
+        description: `Translated ${sourceLang} -> ${targetLang} via direct fallback.`,
+        metadata: { engine: 'google_fallback', sourceLang, targetLang, outputChars: fallbackTranslated.length },
+      });
     } catch (e: unknown) {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) {
+        op.cancel('Translation request cancelled.');
+        return;
+      }
+      op.fail(e, {
+        category: 'NETWORK',
+        description: `Translation failed (${sourceLang} -> ${targetLang}).`,
+      });
       setError(
         e instanceof Error
           ? e.message
@@ -3002,7 +3068,18 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
     if (resolved.source === 'none') {
       setError(null);
       setUsedOffline(true);
-      setResult(runOfflineSmartRewrite(liveText, mode, tonePayload));
+      const offlineOut = runOfflineSmartRewrite(liveText, mode, tonePayload);
+      setResult(offlineOut);
+      logEvent({
+        category: 'USER_OPERATIONS',
+        severity: 'INFO',
+        title: `Smart AI Rewrite (${mode}) — Offline`,
+        description: 'No remote AI server configured; executed offline smart rewrite.',
+        component: 'SmartAIPanel',
+        operation: 'smart_ai_rewrite',
+        status: 'COMPLETED',
+        metadata: { mode, inputChars: liveText.length, outputChars: offlineOut.length, offline: true },
+      });
       return;
     }
 
@@ -3014,6 +3091,16 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
     setError(null);
     setUsedOffline(false);
     setResult('');
+
+    const op = startOperation({
+      category: 'USER_OPERATIONS',
+      title: `Smart AI Rewrite (${mode})`,
+      description: `Sending smart rewrite request (${liveText.length} chars) to AI server.`,
+      component: 'SmartAIPanel',
+      operation: 'smart_ai_rewrite',
+      metadata: { mode, inputChars: liveText.length, serverSource: resolved.source },
+    });
+
     try {
       const res = await fetch(`${resolved.baseUrl}/api/ai/rewrite`, {
         method: 'POST',
@@ -3041,16 +3128,39 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
       if (finalResult) {
         setBoundedCache(rewriteCache, cacheKey, finalResult);
         setResult(finalResult);
+        op.complete({
+          description: `Smart AI rewrite (${mode}) completed.`,
+          metadata: { mode, outputChars: finalResult.length, offline: false },
+        });
       }
     } catch (err: unknown) {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) {
+        op.cancel('Smart AI rewrite request cancelled.');
+        return;
+      }
       // Seamless high-quality offline fallback if server is temporarily unreachable, while offering error info
       const offlineOut = runOfflineSmartRewrite(liveText, mode, tonePayload);
       if (resolved.source === 'settings' || resolved.source === 'env') {
         if (offlineOut && offlineOut !== liveText) {
           setUsedOffline(true);
           setResult(offlineOut);
+          logEvent({
+            category: 'WARNINGS',
+            severity: 'WARNING',
+            title: `Smart AI Rewrite (${mode}) Used Offline Fallback`,
+            description: 'Remote AI server request failed; fell back to local offline rewrite.',
+            component: 'SmartAIPanel',
+            operation: 'smart_ai_rewrite',
+            status: 'RETRIED',
+            operationId: op.operationId,
+            error: err,
+            metadata: { mode, offline: true },
+          });
         } else {
+          op.fail(err, {
+            category: 'NETWORK',
+            description: `Smart AI rewrite (${mode}) failed to reach AI server.`,
+          });
           setError(
             err instanceof Error
               ? err.message
@@ -3060,6 +3170,17 @@ export const SmartAIPanel: React.FC<SmartAIPanelProps> = ({
       } else {
         setUsedOffline(true);
         setResult(offlineOut);
+        logEvent({
+          category: 'WARNINGS',
+          severity: 'WARNING',
+          title: `Smart AI Rewrite (${mode}) Offline Fallback`,
+          description: 'Remote endpoint unavailable; applied offline rewrite.',
+          component: 'SmartAIPanel',
+          operation: 'smart_ai_rewrite',
+          status: 'RETRIED',
+          operationId: op.operationId,
+          error: err,
+        });
       }
     } finally {
       if (abortRef.current === controller) {

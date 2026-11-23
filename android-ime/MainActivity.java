@@ -31,11 +31,31 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.res.Configuration;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
+
 import com.getcapacitor.BridgeActivity;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * KurdiKeyboard MainActivity (Capacitor BridgeActivity)
@@ -45,13 +65,114 @@ import java.util.List;
  *    WebView so KurdiKeyboard IME runs with zero dual-WebView contention (WhatsApp-level speed).
  */
 public class MainActivity extends BridgeActivity {
+    public static final String DIAG_PREFS_NAME = "kurdikebord_diag_prefs";
+    public static final String DIAG_LOGS_KEY = "native_events_json";
+    private static final int MAX_NATIVE_LOGS = 80;
+    private static volatile boolean crashHandlerInstalled = false;
+
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Dialog activeTestDialog = null;
+
+    public static synchronized void recordNativeEvent(
+            Context ctx,
+            String category,
+            String severity,
+            String title,
+            String description,
+            String component,
+            String operation,
+            String status,
+            Throwable error
+    ) {
+        if (ctx == null) return;
+        try {
+            SharedPreferences prefs = ctx.getApplicationContext().getSharedPreferences(DIAG_PREFS_NAME, MODE_PRIVATE);
+            String existingRaw = prefs.getString(DIAG_LOGS_KEY, "[]");
+            JSONArray arr;
+            try {
+                arr = new JSONArray(existingRaw);
+            } catch (Exception e) {
+                arr = new JSONArray();
+            }
+
+            long nowMs = System.currentTimeMillis();
+            SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+            iso.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+            JSONObject obj = new JSONObject();
+            obj.put("id", "nat_" + Long.toString(nowMs, 36) + "_" + (int) (Math.random() * 9999));
+            obj.put("timestamp", iso.format(new Date(nowMs)));
+            obj.put("epochMs", nowMs);
+            obj.put("category", category);
+            obj.put("severity", severity);
+            obj.put("title", title);
+            obj.put("description", description);
+            obj.put("component", component);
+            obj.put("operation", operation);
+            obj.put("status", status);
+            if (error != null) {
+                String msg = error.getMessage();
+                obj.put("errorMessage", error.getClass().getSimpleName() + (msg != null ? ": " + msg : ""));
+                String trace = Log.getStackTraceString(error);
+                if (trace != null && trace.length() > 2400) {
+                    trace = trace.substring(0, 2400) + "... [truncated]";
+                }
+                obj.put("stackTrace", trace);
+            }
+
+            JSONArray next = new JSONArray();
+            next.put(obj);
+            int limit = Math.min(arr.length(), MAX_NATIVE_LOGS - 1);
+            for (int i = 0; i < limit; i++) {
+                next.put(arr.get(i));
+            }
+            prefs.edit().putString(DIAG_LOGS_KEY, next.toString()).commit();
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void installSilentCrashHandler() {
+        if (crashHandlerInstalled) return;
+        crashHandlerInstalled = true;
+        final Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
+        final Context appCtx = getApplicationContext();
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            try {
+                recordNativeEvent(
+                        appCtx,
+                        "CRASHES",
+                        "CRITICAL",
+                        "Uncaught Android Exception",
+                        "Fatal uncaught exception on thread " + (thread != null ? thread.getName() : "unknown"),
+                        "AndroidRuntime",
+                        "uncaught_exception",
+                        "FAILED",
+                        throwable
+                );
+            } catch (Exception ignored) {
+            }
+            if (previous != null) {
+                previous.uncaughtException(thread, throwable);
+            }
+        });
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        installSilentCrashHandler();
         attachSetupBridge();
+        recordNativeEvent(
+                this,
+                "APPLICATION",
+                "INFO",
+                "Android MainActivity Created",
+                "MainActivity initialized and Capacitor bridge attached.",
+                "MainActivity",
+                "onCreate",
+                "COMPLETED",
+                null
+        );
     }
 
     @Override
@@ -59,6 +180,39 @@ public class MainActivity extends BridgeActivity {
         super.onResume();
         attachSetupBridge();
         notifyImeStatusToWeb();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        recordNativeEvent(
+                this,
+                "APPLICATION",
+                "DEBUG",
+                "Android MainActivity Paused",
+                "MainActivity entered background/paused state.",
+                "MainActivity",
+                "onPause",
+                "INFO",
+                null
+        );
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        String orient = newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE ? "landscape" : "portrait";
+        recordNativeEvent(
+                this,
+                "APPLICATION",
+                "DEBUG",
+                "Android Configuration Changed",
+                "Configuration updated (orientation=" + orient + ").",
+                "MainActivity",
+                "onConfigurationChanged",
+                "INFO",
+                null
+        );
     }
 
     @Override
@@ -426,6 +580,155 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public void openNativeTestBox(final String initialText, final boolean isLightTheme) {
             mainHandler.post(() -> showNativeTestDialog(initialText, isLightTheme));
+        }
+
+        @JavascriptInterface
+        public String consumeNativeLogs() {
+            try {
+                SharedPreferences prefs = getApplicationContext().getSharedPreferences(DIAG_PREFS_NAME, MODE_PRIVATE);
+                String raw = prefs.getString(DIAG_LOGS_KEY, "[]");
+                if (raw != null && !raw.equals("[]")) {
+                    prefs.edit().putString(DIAG_LOGS_KEY, "[]").apply();
+                }
+                return raw != null ? raw : "[]";
+            } catch (Exception e) {
+                return "[]";
+            }
+        }
+
+        @JavascriptInterface
+        public void clearNativeLogs() {
+            try {
+                SharedPreferences prefs = getApplicationContext().getSharedPreferences(DIAG_PREFS_NAME, MODE_PRIVATE);
+                prefs.edit().remove(DIAG_LOGS_KEY).apply();
+            } catch (Exception ignored) {
+            }
+        }
+
+        @JavascriptInterface
+        public String getDeviceDiagnostics() {
+            try {
+                JSONObject info = new JSONObject();
+                String versionName = "3.0.6";
+                try {
+                    PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+                    if (pi != null && pi.versionName != null) {
+                        versionName = pi.versionName;
+                    }
+                } catch (Exception ignored) {
+                }
+                info.put("appVersion", versionName);
+                info.put("androidRelease", Build.VERSION.RELEASE != null ? Build.VERSION.RELEASE : "Unknown");
+                info.put("sdkInt", Build.VERSION.SDK_INT);
+                info.put("manufacturer", Build.MANUFACTURER != null ? Build.MANUFACTURER : "");
+                info.put("model", Build.MODEL != null ? Build.MODEL : "");
+                return info.toString();
+            } catch (Exception e) {
+                return "{}";
+            }
+        }
+
+        @JavascriptInterface
+        public void shareText(final String title, final String text) {
+            if (text == null || text.isEmpty()) return;
+            mainHandler.post(() -> {
+                try {
+                    Intent sendIntent = new Intent(Intent.ACTION_SEND);
+                    sendIntent.setType("text/plain");
+                    sendIntent.putExtra(Intent.EXTRA_SUBJECT, title != null ? title : "KurdiKeyboard Activity Report");
+                    sendIntent.putExtra(Intent.EXTRA_TEXT, text);
+                    Intent chooser = Intent.createChooser(sendIntent, title != null ? title : "Share Report");
+                    chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(chooser);
+                } catch (Exception err) {
+                    recordNativeEvent(
+                            MainActivity.this,
+                            "ERRORS",
+                            "ERROR",
+                            "Android Share Intent Failed",
+                            "Failed to launch native share chooser for diagnostic report.",
+                            "MainActivity",
+                            "shareText",
+                            "FAILED",
+                            err
+                    );
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public String saveFileToDownloads(final String fileName, final String mimeType, final String content) {
+            JSONObject res = new JSONObject();
+            String safeName = (fileName != null && !fileName.trim().isEmpty())
+                    ? fileName.replaceAll("[^a-zA-Z0-9._-]", "_")
+                    : "kurdikeyboard-backup.json";
+            String safeMime = (mimeType != null && !mimeType.trim().isEmpty())
+                    ? mimeType
+                    : "application/json";
+            byte[] bytes = (content != null ? content : "").getBytes(StandardCharsets.UTF_8);
+
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ContentResolver resolver = getApplicationContext().getContentResolver();
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.Downloads.DISPLAY_NAME, safeName);
+                    values.put(MediaStore.Downloads.MIME_TYPE, safeMime);
+                    values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                    values.put(MediaStore.Downloads.IS_PENDING, 1);
+
+                    Uri uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                    if (uri == null) {
+                        throw new IllegalStateException("MediaStore.Downloads returned null URI");
+                    }
+                    try (OutputStream os = resolver.openOutputStream(uri)) {
+                        if (os == null) {
+                            throw new IllegalStateException("Could not open OutputStream for Downloads URI");
+                        }
+                        os.write(bytes);
+                        os.flush();
+                    }
+                    values.clear();
+                    values.put(MediaStore.Downloads.IS_PENDING, 0);
+                    resolver.update(uri, values, null, null);
+
+                    res.put("ok", true);
+                    res.put("fileName", safeName);
+                    res.put("path", "Download/" + safeName);
+                    return res.toString();
+                } else {
+                    File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    if (downloadsDir != null && !downloadsDir.exists()) {
+                        downloadsDir.mkdirs();
+                    }
+                    File target = new File(downloadsDir, safeName);
+                    try (FileOutputStream fos = new FileOutputStream(target)) {
+                        fos.write(bytes);
+                        fos.flush();
+                    }
+                    res.put("ok", true);
+                    res.put("fileName", safeName);
+                    res.put("path", "Download/" + safeName);
+                    return res.toString();
+                }
+            } catch (Exception err) {
+                recordNativeEvent(
+                        MainActivity.this,
+                        "STORAGE",
+                        "ERROR",
+                        "Save to Android Download Folder Failed",
+                        "Failed to write " + safeName + " into Download directory.",
+                        "MainActivity",
+                        "saveFileToDownloads",
+                        "FAILED",
+                        err
+                );
+                try {
+                    res.put("ok", false);
+                    res.put("error", err.getMessage() != null ? err.getMessage() : err.getClass().getSimpleName());
+                } catch (Exception ignored) {
+                }
+                return res.toString();
+            }
         }
     }
 }

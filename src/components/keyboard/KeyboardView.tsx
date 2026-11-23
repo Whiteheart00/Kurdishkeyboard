@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CornerDownLeft,
   Loader2,
   Maximize2,
   MicOff,
@@ -16,6 +17,7 @@ import {
   Send,
   X,
 } from 'lucide-react';
+import { logEvent } from '../../utils/activityLogger';
 import {
   ClipboardItem,
   KeyboardSettings,
@@ -1411,6 +1413,16 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     if (isListeningVoice) {
       speechRecRef.current?.stop();
       setIsListeningVoice(false);
+      logEvent({
+        category: 'USER_OPERATIONS',
+        severity: 'INFO',
+        title: 'Voice Typing Stopped',
+        description: 'User stopped active speech recognition session.',
+        component: 'KeyboardView',
+        operation: 'voice_typing',
+        status: 'COMPLETED',
+        metadata: { language: settings.activeLanguage },
+      });
       return;
     }
     const SpeechRecognitionCtor =
@@ -1424,6 +1436,16 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     if (!SpeechRecognitionCtor) {
       setVoiceNotice('گەڕانی دەنگی لەم وێبگەڕەدا پشتگیری ناکرێت.');
       window.setTimeout(() => setVoiceNotice(null), 3000);
+      logEvent({
+        category: 'WARNINGS',
+        severity: 'WARNING',
+        title: 'Voice Typing Unsupported',
+        description: 'SpeechRecognition API is not available in this WebView/browser.',
+        component: 'KeyboardView',
+        operation: 'voice_typing',
+        status: 'FAILED',
+        metadata: { language: settings.activeLanguage },
+      });
       return;
     }
 
@@ -1432,7 +1454,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
         lang: string;
         interimResults: boolean;
         onresult: (e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void;
-        onerror: () => void;
+        onerror: (ev?: { error?: string }) => void;
         onend: () => void;
         start: () => void;
         stop: () => void;
@@ -1448,12 +1470,33 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
         const transcript = e.results[0]?.[0]?.transcript;
         if (transcript) {
           onInsertText(`${transcript} `);
+          logEvent({
+            category: 'USER_OPERATIONS',
+            severity: 'SUCCESS',
+            title: 'Voice Typing Transcript Inserted',
+            description: 'Speech recognition produced text and inserted it into the editor.',
+            component: 'KeyboardView',
+            operation: 'voice_typing',
+            status: 'COMPLETED',
+            metadata: { lang: rec.lang, charCount: transcript.length },
+          });
         }
       };
-      rec.onerror = () => {
+      rec.onerror = (ev) => {
         setIsListeningVoice(false);
         setVoiceNotice('دەنگەکە نەبیسترا، تکایە مۆڵەتی مایکرۆفۆن بدە.');
         window.setTimeout(() => setVoiceNotice(null), 3000);
+        logEvent({
+          category: 'WARNINGS',
+          severity: 'WARNING',
+          title: 'Voice Typing Recognition Error',
+          description: 'Speech recognition reported an error (often microphone permission or silence).',
+          component: 'KeyboardView',
+          operation: 'voice_typing',
+          status: 'FAILED',
+          errorMessage: ev?.error ? `SpeechRecognition error: ${ev.error}` : 'SpeechRecognition error',
+          metadata: { lang: rec.lang, errorCode: ev?.error || 'unknown' },
+        });
       };
       rec.onend = () => {
         setIsListeningVoice(false);
@@ -1462,8 +1505,28 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       rec.start();
       setIsListeningVoice(true);
       setActivePanel('keys');
-    } catch {
+      logEvent({
+        category: 'USER_OPERATIONS',
+        severity: 'INFO',
+        title: 'Voice Typing Started',
+        description: `Started speech recognition for locale ${rec.lang}.`,
+        component: 'KeyboardView',
+        operation: 'voice_typing',
+        status: 'STARTED',
+        metadata: { lang: rec.lang },
+      });
+    } catch (err) {
       setIsListeningVoice(false);
+      logEvent({
+        category: 'ERRORS',
+        severity: 'ERROR',
+        title: 'Voice Typing Failed to Start',
+        description: 'An exception occurred while initializing SpeechRecognition.',
+        component: 'KeyboardView',
+        operation: 'voice_typing',
+        status: 'FAILED',
+        error: err,
+      });
     }
   };
 
@@ -1830,6 +1893,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const memoizedKeyRows = useMemo(() => {
     const cleanPunctuationFaces = new Set(['؟', '،', ':', ',', '.']);
     const stripArabicMarks = (s: string) => s.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '');
+    const isNumericAdv = viewMode === 'numeric_advanced';
+    const isNumericPad = isNumericAdv || viewMode === 'phone' || viewMode === 'phone2';
+    const effectiveRowHGap = isNumericAdv ? Math.max(hGapPx, 6) : hGapPx;
 
     return resolvedLayout.rows.map((row, rIdx) => {
       const isLastRow = rIdx === resolvedLayout.rows.length - 1;
@@ -1845,7 +1911,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
         <div
           key={`row_${rIdx}`}
           className={`${isNumTopRow ? 'flex-[0.76]' : 'flex-1'} flex items-stretch ${isCompactMidRow ? 'px-3.5' : ''}`}
-          style={{ gap: `${hGapPx}px` }}
+          style={{ gap: `${effectiveRowHGap}px` }}
         >
           {row.map((key) => {
             const isPhysicalHighlight = Boolean(
@@ -1857,6 +1923,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             const isPunctuationKey = key.type === 'comma' || key.type === 'period';
             const isSpecial =
               isTatweelKey || Boolean(key.type && key.type !== 'char' && !isPunctuationKey);
+            const isNumDigit =
+              isNumericAdv &&
+              /^[0-9٠-٩۰-۹]$/.test(key.primary.trim());
             const displayLabel =
               key.type === 'space'
                 ? spaceLabel
@@ -1873,8 +1942,10 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
               textCol = theme.enterText;
               btnBorder = theme.enterBorder ? `1px solid ${theme.enterBorder}` : 'none';
             } else if (key.type === 'space') {
-              bg = theme.spaceBg;
-              textCol = theme.spaceText || theme.secondaryText;
+              bg = isNumericAdv ? theme.specialKeyBg : theme.spaceBg;
+              textCol = isNumericAdv
+                ? theme.accent
+                : theme.spaceText || theme.secondaryText;
             } else if (key.type === 'shift') {
               bg = shiftState !== 'off' ? theme.accent : theme.shiftBg || theme.specialKeyBg;
               textCol =
@@ -1884,6 +1955,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             } else if (key.type === 'backspace' || isTatweelKey) {
               bg = theme.backspaceBg || theme.specialKeyBg;
               textCol = theme.backspaceText || theme.specialKeyText;
+            } else if (isNumericAdv && key.type === 'characters') {
+              bg = theme.symbolsBg || theme.specialKeyBg;
+              textCol = theme.accent;
             } else if (
               key.type === 'symbols' ||
               key.type === 'symbols2' ||
@@ -1900,10 +1974,14 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             } else if (isSpecial) {
               bg = theme.specialKeyBg;
               textCol = theme.specialKeyText;
+            } else if (isNumericAdv && !isNumDigit) {
+              bg = theme.specialKeyBg;
+              textCol = theme.keyText;
             }
 
             const rawSecondary = key.secondary?.trim() || '';
             const hideClutterHint =
+              isNumericPad ||
               isTatweelKey ||
               isPunctuationKey ||
               key.type === 'space' ||
@@ -2276,6 +2354,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                   } ${isPhysicalHighlight && settings.keyAnimation ? 'scale-[0.94]' : ''}`}
                   style={{
                     ...shapeStyleProps.style,
+                    borderRadius: isNumericAdv
+                      ? `${Math.max(theme.borderRadius, 9)}px`
+                      : shapeStyleProps.style.borderRadius,
                     color: textCol,
                     touchAction: 'none',
                   }}
@@ -2322,10 +2403,17 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       style={{ width: iconSize + 3, height: iconSize + 3 }}
                     />
                   ) : key.type === 'enter' ? (
-                    <KurdiIcon
-                      name="ic_enter"
-                      style={{ width: iconSize + 3, height: iconSize + 3 }}
-                    />
+                    isNumericAdv ? (
+                      <CornerDownLeft
+                        style={{ width: iconSize + 2, height: iconSize + 2 }}
+                        strokeWidth={2.4}
+                      />
+                    ) : (
+                      <KurdiIcon
+                        name="ic_enter"
+                        style={{ width: iconSize + 3, height: iconSize + 3 }}
+                      />
+                    )
                   ) : key.type === 'emoji' ? (
                     <KurdiIcon
                       name="ic_smile"
@@ -2353,18 +2441,33 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       style={{ width: iconSize, height: iconSize }}
                     />
                   ) : key.type === 'space' ? (
-                    <span
-                      className="font-semibold truncate px-2 flex items-center gap-3 pointer-events-none"
-                      style={{ fontSize: `${Math.round(13 * Math.min(1.28, keyContentScale))}px` }}
-                    >
-                      {spaceLabel ? (
-                        <>
-                          <span className="opacity-65 text-[0.92em]">‹</span>
-                          <span>{spaceLabel}</span>
-                          <span className="opacity-65 text-[0.92em]">›</span>
-                        </>
-                      ) : null}
-                    </span>
+                    isNumericAdv ? (
+                      <svg
+                        viewBox="0 0 24 12"
+                        className="pointer-events-none"
+                        style={{ width: 22, height: 11 }}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M4 4v4h16V4" />
+                      </svg>
+                    ) : (
+                      <span
+                        className="font-semibold truncate px-2 flex items-center gap-3 pointer-events-none"
+                        style={{ fontSize: `${Math.round(13 * Math.min(1.28, keyContentScale))}px` }}
+                      >
+                        {spaceLabel ? (
+                          <>
+                            <span className="opacity-65 text-[0.92em]">‹</span>
+                            <span>{spaceLabel}</span>
+                            <span className="opacity-65 text-[0.92em]">›</span>
+                          </>
+                        ) : null}
+                      </span>
+                    )
                   ) : key.type === 'zwnj' ? (
                     <KurdiIcon
                       name="ic_zwnj"
@@ -2372,16 +2475,30 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                     />
                   ) : (
                     <span
-                      className={`font-semibold leading-[1.15] pointer-events-none ${
-                        displayLabel.length > 2 ? 'truncate max-w-[94%]' : ''
+                      className={`${isNumericAdv ? 'font-bold' : 'font-semibold'} leading-[1.15] pointer-events-none ${
+                        isNumericAdv && key.type === 'characters'
+                          ? 'whitespace-nowrap tracking-tight px-0.5'
+                          : displayLabel.length > 2
+                          ? 'truncate max-w-[94%]'
+                          : ''
                       }`}
                       style={{
                         fontSize: `${
-                          key.type === 'symbols' ||
-                          key.type === 'symbols2' ||
-                          key.type === 'characters' ||
-                          key.type === 'numeric_advanced' ||
-                          key.type === 'kana_toggle'
+                          isNumericAdv && key.type === 'characters'
+                            ? displayLabel.length > 6
+                              ? 11
+                              : 12.5
+                            : isNumericAdv && isNumDigit
+                            ? Math.round(letterFontSize * 1.18)
+                            : isNumericAdv && !isLastRow
+                            ? Math.round(letterFontSize * 1.14)
+                            : isNumericAdv && key.type === 'symbols'
+                            ? Math.max(13, letterFontSize - 3)
+                            : key.type === 'symbols' ||
+                              key.type === 'symbols2' ||
+                              key.type === 'characters' ||
+                              key.type === 'numeric_advanced' ||
+                              key.type === 'kana_toggle'
                             ? Math.max(12, letterFontSize - 4)
                             : key.type === 'period'
                             ? Math.max(22, letterFontSize + 2)
@@ -2395,7 +2512,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                           ? isPhraseHint
                             ? `${Math.round(8 * keyContentScale)}px`
                             : `${Math.round(6 * keyContentScale)}px`
-                          : key.type === 'period'
+                          : key.type === 'period' && !isNumericAdv
                           ? '-2px'
                           : '0px',
                       }}
@@ -3140,9 +3257,11 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             {/* Key Rows Container (Main + Modifier Bottom Row rendered authentically from FlorisBoard JSON) */}
             <div
               ref={deckContainerRef}
-              className="flex-1 flex flex-col px-[3px] pt-1 pb-1.5 relative touch-none select-none"
+              className={`flex-1 flex flex-col relative touch-none select-none ${
+                viewMode === 'numeric_advanced' ? 'px-1.5 pt-1.5 pb-2' : 'px-[3px] pt-1 pb-1.5'
+              }`}
               style={{
-                gap: `${vGapPx}px`,
+                gap: `${viewMode === 'numeric_advanced' ? Math.max(vGapPx, 7) : vGapPx}px`,
                 height: `${computedDeckHeight}px`,
                 touchAction: 'none',
               }}
@@ -3620,6 +3739,41 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                       );
                     })}
                   </div>
+                </div>
+              )}
+
+              {viewMode === 'numeric_advanced' && (
+                <div
+                  className="flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 pb-0.5"
+                  style={{ height: '40px' }}
+                  dir="ltr"
+                >
+                  {(settings.numberStyle === 'kurdish'
+                    ? ['١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩', '٠', '(', ')', '-', '×', '÷', '^', '°']
+                    : settings.numberStyle === 'urdu_farsi'
+                    ? ['۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹', '۰', '(', ')', '-', '×', '÷', '^', '°']
+                    : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '(', ')', '-', '×', '÷', '^', '°']
+                  ).map((sym) => (
+                    <button
+                      key={`num_quick_${sym}`}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        triggerSound('char');
+                        commitCharacter(sym);
+                      }}
+                      className="h-full min-w-[36px] flex-1 shrink-0 rounded-lg font-bold text-lg flex items-center justify-center active:scale-95 transition-transform select-none"
+                      style={{
+                        backgroundColor: theme.keyBg,
+                        color: theme.keyText,
+                        border: keyBorderCss,
+                        boxShadow: keyShadowCss,
+                      }}
+                    >
+                      {sym}
+                    </button>
+                  ))}
                 </div>
               )}
 

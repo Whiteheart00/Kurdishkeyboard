@@ -64,6 +64,7 @@ export type SettingsRoute =
   | 'gestures'
   | 'predictions'
   | 'more_settings'
+  | 'activity_logs'
   | 'faq'
   | 'about';
 

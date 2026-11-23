@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, ChevronLeft, Star, X } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, FileText, Star, X } from 'lucide-react';
 import { KeyboardSettings, SettingsRoute } from '../../types/keyboard';
 import { getAppDirection, tOfficial } from '../../data/officialData';
+import { logEvent } from '../../utils/activityLogger';
 import { KurdiIcon, KurdiIconName, KurdiLogo, PremiumBadgeIcon } from '../icons/KurdiIcons';
 import { NotificationBanner } from './SettingsUI';
 
@@ -188,7 +189,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <div className="grid grid-cols-1 gap-2">
             <button
               type="button"
-              onClick={() => window.AndroidAppSetup?.openImeSettings()}
+              onClick={() => {
+                logEvent({
+                  category: 'USER_OPERATIONS',
+                  severity: 'INFO',
+                  title: 'Opened Android IME Activation Settings',
+                  description: 'User launched Android system input method settings screen.',
+                  component: 'HomeScreen',
+                  operation: 'open_ime_settings',
+                  status: 'COMPLETED',
+                  metadata: { imeEnabled, imeSelected },
+                });
+                window.AndroidAppSetup?.openImeSettings();
+              }}
               className={`w-full h-11 px-3.5 rounded-2xl text-xs font-extrabold flex items-center justify-between transition-all active:scale-[0.98] ${
                 imeEnabled
                   ? 'bg-emerald-500/20 border border-emerald-400/30 text-emerald-300'
@@ -205,7 +218,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
             <button
               type="button"
-              onClick={() => window.AndroidAppSetup?.openImePicker()}
+              onClick={() => {
+                logEvent({
+                  category: 'USER_OPERATIONS',
+                  severity: 'INFO',
+                  title: 'Opened Android Input Method Picker',
+                  description: 'User invoked system keyboard picker dialog.',
+                  component: 'HomeScreen',
+                  operation: 'open_ime_picker',
+                  status: 'COMPLETED',
+                  metadata: { imeEnabled, imeSelected },
+                });
+                window.AndroidAppSetup?.openImePicker();
+              }}
               className={`w-full h-11 px-3.5 rounded-2xl text-xs font-extrabold flex items-center justify-between transition-all active:scale-[0.98] ${
                 imeSelected
                   ? 'bg-emerald-500/20 border border-emerald-400/30 text-emerald-300'
@@ -224,7 +249,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
             <button
               type="button"
-              onClick={() => window.AndroidAppSetup?.openNativeTestBox?.('', isLightApp)}
+              onClick={() => {
+                logEvent({
+                  category: 'USER_OPERATIONS',
+                  severity: 'INFO',
+                  title: 'Opened Native Android Keyboard Test Box',
+                  description: 'User launched zero-lag native Android EditText testing dialog.',
+                  component: 'HomeScreen',
+                  operation: 'open_native_test_box',
+                  status: 'COMPLETED',
+                  metadata: { isLightApp },
+                });
+                window.AndroidAppSetup?.openNativeTestBox?.('', isLightApp);
+              }}
               className="w-full h-11 px-3.5 rounded-2xl text-xs font-extrabold flex items-center justify-between transition-all active:scale-[0.98] bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-md"
             >
               <span>٣. تاقیکردنەوەی خێرای تەختەکلیل (بێ لاگ)</span>
@@ -448,6 +485,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </span>
             <span className="text-sm font-bold">
               {tOfficial(lang, 'faq__screen_title', 'ڕێنمایی و پرسیارە باوەکان (FAQ)')}
+            </span>
+          </div>
+          <ChevronLeft className="w-4 h-4 text-zinc-500" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onNavigate('activity_logs')}
+          className={`w-full px-4 py-3.5 flex items-center justify-between transition-colors ${rowHover}`}
+        >
+          <div className="flex items-center gap-3.5">
+            <span className={`w-10 h-10 rounded-full flex items-center justify-center ${iconCircle}`}>
+              <FileText className="w-5 h-5" />
+            </span>
+            <span className="text-sm font-bold">
+              {lang === 'en' ? 'Activity Logs & Reports' : 'تۆماری چالاکی و ڕاپۆرتەکان'}
             </span>
           </div>
           <ChevronLeft className="w-4 h-4 text-zinc-500" />

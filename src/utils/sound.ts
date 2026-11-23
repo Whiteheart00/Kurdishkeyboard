@@ -1,4 +1,5 @@
 import { SoundPackId } from '../types/keyboard';
+import { logEvent, sanitizeUrl } from './activityLogger';
 
 export interface SoundPackMeta {
   id: SoundPackId;
@@ -96,8 +97,19 @@ async function loadAudioBuffer(url: string, ctx: AudioContext): Promise<AudioBuf
       pendingLoads.delete(url);
       return decoded;
     })
-    .catch(() => {
+    .catch((err) => {
       pendingLoads.delete(url);
+      logEvent({
+        category: 'BACKGROUND_TASKS',
+        severity: 'WARNING',
+        title: 'Sound Pack Audio Load Failed',
+        description: `Failed to fetch or decode audio asset ${sanitizeUrl(url)}.`,
+        component: 'SoundEngine',
+        operation: 'preload_sound_asset',
+        status: 'FAILED',
+        error: err,
+        metadata: { assetUrl: sanitizeUrl(url) },
+      });
       return null;
     });
 

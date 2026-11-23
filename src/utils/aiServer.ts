@@ -1,3 +1,5 @@
+import { logEvent, sanitizeUrl, startOperation } from './activityLogger';
+
 export type AiServerSource = 'settings' | 'env' | 'same_origin' | 'none';
 
 export interface ResolvedAiServer {
@@ -91,6 +93,16 @@ export function resolveAiServer(settingsServerUrl?: string): ResolvedAiServer {
 
 export async function testAiServerConnection(baseUrl: string): Promise<AiHealthTestResult> {
   const endpoint = `${baseUrl.replace(/\/+$/, '')}/api/health`;
+  const safeEndpoint = sanitizeUrl(endpoint);
+  const op = startOperation({
+    category: 'USER_OPERATIONS',
+    title: 'AI Server Connection Test',
+    description: `Testing AI server health endpoint at ${safeEndpoint}.`,
+    component: 'AiServerConfig',
+    operation: 'test_ai_server_connection',
+    metadata: { endpoint: safeEndpoint },
+  });
+
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 10000);
 
@@ -101,6 +113,10 @@ export async function testAiServerConnection(baseUrl: string): Promise<AiHealthT
     });
 
     if (!res.ok) {
+      op.fail(new Error(`Server responded with HTTP ${res.status}`), {
+        httpStatus: res.status,
+        description: `AI health endpoint returned HTTP ${res.status}.`,
+      });
       return {
         status: 'error',
         message: `سێرڤەر وەڵامی هەڵەی گەڕاندەوە (کۆدی ${res.status}). دڵنیابە لە دروستی بەستەرەکە.`,
@@ -116,6 +132,10 @@ export async function testAiServerConnection(baseUrl: string): Promise<AiHealthT
     };
 
     if (!data?.ok) {
+      op.fail(new Error('Invalid health payload'), {
+        httpStatus: res.status,
+        description: 'AI server health response did not report ok=true.',
+      });
       return {
         status: 'error',
         message: 'وەڵامی سێرڤەر گونجاو نییە. دڵنیابە بەستەری پڕۆژەی تەختەکلیلی کوردیت داناوە.',
@@ -127,6 +147,16 @@ export async function testAiServerConnection(baseUrl: string): Promise<AiHealthT
         data.keyCount && data.keyCount > 1
           ? ` (${data.keyCount} کلیل × ${data.modelCount || 4} مۆدێل بە گۆڕینی خۆکار)`
           : '';
+      op.complete({
+        httpStatus: res.status,
+        description: 'AI server is reachable and Gemini credentials are configured.',
+        metadata: {
+          endpoint: safeEndpoint,
+          platform: data.platform || 'unknown',
+          keyCount: data.keyCount || 1,
+          modelCount: data.modelCount || 1,
+        },
+      });
       return {
         status: 'ready',
         platform: data.platform,
@@ -134,6 +164,18 @@ export async function testAiServerConnection(baseUrl: string): Promise<AiHealthT
       };
     }
 
+    logEvent({
+      category: 'WARNINGS',
+      severity: 'WARNING',
+      title: 'AI Server Missing API Key Configuration',
+      description: 'AI server is reachable, but server-side GEMINI_API_KEY is not configured.',
+      component: 'AiServerConfig',
+      operation: 'test_ai_server_connection',
+      status: 'WARNING',
+      httpStatus: res.status,
+      operationId: op.operationId,
+      metadata: { endpoint: safeEndpoint, platform: data.platform || 'unknown' },
+    });
     return {
       status: 'missing_key',
       platform: data.platform,
@@ -142,11 +184,19 @@ export async function testAiServerConnection(baseUrl: string): Promise<AiHealthT
     };
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
+      op.fail(err, {
+        category: 'NETWORK',
+        description: 'AI server health check timed out after 10,000ms.',
+      });
       return {
         status: 'error',
         message: 'کاتی چاوەڕوانی تەواو بوو. دڵنیابە لە هێڵی ئینتەرنێت و بەستەری سێرڤەرەکە.',
       };
     }
+    op.fail(err, {
+      category: 'NETWORK',
+      description: 'Could not reach AI server endpoint.',
+    });
     return {
       status: 'error',
       message: 'نەتوانرا پەیوەندی بە سێرڤەرەکەوە بکرێت. دڵنیابە بەستەرەکە دروستە و ئینتەرنێتت هەیە.',

@@ -1,12 +1,14 @@
 import React, { useRef, useState } from 'react';
-import { Check, ChevronDown, Pencil, Plus, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, FileText, Pencil, Plus, X } from 'lucide-react';
 import {
   AppLanguageCode,
   AppThemeMode,
   KeyboardSettings,
+  SettingsRoute,
   SwipeAction,
   TextShortcut,
 } from '../../types/keyboard';
+import { logEvent } from '../../utils/activityLogger';
 import { playKeyFeedback, preloadSoundPack, SOUND_PACKS } from '../../utils/sound';
 import { getAppDirection, getFaqItems, tOfficial } from '../../data/officialData';
 import {
@@ -1110,6 +1112,7 @@ export const PredictionsScreen: React.FC<BaseSubProps> = ({
 
 // 5. More Settings Screen matching Screenshot 23
 interface MoreSettingsProps extends BaseSubProps {
+  onNavigate?: (route: SettingsRoute) => void;
   onImportSettings: (data: Partial<KeyboardSettings>) => void;
   onResetAll: () => void;
 }
@@ -1118,44 +1121,185 @@ export const MoreSettingsScreen: React.FC<MoreSettingsProps> = ({
   settings,
   onUpdate,
   onBack,
+  onNavigate,
   isLightApp,
   onImportSettings,
   onResetAll,
 }) => {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [statusMsg, setStatusMsg] = useState<{
+    text: string;
+    path?: string;
+    isError?: boolean;
+  } | null>(null);
 
   const cycleAppTheme = () => {
     const order: AppThemeMode[] = ['amoled', 'dark', 'light'];
     const next = order[(order.indexOf(settings.appTheme) + 1) % order.length];
     onUpdate({ appTheme: next });
+    logEvent({
+      category: 'USER_OPERATIONS',
+      severity: 'INFO',
+      title: 'Application Theme Changed',
+      description: `Switched application UI theme from ${settings.appTheme} to ${next}.`,
+      component: 'MoreSettingsScreen',
+      operation: 'change_app_theme',
+      status: 'COMPLETED',
+      metadata: { previousTheme: settings.appTheme, nextTheme: next },
+    });
   };
 
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'kurdikeyboard-backup.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    setStatusMsg('فایلی پاشەکەوتکردن بە سەرکەوتوویی دابەزێنرا.');
-    window.setTimeout(() => setStatusMsg(null), 3000);
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(
+      now.getHours()
+    )}${pad(now.getMinutes())}`;
+    const fileName = `kurdikeyboard-backup-${stamp}.json`;
+
+    try {
+      const payload = JSON.stringify(settings, null, 2);
+
+      // Inside Android APK: save natively into the phone's public Download folder (MediaStore.Downloads)
+      if (typeof window !== 'undefined' && window.AndroidAppSetup?.saveFileToDownloads) {
+        const rawResult = window.AndroidAppSetup.saveFileToDownloads(
+          fileName,
+          'application/json',
+          payload
+        );
+        const parsed = JSON.parse(rawResult || '{}') as {
+          ok?: boolean;
+          path?: string;
+          fileName?: string;
+          error?: string;
+        };
+        if (!parsed.ok) {
+          throw new Error(parsed.error || 'Native Download write failed');
+        }
+        const savedPath = parsed.path || `Download/${fileName}`;
+        setStatusMsg({
+          text: 'فایلی پاشەکەوتکردن بە سەرکەوتوویی لە بەشی Download هەڵگیرا.',
+          path: savedPath,
+        });
+        logEvent({
+          category: 'STORAGE',
+          severity: 'SUCCESS',
+          title: 'Settings Backup Saved to Download Folder',
+          description: `Saved keyboard settings backup to ${savedPath}.`,
+          component: 'MoreSettingsScreen',
+          operation: 'export_settings_backup',
+          status: 'COMPLETED',
+          metadata: { savedPath, byteSize: payload.length, engine: 'AndroidMediaStoreDownloads' },
+        });
+        return;
+      }
+
+      // Standard Browser: trigger direct Download into the user's Downloads folder
+      const blob = new Blob([payload], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+
+      const downloadPath = `Download/${fileName}`;
+      setStatusMsg({
+        text: 'فایلی پاشەکەوتکردن بە سەرکەوتوویی دابەزێنرا بۆ بەشی Download.',
+        path: downloadPath,
+      });
+      logEvent({
+        category: 'STORAGE',
+        severity: 'SUCCESS',
+        title: 'Settings Backup Exported',
+        description: `Exported keyboard settings to ${downloadPath}.`,
+        component: 'MoreSettingsScreen',
+        operation: 'export_settings_backup',
+        status: 'COMPLETED',
+        metadata: { savedPath: downloadPath, byteSize: payload.length, engine: 'BrowserDownload' },
+      });
+    } catch (err) {
+      setStatusMsg({
+        text: 'هەڵە لە پاشەکەوتکردنی فایلدا ڕوویدا.',
+        isError: true,
+      });
+      logEvent({
+        category: 'STORAGE',
+        severity: 'ERROR',
+        title: 'Settings Backup Export Failed',
+        description: 'Failed to save or download settings backup JSON file.',
+        component: 'MoreSettingsScreen',
+        operation: 'export_settings_backup',
+        status: 'FAILED',
+        error: err,
+      });
+    }
   };
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result || '{}'));
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          throw new Error('Backup JSON must be an object');
+        }
         onImportSettings(parsed);
-        setStatusMsg('ڕێکخستنەکان بە سەرکەوتوویی گەڕێنرانەوە.');
-      } catch {
-        setStatusMsg('فایلەکە دروست نییە.');
+        setStatusMsg({
+          text: 'ڕێکخستنەکان بە سەرکەوتوویی گەڕێنرانەوە.',
+          path: file.name,
+        });
+        logEvent({
+          category: 'STORAGE',
+          severity: 'SUCCESS',
+          title: 'Settings Backup Imported',
+          description: 'Restored settings from user-selected JSON backup file.',
+          component: 'MoreSettingsScreen',
+          operation: 'import_settings_backup',
+          status: 'COMPLETED',
+          metadata: {
+            fileSize: file.size,
+            restoredKeysCount: Object.keys(parsed).length,
+          },
+        });
+      } catch (err) {
+        setStatusMsg({
+          text: 'فایلەکە دروست نییە. تکایە فایلی JSON ـی پاشەکەوتکراو لە فۆڵدەری Download هەڵبژێرە.',
+          isError: true,
+        });
+        logEvent({
+          category: 'STORAGE',
+          severity: 'ERROR',
+          title: 'Settings Backup Import Failed',
+          description: 'Selected backup file could not be parsed as valid JSON.',
+          component: 'MoreSettingsScreen',
+          operation: 'import_settings_backup',
+          status: 'FAILED',
+          error: err,
+          metadata: { fileSize: file.size },
+        });
       }
-      window.setTimeout(() => setStatusMsg(null), 3000);
+    };
+    reader.onerror = () => {
+      setStatusMsg({
+        text: 'خوێندنەوەی فایلەکە سەرکەوتوو نەبوو.',
+        isError: true,
+      });
+      logEvent({
+        category: 'STORAGE',
+        severity: 'ERROR',
+        title: 'Settings Backup File Read Error',
+        description: 'FileReader failed while reading settings backup file.',
+        component: 'MoreSettingsScreen',
+        operation: 'import_settings_backup',
+        status: 'FAILED',
+        error: reader.error,
+      });
     };
     reader.readAsText(file);
   };
@@ -1170,8 +1314,32 @@ export const MoreSettingsScreen: React.FC<MoreSettingsProps> = ({
         />
 
         {statusMsg && (
-          <div className="rounded-2xl bg-emerald-500/15 border border-emerald-500/30 p-3 text-xs font-bold text-emerald-300 text-center">
-            {statusMsg}
+          <div
+            className={`rounded-2xl border p-3.5 text-xs space-y-1.5 ${
+              statusMsg.isError
+                ? 'bg-rose-500/15 border-rose-500/35 text-rose-300'
+                : 'bg-emerald-500/15 border-emerald-500/35 text-emerald-300'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span className="font-bold leading-relaxed">{statusMsg.text}</span>
+              <button
+                type="button"
+                onClick={() => setStatusMsg(null)}
+                className="p-0.5 rounded-lg opacity-75 hover:opacity-100 shrink-0"
+                aria-label="داخستن"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {statusMsg.path && (
+              <div
+                className="rounded-xl bg-black/25 px-2.5 py-1.5 font-mono text-[11px] text-emerald-200 break-all"
+                dir="ltr"
+              >
+                📁 {statusMsg.path}
+              </div>
+            )}
           </div>
         )}
 
@@ -1257,14 +1425,14 @@ export const MoreSettingsScreen: React.FC<MoreSettingsProps> = ({
           className="w-full py-2.5 flex items-center justify-between border-b border-white/5 text-right"
         >
           <div className="flex items-center gap-3">
-            <KurdiIcon name="ic_backup" className="w-5 h-5 text-zinc-400" />
+            <KurdiIcon name="ic_backup" className="w-5 h-5 text-zinc-400 shrink-0" />
             <div>
               <div className="text-sm font-bold flex items-center gap-2">
-                <span>پاشەکەوتکردنی داتاکان</span>
+                <span>پاشەکەوتکردن و دابەزاندنی ڕێکخستنەکان</span>
                 <ProBadge unlocked={settings.proUnlocked} />
               </div>
               <div className="text-xs text-zinc-400 mt-0.5">
-                هەڵگرتنی ڕێکخستن و دەستکاریکردنەکانی تەختەکلیل
+                شوێنی پاشەکەوت: فۆڵدەری <span className="font-mono text-sky-400" dir="ltr">Download/</span>
               </div>
             </div>
           </div>
@@ -1276,14 +1444,14 @@ export const MoreSettingsScreen: React.FC<MoreSettingsProps> = ({
           className="w-full py-2.5 flex items-center justify-between border-b border-white/5 text-right"
         >
           <div className="flex items-center gap-3">
-            <KurdiIcon name="ic_download" className="w-5 h-5 text-zinc-400" />
+            <KurdiIcon name="ic_download" className="w-5 h-5 text-zinc-400 shrink-0" />
             <div>
               <div className="text-sm font-bold flex items-center gap-2">
                 <span>گێڕانەوەی داتاکان</span>
                 <ProBadge unlocked={settings.proUnlocked} />
               </div>
               <div className="text-xs text-zinc-400 mt-0.5">
-                گێڕانەوەی ڕێکخستن و زیادکراوە هەڵگیراوەکان لە ڕێی فایلی پاشەکەوتکراوەوە
+                هەڵبژاردنی فایلی پاشەکەوتکراوی JSON لە فۆڵدەری <span className="font-mono text-sky-400" dir="ltr">Download/</span>
               </div>
             </div>
           </div>
@@ -1291,7 +1459,7 @@ export const MoreSettingsScreen: React.FC<MoreSettingsProps> = ({
         <input
           ref={fileRef}
           type="file"
-          accept="application/json"
+          accept=".json,application/json,text/plain"
           onChange={handleImportFile}
           className="hidden"
         />
@@ -1312,6 +1480,29 @@ export const MoreSettingsScreen: React.FC<MoreSettingsProps> = ({
             label="تەختەکلیلی دەرەکی"
           />
         </div>
+
+        {onNavigate && (
+          <button
+            type="button"
+            onClick={() => onNavigate('activity_logs')}
+            className="w-full py-2.5 flex items-center justify-between border-b border-white/5 text-right"
+          >
+            <div className="flex items-center gap-3">
+              <FileText className="w-5 h-5 text-zinc-400 shrink-0" />
+              <div>
+                <div className="text-sm font-bold">
+                  {settings.appLanguage === 'en'
+                    ? 'Activity Logs & Reports'
+                    : 'تۆماری چالاکی و ڕاپۆرتەکان'}
+                </div>
+                <div className="text-xs text-zinc-400 mt-0.5">
+                  Activity Logs & Reports · بینین، کۆپیکردن و بەڕێوەبردنی ڕاپۆرتە تەکنیکییەکان
+                </div>
+              </div>
+            </div>
+            <ChevronLeft className="w-4 h-4 text-zinc-500 shrink-0" />
+          </button>
+        )}
 
         <button
           type="button"

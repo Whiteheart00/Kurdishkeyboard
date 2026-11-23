@@ -17,9 +17,11 @@ import { findSubtypePreset } from './data/layouts';
 import { normalizeSwipeAction } from './data/gestures';
 import { preloadSoundPack } from './utils/sound';
 import { idbGet, idbSet, requestPersistentStorage } from './utils/persistentStorage';
+import { initDiagnosticsSystem, logEvent } from './utils/activityLogger';
 import { KurdiIcon, KurdiLogo } from './components/icons/KurdiIcons';
 import { KeyboardView } from './components/keyboard/KeyboardView';
 import { HomeScreen } from './components/settings/HomeScreen';
+import { ActivityLogsScreen } from './components/settings/ActivityLogsScreen';
 import {
   AISettingsScreen,
   FontStyleScreen,
@@ -79,6 +81,11 @@ interface AndroidAppSetupBridge {
   openImeSettings: () => void;
   openImePicker: () => void;
   openNativeTestBox?: (initialText: string, isLightTheme: boolean) => void;
+  consumeNativeLogs?: () => string;
+  clearNativeLogs?: () => void;
+  getDeviceDiagnostics?: () => string;
+  shareText?: (title: string, text: string) => void;
+  saveFileToDownloads?: (fileName: string, mimeType: string, content: string) => string;
 }
 
 declare global {
@@ -399,34 +406,84 @@ export default function App() {
     };
   }, [isAndroidApk]);
 
+  // Initialize silent on-device Activity Logs & Diagnostics engine once per launch
+  useEffect(() => {
+    initDiagnosticsSystem({
+      mode: isNativeImeMode ? 'ime' : 'app',
+      appTheme: settings.appTheme,
+      appLanguage: settings.appLanguage,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Request browser persistent storage and recover from IndexedDB if localStorage was cleared after restart
   useEffect(() => {
-    requestPersistentStorage();
+    requestPersistentStorage().then((status) => {
+      if (!isNativeImeMode) {
+        logEvent({
+          category: 'STORAGE',
+          severity: status === 'granted' ? 'SUCCESS' : 'INFO',
+          title: `Persistent Storage Request (${status})`,
+          description: `navigator.storage.persist() resolved with status "${status}".`,
+          component: 'PersistentStorage',
+          operation: 'request_persistent_storage',
+          status: status === 'granted' ? 'COMPLETED' : 'INFO',
+          metadata: { persistStatus: status },
+        });
+      }
+    });
     let cancelled = false;
     (async () => {
       try {
         const hasLocalClip = Boolean(localStorage.getItem(STORAGE_KEY_CLIPBOARD));
         const hasLocalSettings = Boolean(localStorage.getItem(STORAGE_KEY_SETTINGS));
         const hasLocalEditor = localStorage.getItem(STORAGE_KEY_EDITOR) !== null;
+        let recoveredKeys = 0;
 
         if (!hasLocalClip) {
           const idbClip = await idbGet<ClipboardItem[]>(STORAGE_KEY_CLIPBOARD);
           if (!cancelled && Array.isArray(idbClip) && idbClip.length > 0) {
             setClipboardItems(idbClip);
+            recoveredKeys++;
           }
         }
         if (!hasLocalSettings) {
           const idbSettings = await idbGet<Partial<KeyboardSettings>>(STORAGE_KEY_SETTINGS);
           if (!cancelled && idbSettings) {
             setSettings(hydrateSettings(idbSettings));
+            recoveredKeys++;
           }
         }
         if (!hasLocalEditor) {
           const idbEditor = await idbGet<string>(STORAGE_KEY_EDITOR);
           if (!cancelled && typeof idbEditor === 'string') {
             setEditorText(idbEditor);
+            recoveredKeys++;
           }
         }
+        if (recoveredKeys > 0) {
+          logEvent({
+            category: 'BACKGROUND_TASKS',
+            severity: 'SUCCESS',
+            title: 'Recovered Local Data from IndexedDB',
+            description: `Restored ${recoveredKeys} storage bucket(s) from IndexedDB backup after localStorage reset.`,
+            component: 'PersistentStorage',
+            operation: 'idb_recovery',
+            status: 'COMPLETED',
+            metadata: { recoveredKeys },
+          });
+        }
+      } catch (err) {
+        logEvent({
+          category: 'STORAGE',
+          severity: 'ERROR',
+          title: 'IndexedDB Hydration Failed',
+          description: 'Error occurred while checking IndexedDB fallback storage on startup.',
+          component: 'PersistentStorage',
+          operation: 'idb_recovery',
+          status: 'FAILED',
+          error: err,
+        });
       } finally {
         idbHydratedRef.current = true;
       }
@@ -434,7 +491,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isNativeImeMode]);
 
   // Sync dark class on <html>
   useEffect(() => {
@@ -462,8 +519,17 @@ export default function App() {
         lastSettingsJsonRef.current = serialized;
         localStorage.setItem(STORAGE_KEY_SETTINGS, serialized);
       }
-    } catch {
-      // Ignore storage quota errors
+    } catch (err) {
+      logEvent({
+        category: 'STORAGE',
+        severity: 'ERROR',
+        title: 'Settings localStorage Write Failed',
+        description: 'Failed to persist keyboard settings to localStorage.',
+        component: 'AppStorage',
+        operation: 'save_settings',
+        status: 'FAILED',
+        error: err,
+      });
     }
     const timer = window.setTimeout(() => {
       idbSet(STORAGE_KEY_SETTINGS, settings);
@@ -479,8 +545,18 @@ export default function App() {
         lastClipboardJsonRef.current = serialized;
         localStorage.setItem(STORAGE_KEY_CLIPBOARD, serialized);
       }
-    } catch {
-      // Ignore storage quota errors
+    } catch (err) {
+      logEvent({
+        category: 'STORAGE',
+        severity: 'ERROR',
+        title: 'Clipboard localStorage Write Failed',
+        description: 'Failed to persist clipboard history to localStorage.',
+        component: 'AppStorage',
+        operation: 'save_clipboard',
+        status: 'FAILED',
+        error: err,
+        metadata: { itemCount: clipboardItems.length },
+      });
     }
     const timer = window.setTimeout(() => {
       idbSet(STORAGE_KEY_CLIPBOARD, clipboardItems);
@@ -1175,13 +1251,31 @@ export default function App() {
             settings={settings}
             onUpdate={updateSettings}
             onBack={goBack}
+            onNavigate={navigateTo}
             isLightApp={isLightApp}
             onImportSettings={(data) => setSettings(hydrateSettings(data))}
             onResetAll={() => {
               setSettings(DEFAULT_SETTINGS);
               setClipboardItems(INITIAL_CLIPBOARD);
+              logEvent({
+                category: 'USER_OPERATIONS',
+                severity: 'WARNING',
+                title: 'All Keyboard Settings Reset to Defaults',
+                description: 'User triggered full reset of keyboard preferences and clipboard items.',
+                component: 'MoreSettingsScreen',
+                operation: 'reset_all_settings',
+                status: 'COMPLETED',
+              });
               showToast('هەموو ڕێکخستنەکان گەڕێنرانەوە');
             }}
+          />
+        );
+      case 'activity_logs':
+        return (
+          <ActivityLogsScreen
+            settings={settings}
+            onBack={goBack}
+            isLightApp={isLightApp}
           />
         );
       case 'faq':

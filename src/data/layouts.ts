@@ -782,6 +782,55 @@ export function resolveLayoutRows(
     return converted;
   });
 
+  // Match original KurdiKeyboard numeric_advanced pixel-perfect 5-column grid & balanced bottom row
+  if (viewMode === 'numeric_advanced' && specRows.length >= 4) {
+    const shortLangLabel =
+      langConfig.code === 'ckb'
+        ? 'کوردی'
+        : langConfig.code === 'en'
+        ? 'English'
+        : (langConfig.nativeName || langConfig.name || 'ABC').split(/[\s(]/)[0];
+
+    const topGridWidths = [1.0, 1.38, 1.38, 1.38, 1.0];
+    specRows = specRows.map((row, rIdx) => {
+      if (rIdx < 3 && row.length === 5) {
+        return row.map((k, cIdx) => ({
+          ...k,
+          width: topGridWidths[cIdx],
+        }));
+      }
+      if (rIdx === specRows.length - 1) {
+        return row.map((k) => {
+          if (k.type === 'characters') {
+            return { ...k, primary: shortLangLabel, width: 1.32 };
+          }
+          if (k.type === 'symbols') {
+            return { ...k, width: 1.16 };
+          }
+          if (k.type === 'comma' || k.primary === ',' || k.primary === '،') {
+            return { ...k, width: 0.94 };
+          }
+          if (k.primary === '0' || k.primary === '٠' || k.primary === '۰' || k.code === 48 || k.code === 1632) {
+            return { ...k, width: 1.08 };
+          }
+          if (k.primary === '=' || k.code === 61) {
+            return { ...k, width: 0.94 };
+          }
+          if (k.type === 'space') {
+            return { ...k, width: 2.84 };
+          }
+          if (k.type === 'enter') {
+            return { ...k, width: 1.36 };
+          }
+          return { ...k, width: 1.0 };
+        });
+      }
+      return row;
+    });
+  } else if (viewMode === 'phone' || viewMode === 'phone2') {
+    specRows = specRows.map((row) => row.map((k) => ({ ...k, width: 1.0 })));
+  }
+
   // When number row is OFF on a 10-key top letter row, surface 1..0 as corner hints & long-press options (matching original KurdiKeyboard)
   const effectiveNumRowOff =
     settings.numberRowMode === 'never' ||
