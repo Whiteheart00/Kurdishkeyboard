@@ -127,6 +127,9 @@ public class KurdiKeyboardImeService extends InputMethodService {
                 super.onReceivedError(view, request, error);
                 try {
                     String path = (request != null && request.getUrl() != null) ? request.getUrl().getPath() : "unknown";
+                    if (path != null && path.contains("emoji-datasource-facebook")) {
+                        return;
+                    }
                     CharSequence desc = error != null ? error.getDescription() : "WebView resource error";
                     MainActivity.recordNativeEvent(
                             KurdiKeyboardImeService.this,
@@ -148,6 +151,9 @@ public class KurdiKeyboardImeService extends InputMethodService {
                 super.onReceivedHttpError(view, request, errorResponse);
                 try {
                     String path = (request != null && request.getUrl() != null) ? request.getUrl().getPath() : "unknown";
+                    if (path != null && path.contains("emoji-datasource-facebook")) {
+                        return;
+                    }
                     int status = errorResponse != null ? errorResponse.getStatusCode() : 0;
                     MainActivity.recordNativeEvent(
                             KurdiKeyboardImeService.this,

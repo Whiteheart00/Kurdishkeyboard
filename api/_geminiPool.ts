@@ -1,41 +1,76 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 
 export interface ModelCandidate {
   id: string;
-  thinkingLevel?: 'MINIMAL' | 'LOW';
+  thinkingLevel?: ThinkingLevel;
 }
 
 /**
  * Multi-model failover chain (each model carries its own independent quota per API key).
- * Ordered from highest-availability GA flash-lite models to additional independent-quota fallbacks.
+ * Uses active supported models only (retired gemini-2.0-* models removed).
  */
 export const MODEL_CANDIDATES: ModelCandidate[] = [
+  { id: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW },
+  { id: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL },
   { id: 'gemini-2.5-flash-lite' },
   { id: 'gemini-2.5-flash' },
-  { id: 'gemini-3.1-flash-lite', thinkingLevel: 'MINIMAL' },
-  { id: 'gemini-2.0-flash-lite' },
-  { id: 'gemini-2.0-flash' },
 ];
 
 const PLACEHOLDER_KEYS = new Set(['MY_GEMINI_API_KEY', 'YOUR_GEMINI_API_KEY', '']);
+const VALID_ASCII_KEY_RE = /^[\x21-\x7E]{16,128}$/;
+const EMBEDDED_GEMINI_KEY_RE = /AIza[0-9A-Za-z_-]{20,60}/g;
+
+export interface KeyInspectionResult {
+  validKeys: string[];
+  rejectedCount: number;
+}
 
 /**
- * Collects all configured Gemini API keys from process.env:
+ * Collects and sanitizes all configured Gemini API keys from process.env:
  * - GEMINI_API_KEY (supports single key or comma/newline-separated keys)
  * - GEMINI_API_KEYS (optional comma/newline-separated list)
  * - GEMINI_API_KEY_1, GEMINI_API_KEY_2, ..., GEMINI_API_KEY_N (any positive integer)
+ *
+ * Strictly guarantees pure printable ASCII keys so non-ASCII/Kurdish characters
+ * pasted alongside keys can never crash fetch() headers with a ByteString TypeError.
  */
-export function collectGeminiApiKeys(): string[] {
+export function inspectGeminiApiKeys(): KeyInspectionResult {
   const seen = new Set<string>();
-  const keys: string[] = [];
+  const validKeys: string[] = [];
+  let rejectedCount = 0;
+
+  const pushKey = (candidate: string) => {
+    const clean = candidate.trim().replace(/^["']|["']$/g, '');
+    if (!clean || PLACEHOLDER_KEYS.has(clean)) return;
+    if (!VALID_ASCII_KEY_RE.test(clean)) {
+      rejectedCount += 1;
+      return;
+    }
+    if (!seen.has(clean)) {
+      seen.add(clean);
+      validKeys.push(clean);
+    }
+  };
 
   const addRaw = (raw: string | undefined) => {
     if (!raw) return;
     for (const part of raw.split(/[\s,;]+/)) {
-      const clean = part.trim().replace(/^["']|["']$/g, '');
-      if (clean && !PLACEHOLDER_KEYS.has(clean) && !seen.has(clean)) {
-        seen.add(clean);
-        keys.push(clean);
+      const trimmed = part.trim().replace(/^["']|["']$/g, '');
+      if (!trimmed || PLACEHOLDER_KEYS.has(trimmed)) continue;
+
+      if (VALID_ASCII_KEY_RE.test(trimmed)) {
+        pushKey(trimmed);
+        continue;
+      }
+
+      // Rescue valid AIza... tokens even if non-ASCII/Kurdish text was accidentally pasted next to them
+      const rescued = trimmed.match(EMBEDDED_GEMINI_KEY_RE);
+      if (rescued && rescued.length > 0) {
+        for (const token of rescued) {
+          pushKey(token);
+        }
+      } else {
+        rejectedCount += 1;
       }
     }
   };
@@ -55,7 +90,11 @@ export function collectGeminiApiKeys(): string[] {
     addRaw(item.val);
   }
 
-  return keys;
+  return { validKeys, rejectedCount };
+}
+
+export function collectGeminiApiKeys(): string[] {
+  return inspectGeminiApiKeys().validKeys;
 }
 
 // Module-level state (persists across warm serverless invocations & Node server lifetime)
@@ -75,6 +114,7 @@ function getClientForKey(apiKey: string): GoogleGenAI {
     client = new GoogleGenAI({
       apiKey,
       httpOptions: {
+        timeout: 6500,
         headers: {
           'User-Agent': 'aistudio-build',
         },
@@ -134,6 +174,8 @@ function classifyGeminiError(err: unknown): { kind: ErrorKind; message: string }
     lower.includes('api_key_invalid') ||
     lower.includes('api key not valid') ||
     lower.includes('permission_denied') ||
+    lower.includes('bytestring') ||
+    lower.includes('greater than 255') ||
     lower.includes('403') ||
     lower.includes('unauthorized') ||
     lower.includes('401')
@@ -217,7 +259,7 @@ function buildAttemptPlan(keys: string[]): { keyIdx: number; apiKey: string; mod
 function buildConfig(systemInstruction: string, model: ModelCandidate) {
   return model.thinkingLevel
     ? {
-        thinkingConfig: { thinkingLevel: model.thinkingLevel as never },
+        thinkingConfig: { thinkingLevel: model.thinkingLevel },
         systemInstruction,
       }
     : { systemInstruction };

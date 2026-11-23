@@ -748,10 +748,10 @@ export function formatMultipleReports(
 
 function shouldInstrumentFetchUrl(rawUrl: string): boolean {
   if (!rawUrl) return false;
-  // Skip noisy local static asset requests (icons/fonts/js/css chunks) unless they fail
+  // Skip noisy local static asset requests (icons/fonts/audio/js/css chunks) unless they fail
   const lower = rawUrl.toLowerCase();
   const isStatic =
-    /\.(png|jpg|jpeg|webp|svg|woff2?|ttf|otf|css|js|ico)(\?|$)/i.test(lower) &&
+    /\.(png|jpg|jpeg|webp|svg|woff2?|ttf|otf|css|js|ico|ogg|mp3|wav)(\?|$)/i.test(lower) &&
     !lower.includes('/api/');
   return !isStatic;
 }
@@ -760,11 +760,10 @@ function installNetworkInterceptor(): void {
   if (typeof window === 'undefined' || typeof window.fetch !== 'function') return;
   const win = window as unknown as { __kurdiFetchInstrumented?: boolean };
   if (win.__kurdiFetchInstrumented) return;
-  win.__kurdiFetchInstrumented = true;
 
   const originalFetch = window.fetch.bind(window);
 
-  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  const wrappedFetch: typeof window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const rawUrl =
       typeof input === 'string'
         ? input
@@ -858,6 +857,28 @@ function installNetworkInterceptor(): void {
       throw err;
     }
   };
+
+  try {
+    const desc =
+      Object.getOwnPropertyDescriptor(window, 'fetch') ||
+      Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window), 'fetch');
+    if (desc && !desc.writable && desc.set === undefined) {
+      if (desc.configurable) {
+        Object.defineProperty(window, 'fetch', {
+          value: wrappedFetch,
+          configurable: true,
+          writable: true,
+        });
+        win.__kurdiFetchInstrumented = true;
+      }
+      // Non-configurable getter-only window.fetch (e.g. sandboxed preview): skip gracefully
+      return;
+    }
+    window.fetch = wrappedFetch;
+    win.__kurdiFetchInstrumented = true;
+  } catch {
+    // Some WebView / preview runtimes expose window.fetch as a read-only getter; never crash startup
+  }
 }
 
 export function initDiagnosticsSystem(context: {
@@ -977,6 +998,10 @@ export function initDiagnosticsSystem(context: {
             (target as HTMLImageElement).src ||
             (target as HTMLLinkElement).href ||
             '';
+          // Optional Facebook emoji PNGs seamlessly fall back to native system emoji
+          if (src.includes('emoji-datasource-facebook')) {
+            return;
+          }
           logEvent({
             category: 'WARNINGS',
             severity: 'WARNING',
@@ -1007,22 +1032,24 @@ export function initDiagnosticsSystem(context: {
     });
   });
 
-  // Application lifecycle: pause / background / resume
-  document.addEventListener('visibilitychange', () => {
-    const hidden = document.visibilityState === 'hidden';
-    logEvent({
-      category: 'APPLICATION',
-      severity: 'DEBUG',
-      title: hidden ? 'Application Moved to Background' : 'Application Resumed',
-      description: hidden
-        ? 'Document visibility changed to hidden (paused/backgrounded).'
-        : 'Document visibility changed to visible (resumed foreground).',
-      component: 'AppLifecycle',
-      operation: hidden ? 'app_background' : 'app_resume',
-      status: 'INFO',
-      metadata: { visibilityState: document.visibilityState, mode: context.mode },
+  // Application lifecycle: pause / background / resume (skip noisy IME open/close visibility toggles)
+  if (context.mode === 'app') {
+    document.addEventListener('visibilitychange', () => {
+      const hidden = document.visibilityState === 'hidden';
+      logEvent({
+        category: 'APPLICATION',
+        severity: 'DEBUG',
+        title: hidden ? 'Application Moved to Background' : 'Application Resumed',
+        description: hidden
+          ? 'Document visibility changed to hidden (paused/backgrounded).'
+          : 'Document visibility changed to visible (resumed foreground).',
+        component: 'AppLifecycle',
+        operation: hidden ? 'app_background' : 'app_resume',
+        status: 'INFO',
+        metadata: { visibilityState: document.visibilityState, mode: context.mode },
+      });
     });
-  });
+  }
 
   // Clean shutdown marker
   const markCleanClose = (trigger: string) => {
@@ -1074,14 +1101,24 @@ export function initDiagnosticsSystem(context: {
 
   // Configuration changes (debounced viewport / orientation changes)
   let resizeTimer: number | null = null;
+  let lastWidth = window.innerWidth;
   let lastSize = `${window.innerWidth}x${window.innerHeight}`;
   window.addEventListener('resize', () => {
     if (resizeTimer !== null) window.clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(() => {
-      const nextSize = `${window.innerWidth}x${window.innerHeight}`;
+      const nextWidth = window.innerWidth;
+      const nextSize = `${nextWidth}x${window.innerHeight}`;
       if (nextSize === lastSize) return;
+      // In IME mode, ignore minor panel height adjustments when viewport width did not change
+      if (context.mode === 'ime' && nextWidth === lastWidth) {
+        lastSize = nextSize;
+        return;
+      }
       const prevSize = lastSize;
+      lastWidth = nextWidth;
       lastSize = nextSize;
+      const screenW = typeof window.screen?.width === 'number' ? window.screen.width : window.innerWidth;
+      const screenH = typeof window.screen?.height === 'number' ? window.screen.height : window.innerHeight;
       logEvent({
         category: 'APPLICATION',
         severity: 'DEBUG',
@@ -1093,7 +1130,7 @@ export function initDiagnosticsSystem(context: {
         metadata: {
           previousViewport: prevSize,
           currentViewport: nextSize,
-          orientation: window.innerWidth >= window.innerHeight ? 'landscape' : 'portrait',
+          orientation: screenW > screenH ? 'landscape' : 'portrait',
         },
       });
     }, 600);

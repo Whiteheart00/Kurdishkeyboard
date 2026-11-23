@@ -128,6 +128,7 @@ export async function testAiServerConnection(baseUrl: string): Promise<AiHealthT
       aiConfigured?: boolean;
       platform?: string;
       keyCount?: number;
+      rejectedKeyCount?: number;
       modelCount?: number;
     };
 
@@ -147,6 +148,10 @@ export async function testAiServerConnection(baseUrl: string): Promise<AiHealthT
         data.keyCount && data.keyCount > 1
           ? ` (${data.keyCount} کلیل × ${data.modelCount || 4} مۆدێل بە گۆڕینی خۆکار)`
           : '';
+      const rejectedNote =
+        data.rejectedKeyCount && data.rejectedKeyCount > 0
+          ? ` — تێبینی: ${data.rejectedKeyCount} کلیلی نادروست (پیتی نائینگلیزی تێدایە) خۆکارانە پشتگوێ خرا، تکایە لە Vercel پشکنینی بۆ بکە`
+          : '';
       op.complete({
         httpStatus: res.status,
         description: 'AI server is reachable and Gemini credentials are configured.',
@@ -154,13 +159,14 @@ export async function testAiServerConnection(baseUrl: string): Promise<AiHealthT
           endpoint: safeEndpoint,
           platform: data.platform || 'unknown',
           keyCount: data.keyCount || 1,
+          rejectedKeyCount: data.rejectedKeyCount || 0,
           modelCount: data.modelCount || 1,
         },
       });
       return {
         status: 'ready',
         platform: data.platform,
-        message: `پەیوەندی سەرکەوتووە! سێرڤەر و ژیری دەسکردی Gemini بە تەواوی ئامادەن${multiKeyNote}.`,
+        message: `پەیوەندی سەرکەوتووە! سێرڤەر و ژیری دەسکردی Gemini بە تەواوی ئامادەن${multiKeyNote}${rejectedNote}.`,
       };
     }
 

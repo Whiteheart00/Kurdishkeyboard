@@ -1,29 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-
-const PLACEHOLDER_KEYS = new Set(['MY_GEMINI_API_KEY', 'YOUR_GEMINI_API_KEY', '']);
-const MODEL_COUNT = 5;
-
-function countConfiguredGeminiKeys(): number {
-  const seen = new Set<string>();
-  const addRaw = (raw: string | undefined) => {
-    if (!raw) return;
-    for (const part of raw.split(/[\s,;]+/)) {
-      const clean = part.trim().replace(/^["']|["']$/g, '');
-      if (clean && !PLACEHOLDER_KEYS.has(clean)) {
-        seen.add(clean);
-      }
-    }
-  };
-
-  addRaw(process.env.GEMINI_API_KEY);
-  addRaw(process.env.GEMINI_API_KEYS);
-  for (const [envName, envVal] of Object.entries(process.env)) {
-    if (/^GEMINI_API_KEY_\d+$/.test(envName) && envVal) {
-      addRaw(envVal);
-    }
-  }
-  return seen.size;
-}
+import { inspectGeminiApiKeys, MODEL_CANDIDATES } from './_geminiPool.js';
 
 function setCors(res: ServerResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -41,7 +17,8 @@ export default function handler(req: IncomingMessage, res: ServerResponse) {
     return;
   }
 
-  const keyCount = countConfiguredGeminiKeys();
+  const { validKeys, rejectedCount } = inspectGeminiApiKeys();
+  const keyCount = validKeys.length;
   const aiConfigured = keyCount > 0;
 
   res.statusCode = 200;
@@ -51,7 +28,8 @@ export default function handler(req: IncomingMessage, res: ServerResponse) {
       platform: 'vercel',
       aiConfigured,
       keyCount,
-      modelCount: MODEL_COUNT,
+      rejectedKeyCount: rejectedCount,
+      modelCount: MODEL_CANDIDATES.length,
     })
   );
 }
