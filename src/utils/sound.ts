@@ -162,11 +162,14 @@ export function playKeyFeedback(
   soundEnabled: boolean,
   vibrationEnabled: boolean,
   soundPack: SoundPackId = 'modern',
-  volume = 0.75
+  volume = 0.75,
+  vibrationDurationMs = 16
 ) {
   if (vibrationEnabled && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      navigator.vibrate(type === 'backspace' || type === 'enter' ? 16 : 9);
+      const baseMs = Math.max(6, Math.min(60, Math.round(vibrationDurationMs || 16)));
+      const dur = type === 'backspace' || type === 'enter' ? Math.min(65, Math.round(baseMs * 1.35)) : baseMs;
+      navigator.vibrate(dur);
     } catch {
       // Ignore unsupported environments
     }

@@ -21,11 +21,13 @@ import {
   Type,
 } from 'lucide-react';
 import {
+  CapitalizationBehavior,
   EmojiHistoryUpdateStrategy,
   EmojiInitialTabMode,
   EmojiStyleMode,
   EmojiSuggestionTypeMode,
   KeyboardSettings,
+  NumberRowMode,
 } from '../../types/keyboard';
 import { BOTTOM_ROW_PRESETS, NUMBER_STYLE_OPTIONS } from '../../data/layouts';
 import {
@@ -115,7 +117,8 @@ export const KeyboardPrefsScreen: React.FC<KeyboardPrefsScreenProps> = ({
             <MoveVertical className="w-6 h-6 text-[#8EC2FF]" />
             <div className="text-sm font-bold">مەودای نێوان دوگمەکان</div>
             <div className="text-xs text-zinc-400 font-mono tabular-nums" dir="ltr">
-              {settings.keySpacingPercent}% / {settings.keySpacingPercent}%
+              {settings.keySpacingHorizontal ?? settings.keySpacingPercent}% /{' '}
+              {settings.keySpacingVertical ?? settings.keySpacingPercent}%
             </div>
           </button>
 
@@ -133,47 +136,160 @@ export const KeyboardPrefsScreen: React.FC<KeyboardPrefsScreenProps> = ({
           </button>
         </div>
 
-        {/* Inline Live Metric Slider */}
+        {/* Inline Live Metric Slider (supports independent Horizontal & Vertical key spacing!) */}
         {editingMetric && (
-          <div className={`rounded-2xl p-4 border space-y-2 ${cardBg}`}>
-            <div className="flex justify-between text-xs font-bold">
-              <span>
-                {editingMetric === 'font'
-                  ? 'قیاسی فۆنت'
-                  : editingMetric === 'icon'
-                  ? 'قەبارەی ئایکۆنەکان'
-                  : 'مەودای نێوان دوگمەکان'}
+          <div className={`rounded-2xl p-4 border space-y-3 ${cardBg}`}>
+            {editingMetric === 'spacing' ? (
+              <>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span>مەودای ئاسۆیی نێوان دوگمەکان</span>
+                    <span className="font-mono text-sky-400 tabular-nums">
+                      {settings.keySpacingHorizontal ?? settings.keySpacingPercent}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={50}
+                    max={160}
+                    value={settings.keySpacingHorizontal ?? settings.keySpacingPercent}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      onUpdate({ keySpacingHorizontal: v, keySpacingPercent: v });
+                    }}
+                    className="w-full accent-sky-400"
+                  />
+                </div>
+                <div className="space-y-1.5 pt-2 border-t border-white/5">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span>مەودای ستوونی نێوان ڕیزەکان</span>
+                    <span className="font-mono text-sky-400 tabular-nums">
+                      {settings.keySpacingVertical ?? settings.keySpacingPercent}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={50}
+                    max={160}
+                    value={settings.keySpacingVertical ?? settings.keySpacingPercent}
+                    onChange={(e) => onUpdate({ keySpacingVertical: Number(e.target.value) })}
+                    className="w-full accent-sky-400"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-bold">
+                  <span>
+                    {editingMetric === 'font' ? 'قیاسی فۆنت' : 'قەبارەی ئایکۆنەکان'}
+                  </span>
+                  <span className="font-mono text-sky-400 tabular-nums">
+                    {editingMetric === 'font'
+                      ? settings.fontSizePercent
+                      : settings.iconSizePercent}
+                    %
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={80}
+                  max={160}
+                  value={
+                    editingMetric === 'font'
+                      ? settings.fontSizePercent
+                      : settings.iconSizePercent
+                  }
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    if (editingMetric === 'font') onUpdate({ fontSizePercent: v });
+                    else onUpdate({ iconSizePercent: v });
+                  }}
+                  className="w-full accent-sky-400"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Long-Press Delay & Number Row Mode (from original KurdiKeyboard keyboard prefs) */}
+        <div className={`rounded-3xl p-4 border space-y-4 ${cardBg}`}>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#8EC2FF]" />
+                ماوەی دەستڕاگرتن لەسەر پیتەکان
               </span>
-              <span className="font-mono text-sky-400 tabular-nums">
-                {editingMetric === 'font'
-                  ? settings.fontSizePercent
-                  : editingMetric === 'icon'
-                  ? settings.iconSizePercent
-                  : settings.keySpacingPercent}
-                %
+              <span className="font-mono text-sky-400 tabular-nums" dir="ltr">
+                {settings.longPressDelayMs || 300} ms
               </span>
             </div>
             <input
               type="range"
-              min={editingMetric === 'spacing' ? 50 : 80}
-              max={160}
-              value={
-                editingMetric === 'font'
-                  ? settings.fontSizePercent
-                  : editingMetric === 'icon'
-                  ? settings.iconSizePercent
-                  : settings.keySpacingPercent
-              }
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                if (editingMetric === 'font') onUpdate({ fontSizePercent: v });
-                else if (editingMetric === 'icon') onUpdate({ iconSizePercent: v });
-                else onUpdate({ keySpacingPercent: v });
-              }}
+              min={150}
+              max={600}
+              step={10}
+              value={settings.longPressDelayMs || 300}
+              onChange={(e) => onUpdate({ longPressDelayMs: Number(e.target.value) })}
               className="w-full accent-sky-400"
             />
+            <div className="flex justify-between text-[10px] text-zinc-400">
+              <span>خێرا (150ms)</span>
+              <span>ئاسایی (300ms)</span>
+              <span>هێواش (600ms)</span>
+            </div>
           </div>
-        )}
+
+          <div className="space-y-2 pt-2 border-t border-white/5">
+            <div className="text-xs font-bold">ڕیزی ژمارەکانی سەرەوە</div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(
+                [
+                  { id: 'per_language' as NumberRowMode, label: 'بەپێی زمان' },
+                  { id: 'always' as NumberRowMode, label: 'هەمیشە هەبێت' },
+                  { id: 'never' as NumberRowMode, label: 'شاراوە بێت' },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onUpdate({ numberRowMode: opt.id })}
+                  className={`h-9 rounded-xl text-[11px] font-bold border transition-colors ${
+                    (settings.numberRowMode || 'per_language') === opt.id
+                      ? 'bg-sky-500/20 border-sky-400 text-sky-300'
+                      : 'border-white/10 text-zinc-400 hover:bg-white/5'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-2 border-t border-white/5">
+            <div className="text-xs font-bold">شێوازی قفڵکردنی پیتی گەورە (Caps Lock)</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(
+                [
+                  { id: 'capslock_by_double_tap' as CapitalizationBehavior, label: 'دوو جار داگرتن' },
+                  { id: 'capslock_by_cycle' as CapitalizationBehavior, label: 'گۆڕینی یەکبەدوایەک' },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onUpdate({ capitalizationBehavior: opt.id })}
+                  className={`h-9 rounded-xl text-[11px] font-bold border transition-colors ${
+                    (settings.capitalizationBehavior || 'capslock_by_double_tap') === opt.id
+                      ? 'bg-sky-500/20 border-sky-400 text-sky-300'
+                      : 'border-white/10 text-zinc-400 hover:bg-white/5'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* Bottom Row Preset Selector (All official bottom_row_* JSON presets!) */}
         <div className={`rounded-3xl p-4 border space-y-3 ${cardBg}`}>
@@ -279,6 +395,41 @@ export const KeyboardPrefsScreen: React.FC<KeyboardPrefsScreenProps> = ({
               set: (v: boolean) => onUpdate({ swapGlobeAndEmoji: v }),
               icon: ArrowLeftRight,
             },
+            {
+              title: 'شریتی ئامرازەکانی سەرەوە',
+              sub: 'پیشاندانی شریتی کۆپی، لکاندن و جووڵاندنی کێرسەر لە سەرەوەی کیبۆرد',
+              val: settings.showTopToolbar,
+              set: (v: boolean) => onUpdate({ showTopToolbar: v }),
+              icon: LayoutGrid,
+            },
+            {
+              title: 'گەڕانەوە بۆ پیتەکان بە دوگمەی بۆشایی',
+              sub: 'دوای داگرتنی بۆشایی لە بەشی هێماکاندا خۆکارانە دەگەڕێتەوە سەر پیتەکان',
+              val: settings.spaceBarSwitchesToCharacters !== false,
+              set: (v: boolean) => onUpdate({ spaceBarSwitchesToCharacters: v }),
+              icon: KeyboardIcon,
+            },
+            {
+              title: 'پیتی گەورەی خۆکار (Auto-Cap)',
+              sub: 'یەکەم پیتی هەر ڕستەیەک لە زمانە لاتینییەکاندا خۆکارانە گەورە دەکات',
+              val: settings.autoCapitalization !== false,
+              set: (v: boolean) => onUpdate({ autoCapitalization: v }),
+              icon: Type,
+            },
+            {
+              title: 'بۆشایی خۆکار دوای خاڵبەندی',
+              sub: 'دانانی بۆشایی خۆکار دوای نووسینی (، . ؟ !)',
+              val: Boolean(settings.autoSpacePunctuation),
+              set: (v: boolean) => onUpdate({ autoSpacePunctuation: v }),
+              icon: Sparkles,
+            },
+            {
+              title: 'فڕینی پیتەکان لەکاتی نووسین',
+              sub: 'کاریگەری بەرزبوونەوەی پیت بە شێوەیەکی جوان لەکاتی دەستلێدان',
+              val: Boolean(settings.flyingLettersEnabled),
+              set: (v: boolean) => onUpdate({ flyingLettersEnabled: v }),
+              icon: Sparkles,
+            },
           ].map((row) => {
             const Icon = row.icon;
             return (
@@ -297,6 +448,26 @@ export const KeyboardPrefsScreen: React.FC<KeyboardPrefsScreenProps> = ({
               </div>
             );
           })}
+
+          {settings.flyingLettersEnabled && (
+            <div className={`rounded-2xl p-4 border space-y-2 ${cardBg}`}>
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span>قەبارەی پیتە فڕیوەکان</span>
+                <span className="font-mono text-sky-400 tabular-nums">
+                  {settings.flyingLettersSizeMultiplier || 90}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={60}
+                max={140}
+                step={5}
+                value={settings.flyingLettersSizeMultiplier || 90}
+                onChange={(e) => onUpdate({ flyingLettersSizeMultiplier: Number(e.target.value) })}
+                className="w-full accent-sky-400"
+              />
+            </div>
+          )}
 
           {/* Spacebar Label Setting */}
           <div className={`rounded-2xl p-4 border space-y-2.5 ${cardBg}`}>

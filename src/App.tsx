@@ -226,6 +226,64 @@ function hydrateSettings(partial: Partial<KeyboardSettings>): KeyboardSettings {
       salawat: merged.zikrHistories.salawat || DEFAULT_SETTINGS.zikrHistories.salawat,
     };
   }
+  // Hydrate frame-resize geometry & KurdiKeyboard original preferences safely
+  if (typeof merged.keySpacingHorizontal !== 'number') {
+    merged.keySpacingHorizontal =
+      typeof merged.keySpacingPercent === 'number'
+        ? merged.keySpacingPercent
+        : DEFAULT_SETTINGS.keySpacingHorizontal;
+  }
+  if (typeof merged.keySpacingVertical !== 'number') {
+    merged.keySpacingVertical =
+      typeof merged.keySpacingPercent === 'number'
+        ? merged.keySpacingPercent
+        : DEFAULT_SETTINGS.keySpacingVertical;
+  }
+  if (typeof merged.keyboardWidthPercent !== 'number' || merged.keyboardWidthPercent < 70 || merged.keyboardWidthPercent > 100) {
+    merged.keyboardWidthPercent = DEFAULT_SETTINGS.keyboardWidthPercent;
+  }
+  if (typeof merged.keyboardBottomOffsetPx !== 'number' || merged.keyboardBottomOffsetPx < 0 || merged.keyboardBottomOffsetPx > 96) {
+    merged.keyboardBottomOffsetPx = DEFAULT_SETTINGS.keyboardBottomOffsetPx;
+  }
+  if (typeof merged.keyboardHorizontalOffsetPx !== 'number' || merged.keyboardHorizontalOffsetPx < -80 || merged.keyboardHorizontalOffsetPx > 80) {
+    merged.keyboardHorizontalOffsetPx = DEFAULT_SETTINGS.keyboardHorizontalOffsetPx;
+  }
+  if (!['always', 'per_language', 'never'].includes(merged.numberRowMode)) {
+    merged.numberRowMode = DEFAULT_SETTINGS.numberRowMode;
+  }
+  if (typeof merged.longPressDelayMs !== 'number' || merged.longPressDelayMs < 150 || merged.longPressDelayMs > 600) {
+    merged.longPressDelayMs = DEFAULT_SETTINGS.longPressDelayMs;
+  }
+  if (typeof merged.spaceBarSwitchesToCharacters !== 'boolean') {
+    merged.spaceBarSwitchesToCharacters = DEFAULT_SETTINGS.spaceBarSwitchesToCharacters;
+  }
+  if (!['capslock_by_double_tap', 'capslock_by_cycle'].includes(merged.capitalizationBehavior)) {
+    merged.capitalizationBehavior = DEFAULT_SETTINGS.capitalizationBehavior;
+  }
+  if (typeof merged.flyingLettersEnabled !== 'boolean') {
+    merged.flyingLettersEnabled = DEFAULT_SETTINGS.flyingLettersEnabled;
+  }
+  if (typeof merged.flyingLettersSizeMultiplier !== 'number' || merged.flyingLettersSizeMultiplier < 60) {
+    merged.flyingLettersSizeMultiplier = DEFAULT_SETTINGS.flyingLettersSizeMultiplier;
+  }
+  if (typeof merged.autoCapitalization !== 'boolean') {
+    merged.autoCapitalization = DEFAULT_SETTINGS.autoCapitalization;
+  }
+  if (typeof merged.autoSpacePunctuation !== 'boolean') {
+    merged.autoSpacePunctuation = DEFAULT_SETTINGS.autoSpacePunctuation;
+  }
+  if (typeof merged.rememberCapsLockState !== 'boolean') {
+    merged.rememberCapsLockState = DEFAULT_SETTINGS.rememberCapsLockState;
+  }
+  if (typeof merged.clipboardHideOnPaste !== 'boolean') {
+    merged.clipboardHideOnPaste = DEFAULT_SETTINGS.clipboardHideOnPaste;
+  }
+  if (merged.clipboardGridColumns !== 1 && merged.clipboardGridColumns !== 2) {
+    merged.clipboardGridColumns = DEFAULT_SETTINGS.clipboardGridColumns;
+  }
+  if (typeof merged.vibrationDurationMs !== 'number' || merged.vibrationDurationMs < 6 || merged.vibrationDurationMs > 60) {
+    merged.vibrationDurationMs = DEFAULT_SETTINGS.vibrationDurationMs;
+  }
   return merged;
 }
 

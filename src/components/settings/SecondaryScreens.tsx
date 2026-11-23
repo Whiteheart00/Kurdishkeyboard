@@ -84,6 +84,13 @@ export const ClipboardSettingsScreen: React.FC<BaseSubProps> = ({
               set: (v: boolean) => onUpdate({ clipboardAutoDeleteOld: v }),
               icon: 'ic_trash' as KurdiIconName,
             },
+            {
+              title: 'داخستنی پانێڵ دوای لکاندن',
+              sub: 'گەڕانەوەی خۆکار بۆ پیتەکان ڕاستەوخۆ دوای لکاندنی هەر لەبەرگیراوێک',
+              val: settings.clipboardHideOnPaste !== false,
+              set: (v: boolean) => onUpdate({ clipboardHideOnPaste: v }),
+              icon: 'ic_pastes' as KurdiIconName,
+            },
           ] as const
         ).map((row) => (
           <div key={row.title} className="flex items-center justify-between gap-3">
@@ -100,6 +107,34 @@ export const ClipboardSettingsScreen: React.FC<BaseSubProps> = ({
             <AppToggle checked={row.val} onChange={row.set} label={row.title} />
           </div>
         ))}
+
+        <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <KurdiIcon name="ic_clipboards" className="w-5 h-5 text-zinc-400" />
+            <div>
+              <div className="text-sm font-bold">ژمارەی ستوونەکان</div>
+              <div className="text-xs text-zinc-400">
+                {settings.clipboardGridColumns === 1 ? '١ ستوون (فراوان)' : '٢ ستوون (تۆڕی)'}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {([1, 2] as const).map((cols) => (
+              <button
+                key={cols}
+                type="button"
+                onClick={() => onUpdate({ clipboardGridColumns: cols })}
+                className={`h-8 px-3 rounded-lg text-xs font-bold tabular-nums ${
+                  (settings.clipboardGridColumns || 2) === cols
+                    ? 'bg-[#A4C9FF] text-[#051B3A]'
+                    : 'bg-zinc-900 text-zinc-400'
+                }`}
+              >
+                {cols}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="pt-2 border-t border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -258,11 +293,56 @@ export const SoundVibrationScreen: React.FC<BaseSubProps> = ({
               checked={settings.vibrationEnabled}
               onChange={(v) => {
                 onUpdate({ vibrationEnabled: v });
-                if (v) playKeyFeedback('char', false, true, settings.soundPack, settings.soundVolume);
+                if (v) {
+                  playKeyFeedback(
+                    'char',
+                    false,
+                    true,
+                    settings.soundPack,
+                    settings.soundVolume,
+                    settings.vibrationDurationMs
+                  );
+                }
               }}
               label="چالاککردنی کاریگەری لەرزین"
             />
           </div>
+
+          {settings.vibrationEnabled && (
+            <div
+              className={`rounded-2xl p-3.5 border space-y-2.5 ${
+                isLightApp
+                  ? 'bg-white border-slate-200'
+                  : 'bg-[#12151C] border-white/[0.08]'
+              }`}
+            >
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span>ماوەی لەرزین (هێز)</span>
+                <span className="text-[#9AC5FF] tabular-nums" dir="ltr">
+                  {settings.vibrationDurationMs || 16} ms
+                </span>
+              </div>
+              <input
+                type="range"
+                min={8}
+                max={60}
+                step={2}
+                value={settings.vibrationDurationMs || 16}
+                onChange={(e) => onUpdate({ vibrationDurationMs: Number(e.target.value) })}
+                onPointerUp={() =>
+                  playKeyFeedback(
+                    'char',
+                    false,
+                    true,
+                    settings.soundPack,
+                    settings.soundVolume,
+                    settings.vibrationDurationMs
+                  )
+                }
+                className="w-full accent-[#A4C9FF] cursor-pointer"
+              />
+            </div>
+          )}
         </div>
 
         {/* Multi-Key Live Audio Tester */}
@@ -285,7 +365,8 @@ export const SoundVibrationScreen: React.FC<BaseSubProps> = ({
                     settings.soundEnabled,
                     settings.vibrationEnabled,
                     settings.soundPack,
-                    settings.soundVolume
+                    settings.soundVolume,
+                    settings.vibrationDurationMs
                   )
                 }
                 className="h-11 rounded-2xl bg-[#151820] border border-white/10 text-xs font-bold text-[#9AC5FF] hover:bg-[#1D222D] active:scale-95 transition-all"

@@ -98,6 +98,8 @@ export type EmojiHistoryUpdateStrategy =
   | 'manual_append';
 export type EmojiInitialTabMode = 'recent' | 'last_used';
 export type EmojiSuggestionTypeMode = 'inline_text' | 'leading_colon';
+export type NumberRowMode = 'always' | 'per_language' | 'never';
+export type CapitalizationBehavior = 'capslock_by_double_tap' | 'capslock_by_cycle';
 
 export interface EmojiHistoryStore {
   pinned: string[];
@@ -260,9 +262,20 @@ export interface KeyboardSettings {
   fontStyle: KeyboardFontStyle;
   fontSizePercent: number; // 80 - 160
   iconSizePercent: number; // 80 - 160
-  keySpacingPercent: number; // 50 - 150
-  keyboardHeightPx: number; // 240 - 360
+  keySpacingPercent: number; // 50 - 150 (legacy mirror)
+  keySpacingHorizontal: number; // 50 - 160
+  keySpacingVertical: number; // 50 - 160
+  keyboardHeightPx: number; // 190 - half screen
+  keyboardWidthPercent: number; // 72 - 100
+  keyboardBottomOffsetPx: number; // 0 - 84
+  keyboardHorizontalOffsetPx: number; // -60 - +60
   numberStyle: NumberStyle;
+  numberRowMode: NumberRowMode;
+  longPressDelayMs: number; // 150 - 600
+  spaceBarSwitchesToCharacters: boolean;
+  capitalizationBehavior: CapitalizationBehavior;
+  flyingLettersEnabled: boolean;
+  flyingLettersSizeMultiplier: number; // 60 - 140
 
   // Key Visuals & Bottom Row
   keyAnimation: boolean;
@@ -326,12 +339,15 @@ export interface KeyboardSettings {
   clipboardSuggestLimit60s: boolean;
   clipboardAutoDeleteOld: boolean;
   clipboardMaxItems: number;
+  clipboardHideOnPaste: boolean;
+  clipboardGridColumns: 1 | 2;
 
   // Sound & Vibration
   soundEnabled: boolean;
   soundPack: SoundPackId;
   soundVolume: number; // 0.1 - 1.0
   vibrationEnabled: boolean;
+  vibrationDurationMs: number; // 8 - 60
 
   // Gestures (All 12 official KurdiKebord gesture preferences)
   swipeUpAction: SwipeAction;
@@ -350,10 +366,13 @@ export interface KeyboardSettings {
   spacebarSwipeAction: 'switch_lang' | 'move_cursor' | 'none';
   backspaceSwipeDeleteWord: boolean;
 
-  // Predictions & Dictionary
+  // Predictions & Correction
   wordSuggestions: boolean;
   autoComplete: boolean;
   doubleSpacePeriod: boolean;
+  autoCapitalization: boolean;
+  autoSpacePunctuation: boolean;
+  rememberCapsLockState: boolean;
   personalDictionaryEnabled: boolean;
   personalDictionary: string[];
   textShortcutsEnabled: boolean;

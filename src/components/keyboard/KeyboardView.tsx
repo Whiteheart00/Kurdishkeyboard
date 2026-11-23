@@ -10,7 +10,7 @@ import {
   Loader2,
   Maximize2,
   MicOff,
-  MoveVertical,
+  Move,
   RotateCcw,
   Search,
   Send,
@@ -306,6 +306,11 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     return Math.max(380, Math.min(540, Math.round(refH * 0.5)));
   }, []);
 
+  const [isDraggingResize, setIsDraggingResize] = useState(false);
+  const [flyingLetters, setFlyingLetters] = useState<
+    { id: number; char: string; x: number; y: number }[]
+  >([]);
+  const flyingIdRef = useRef<number>(1);
   const deckContainerRef = useRef<HTMLDivElement | null>(null);
   const keyPreviewRef = useRef<HTMLDivElement | null>(null);
   const extendedPopupRef = useRef<HTMLDivElement | null>(null);
@@ -328,7 +333,17 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   >(new Map());
   const emailSlidRef = useRef<boolean>(false);
   const emojiLongPressedRef = useRef<boolean>(false);
-  const resizeDragRef = useRef<{ pointerId: number; startY: number; startHeight: number } | null>(null);
+  const resizeDragRef = useRef<{
+    pointerId: number;
+    mode: 'top' | 'bottom' | 'left' | 'right' | 'tl' | 'tr' | 'bl' | 'br' | 'move';
+    startX: number;
+    startY: number;
+    startHeight: number;
+    startWidthPct: number;
+    startBottomOffset: number;
+    startHorizontalOffset: number;
+    containerWidth: number;
+  } | null>(null);
   const deckGapSwipeRef = useRef<{ pointerId: number; startX: number; startY: number; time: number } | null>(null);
   const lastSpaceTapRef = useRef<number>(0);
   const lastShiftTapRef = useRef<number>(0);
@@ -368,6 +383,17 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     }
   }, [settings.soundEnabled, settings.soundPack]);
 
+  // Auto-capitalization at sentence boundaries for LTR Latin layouts
+  useEffect(() => {
+    if (settings.autoCapitalization === false) return;
+    if (viewMode !== 'characters' || activeLangConfig?.dir !== 'ltr') return;
+    setShiftState((prev) => {
+      if (prev === 'caps') return prev;
+      const shouldCap = editorTail.length === 0 || /[.!?]\s+$|\n$/.test(editorTail);
+      return shouldCap ? 'once' : prev;
+    });
+  }, [editorTail, activeLangConfig?.dir, viewMode, settings.autoCapitalization]);
+
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
@@ -383,7 +409,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       settings.soundEnabled,
       settings.vibrationEnabled,
       settings.soundPack,
-      settings.soundVolume
+      settings.soundVolume,
+      settings.vibrationDurationMs
     );
   };
 
@@ -853,7 +880,12 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     }
 
     const decorated = applyActiveDecorator(raw);
-    onInsertText(decorated);
+    const shouldAutoSpace =
+      Boolean(settings.autoSpacePunctuation) &&
+      activeDecoratorId === 'none' &&
+      /^[.,،؟?!;:]$/.test(raw) &&
+      !(raw === '.' && (/\d$/.test(editorTail) || /@[^\s]*$/.test(editorTail)));
+    onInsertText(shouldAutoSpace ? `${decorated} ` : decorated);
     if (shiftState === 'once') {
       setShiftState('off');
     }
@@ -931,6 +963,12 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     }
     lastSpaceTapRef.current = now;
     onInsertText(' ');
+    if (
+      settings.spaceBarSwitchesToCharacters !== false &&
+      (viewMode === 'symbols' || viewMode === 'symbols2')
+    ) {
+      setViewMode('characters');
+    }
   };
 
   const handleKeyTap = (key: KeySpec) => {
@@ -940,6 +978,12 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     switch (key.type) {
       case 'shift': {
         triggerSound('special');
+        if (settings.capitalizationBehavior === 'capslock_by_cycle') {
+          setShiftState((prev) =>
+            prev === 'off' ? 'once' : prev === 'once' ? 'caps' : 'off'
+          );
+          return;
+        }
         const now = Date.now();
         if (now - lastShiftTapRef.current < 320) {
           setShiftState((prev) => (prev === 'caps' ? 'off' : 'caps'));
@@ -1095,11 +1139,30 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     }
   };
 
+  const spawnFlyingLetter = (char: string, targetEl: HTMLElement | null) => {
+    if (!settings.flyingLettersEnabled || !targetEl || !deckContainerRef.current) return;
+    const deckRect = deckContainerRef.current.getBoundingClientRect();
+    const keyRect = targetEl.getBoundingClientRect();
+    const id = flyingIdRef.current++;
+    const x = keyRect.left - deckRect.left + keyRect.width / 2;
+    const y = keyRect.top - deckRect.top - 6;
+    setFlyingLetters((prev) => [...prev.slice(-3), { id, char, x, y }]);
+    window.setTimeout(() => {
+      setFlyingLetters((prev) => prev.filter((item) => item.id !== id));
+    }, 430);
+  };
+
   const handleKeyPointerDown = (key: KeySpec, targetEl: HTMLElement | null) => {
+    const lpDelay = Math.max(150, Math.min(600, settings.longPressDelayMs || 300));
     const isPrintable = !key.type || key.type === 'char' || key.type === 'comma' || key.type === 'period';
-    if (settings.keyPopupPreview && isPrintable) {
+    if (isPrintable) {
       const label = shiftState !== 'off' && key.shiftPrimary ? key.shiftPrimary : key.primary;
-      showKeyPreviewBubble(label, targetEl);
+      if (settings.keyPopupPreview) {
+        showKeyPreviewBubble(label, targetEl);
+      }
+      if (settings.flyingLettersEnabled && label.trim()) {
+        spawnFlyingLetter(label, targetEl);
+      }
     }
 
     if (key.type === 'backspace') {
@@ -1129,7 +1192,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             onBackspace();
           }
         }, deleteByWord ? 180 : 75);
-      }, 360);
+      }, Math.round(lpDelay * 1.15));
       return;
     }
 
@@ -1142,7 +1205,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             spaceLongPressedRef.current = true;
             executeSwipeAction(spaceLong);
           }
-        }, 430);
+        }, Math.round(lpDelay * 1.35));
       }
       return;
     }
@@ -1152,11 +1215,11 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       longPressTimerRef.current = window.setTimeout(() => {
         setShowLangPicker(true);
         triggerSound('special');
-      }, 420);
+      }, Math.round(lpDelay * 1.3));
       return;
     }
 
-    // Long-press on Emoji (smiley) key activates Live Interactive Keyboard Resize (up to 50% of screen)
+    // Long-press on Emoji (smiley) key activates Live Interactive Keyboard Resize Frame (up to 50% of screen)
     if (key.type === 'emoji') {
       emojiLongPressedRef.current = false;
       if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
@@ -1168,14 +1231,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
         setActivePanel('keys');
         setInlineResizeMode(true);
         triggerSound('special');
-        if (settings.vibrationEnabled && navigator.vibrate) {
-          try {
-            navigator.vibrate(16);
-          } catch {
-            // ignore
-          }
-        }
-      }, 360);
+      }, Math.round(lpDelay * 1.15));
       return;
     }
 
@@ -1241,7 +1297,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           isEmailPopup,
         });
         triggerSound('special');
-      }, 270);
+      }, lpDelay);
     }
   };
 
@@ -1537,6 +1593,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     shiftState,
     kanaMode,
     settings.numberStyle,
+    settings.numberRowMode,
     settings.showBottomKeys,
     settings.bottomRowPreset,
     settings.showGlobeKey,
@@ -1546,10 +1603,16 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     settings.customLayouts,
   ]);
 
-  const hGapPx = Math.max(2.5, Math.round((settings.keySpacingPercent / 100) * 3.6 * 2) / 2);
-  const vGapPx = Math.max(4, Math.round((settings.keySpacingPercent / 100) * 6));
+  const hSpacingPct = settings.keySpacingHorizontal ?? settings.keySpacingPercent ?? 100;
+  const vSpacingPct = settings.keySpacingVertical ?? settings.keySpacingPercent ?? 100;
+  const hGapPx = Math.max(2, Math.round((hSpacingPct / 100) * 3.6 * 2) / 2);
+  const vGapPx = Math.max(3, Math.round((vSpacingPct / 100) * 6));
+  const kbWidthPct = Math.max(72, Math.min(100, settings.keyboardWidthPercent ?? 100));
+  const kbBottomOffsetPx = Math.max(0, Math.min(84, settings.keyboardBottomOffsetPx ?? 0));
+  const kbHorizontalOffsetPx = Math.max(-60, Math.min(60, settings.keyboardHorizontalOffsetPx ?? 0));
   const heightRatio = settings.keyboardHeightPx / 248;
-  const keyContentScale = Math.max(0.9, Math.min(1.48, 1 + (heightRatio - 1) * 0.65));
+  const widthScale = kbWidthPct < 100 ? Math.max(0.84, kbWidthPct / 100) : 1;
+  const keyContentScale = Math.max(0.82, Math.min(1.48, (1 + (heightRatio - 1) * 0.65) * widthScale));
   const letterFontSize = Math.round(16 * (settings.fontSizePercent / 100) * keyContentScale);
   const iconSize = Math.round(17 * (settings.iconSizePercent / 100) * keyContentScale);
   const spaceLabel =
@@ -1612,11 +1675,157 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     onUpdateSettings,
   };
 
+  const effectiveNumberRowOn =
+    settings.numberRowMode === 'always'
+      ? true
+      : settings.numberRowMode === 'never'
+      ? false
+      : Boolean(activeLangConfig?.numberRow);
   const hasDedicatedNumRow =
-    viewMode === 'characters' && Boolean(activeLangConfig?.numberRow) && resolvedLayout.rows.length >= 6;
+    viewMode === 'characters' && effectiveNumberRowOn && resolvedLayout.rows.length >= 6;
   const computedDeckHeight = hasDedicatedNumRow
     ? settings.keyboardHeightPx + 30
     : settings.keyboardHeightPx;
+
+  const startResizeDrag = (
+    mode: 'top' | 'bottom' | 'left' | 'right' | 'tl' | 'tr' | 'bl' | 'br' | 'move',
+    e: React.PointerEvent<HTMLElement>
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+    const parentW =
+      deckContainerRef.current?.parentElement?.parentElement?.getBoundingClientRect().width ||
+      window.innerWidth ||
+      380;
+    resizeDragRef.current = {
+      pointerId: e.pointerId,
+      mode,
+      startX: e.screenX || e.clientX,
+      startY: e.screenY || e.clientY,
+      startHeight: settings.keyboardHeightPx,
+      startWidthPct: kbWidthPct,
+      startBottomOffset: kbBottomOffsetPx,
+      startHorizontalOffset: kbHorizontalOffsetPx,
+      containerWidth: Math.max(260, parentW),
+    };
+    setIsDraggingResize(true);
+  };
+
+  const handleResizeDragMove = (e: React.PointerEvent<HTMLElement>) => {
+    const drag = resizeDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const curX = e.screenX || e.clientX;
+    const curY = e.screenY || e.clientY;
+    const dx = curX - drag.startX;
+    const dy = curY - drag.startY;
+    const patch: Partial<KeyboardSettings> = {};
+
+    const adjustTopHeight = () => {
+      const nextH = Math.max(
+        195,
+        Math.min(maxHalfScreenHeight, Math.round(drag.startHeight - dy))
+      );
+      patch.keyboardHeightPx = nextH;
+    };
+
+    const adjustBottomLift = () => {
+      // Dragging UP increases bottom lift (raises keyboard), dragging DOWN lowers it back to 0
+      const nextBottom = Math.max(0, Math.min(84, Math.round(drag.startBottomOffset - dy)));
+      patch.keyboardBottomOffsetPx = nextBottom;
+    };
+
+    const adjustWidthFromLeft = () => {
+      // Dragging RIGHT narrows width; dragging LEFT widens back toward 100%
+      const deltaPct = (-dx / drag.containerWidth) * 100 * 1.35;
+      const nextW = Math.max(72, Math.min(100, Math.round(drag.startWidthPct + deltaPct)));
+      patch.keyboardWidthPercent = nextW;
+      if (nextW === 100) {
+        patch.keyboardHorizontalOffsetPx = 0;
+      } else {
+        const maxShift = Math.round(((100 - nextW) / 100) * drag.containerWidth * 0.5);
+        patch.keyboardHorizontalOffsetPx = Math.max(
+          -maxShift,
+          Math.min(maxShift, Math.round(drag.startHorizontalOffset + dx * 0.35))
+        );
+      }
+    };
+
+    const adjustWidthFromRight = () => {
+      // Dragging LEFT narrows width; dragging RIGHT widens back toward 100%
+      const deltaPct = (dx / drag.containerWidth) * 100 * 1.35;
+      const nextW = Math.max(72, Math.min(100, Math.round(drag.startWidthPct + deltaPct)));
+      patch.keyboardWidthPercent = nextW;
+      if (nextW === 100) {
+        patch.keyboardHorizontalOffsetPx = 0;
+      } else {
+        const maxShift = Math.round(((100 - nextW) / 100) * drag.containerWidth * 0.5);
+        patch.keyboardHorizontalOffsetPx = Math.max(
+          -maxShift,
+          Math.min(maxShift, Math.round(drag.startHorizontalOffset + dx * 0.35))
+        );
+      }
+    };
+
+    switch (drag.mode) {
+      case 'top':
+        adjustTopHeight();
+        break;
+      case 'bottom':
+        adjustBottomLift();
+        break;
+      case 'left':
+        adjustWidthFromLeft();
+        break;
+      case 'right':
+        adjustWidthFromRight();
+        break;
+      case 'tl':
+        adjustTopHeight();
+        adjustWidthFromLeft();
+        break;
+      case 'tr':
+        adjustTopHeight();
+        adjustWidthFromRight();
+        break;
+      case 'bl':
+        adjustBottomLift();
+        adjustWidthFromLeft();
+        break;
+      case 'br':
+        adjustBottomLift();
+        adjustWidthFromRight();
+        break;
+      case 'move': {
+        adjustBottomLift();
+        const maxShift = Math.round(((100 - drag.startWidthPct) / 100) * drag.containerWidth * 0.5);
+        if (maxShift > 2) {
+          patch.keyboardHorizontalOffsetPx = Math.max(
+            -maxShift,
+            Math.min(maxShift, Math.round(drag.startHorizontalOffset + dx))
+          );
+        }
+        break;
+      }
+    }
+
+    if (Object.keys(patch).length > 0) {
+      onUpdateSettings(patch);
+    }
+  };
+
+  const endResizeDrag = (e: React.PointerEvent<HTMLElement>) => {
+    if (resizeDragRef.current?.pointerId === e.pointerId) {
+      resizeDragRef.current = null;
+      setIsDraggingResize(false);
+    }
+  };
 
   const memoizedKeyRows = useMemo(() => {
     const cleanPunctuationFaces = new Set(['؟', '،', ':', ',', '.']);
@@ -2227,13 +2436,32 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
     <div
       className={`w-full overflow-visible select-none ${fontClass}`}
       style={{
-        backgroundColor: theme.bg,
-        boxShadow: settings.dynamicBackgroundGlow
-          ? `0 -8px 30px -10px ${theme.accent}55`
-          : undefined,
+        backgroundColor:
+          kbWidthPct < 100 || kbBottomOffsetPx > 0
+            ? isLight
+              ? '#E2E8F0'
+              : '#050608'
+            : theme.bg,
+        paddingBottom: kbBottomOffsetPx > 0 ? `${kbBottomOffsetPx}px` : undefined,
       }}
       dir="ltr"
     >
+      <div
+        className={`overflow-visible mx-auto transition-[border-radius] duration-150 ${
+          kbWidthPct < 100 || kbBottomOffsetPx > 0 ? 'rounded-2xl shadow-2xl' : ''
+        }`}
+        style={{
+          width: `${kbWidthPct}%`,
+          transform:
+            kbWidthPct < 100 && kbHorizontalOffsetPx !== 0
+              ? `translateX(${kbHorizontalOffsetPx}px)`
+              : undefined,
+          backgroundColor: theme.bg,
+          boxShadow: settings.dynamicBackgroundGlow
+            ? `0 -8px 30px -10px ${theme.accent}55`
+            : undefined,
+        }}
+      >
       {/* Top 7-Icon Editing Toolbar using official KurdiKeyboard vectors */}
       {settings.showTopToolbar && activePanel !== 'emoji' && (
         <div
@@ -2385,7 +2613,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           currentText={editorText}
           onPasteItem={(text) => {
             onInsertText(text);
-            setActivePanel('keys');
+            if (settings.clipboardHideOnPaste !== false) {
+              setActivePanel('keys');
+            }
           }}
           onSaveCurrent={() => onSaveToClipboard(editorText)}
           onTogglePin={onTogglePinClipboard}
@@ -2884,95 +3114,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           </div>
           )}
 
-          {/* Live Interactive Drag-to-Resize Top Handle Bar (activated via long-press on Emoji or Resize tool) */}
-          {inlineResizeMode && (
-            <div
-              className="w-full px-3 py-1.5 flex items-center justify-between gap-2 cursor-ns-resize touch-none select-none border-t-2 border-b"
-              style={{
-                borderTopColor: theme.accent,
-                borderBottomColor: `${theme.accent}44`,
-                backgroundColor: isLight ? 'rgba(14,165,233,0.12)' : 'rgba(14,165,233,0.16)',
-                touchAction: 'none',
-              }}
-              dir="rtl"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                try {
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                } catch {
-                  // ignore
-                }
-                const startY = e.screenY || e.clientY;
-                resizeDragRef.current = {
-                  pointerId: e.pointerId,
-                  startY,
-                  startHeight: settings.keyboardHeightPx,
-                };
-              }}
-              onPointerMove={(e) => {
-                const drag = resizeDragRef.current;
-                if (!drag || drag.pointerId !== e.pointerId) return;
-                const curY = e.screenY || e.clientY;
-                // Dragging UP decreases Y -> increases keyboard height smoothly up to half-screen
-                const deltaUp = drag.startY - curY;
-                const nextH = Math.max(
-                  210,
-                  Math.min(maxHalfScreenHeight, Math.round(drag.startHeight + deltaUp))
-                );
-                if (nextH !== settings.keyboardHeightPx) {
-                  onUpdateSettings({ keyboardHeightPx: nextH });
-                }
-              }}
-              onPointerUp={(e) => {
-                if (resizeDragRef.current?.pointerId === e.pointerId) {
-                  resizeDragRef.current = null;
-                }
-              }}
-              onPointerCancel={() => {
-                resizeDragRef.current = null;
-              }}
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <MoveVertical className="w-4 h-4 shrink-0" style={{ color: theme.accent }} />
-                <span
-                  className={`text-[11px] font-bold truncate ${
-                    isLight ? 'text-slate-900' : 'text-white'
-                  }`}
-                >
-                  بەرزی تەختەکلیل ڕابکێشە
-                </span>
-              </div>
-
-              {/* Center Grab Pill */}
-              <div
-                className="w-12 h-1.5 rounded-full shrink-0 opacity-85"
-                style={{ backgroundColor: theme.accent }}
-              />
-
-              <span
-                className="text-[11px] font-mono font-bold tabular-nums px-2 py-0.5 rounded-md shrink-0"
-                style={{
-                  backgroundColor: `${theme.accent}28`,
-                  color: isLight ? '#0369A1' : '#FFFFFF',
-                }}
-              >
-                {settings.keyboardHeightPx}px
-              </span>
-            </div>
-          )}
-
           {/* One-handed wrapper */}
-          <div
-            className={`flex w-full items-stretch relative ${
-              inlineResizeMode ? 'ring-2 ring-inset' : ''
-            }`}
-            style={
-              inlineResizeMode
-                ? ({ '--tw-ring-color': `${theme.accent}AA` } as React.CSSProperties)
-                : undefined
-            }
-          >
+          <div className="flex w-full items-stretch relative">
             {settings.oneHandedMode === 'right' && (
               <div className="w-12 flex flex-col items-center justify-center gap-3 px-1">
                 <button
@@ -3036,122 +3179,223 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
                 if (gesturePopup) setGesturePopup(null);
               }}
             >
-              {/* Live Interactive Resize Floating Overlay (keeps real keys visible while resizing up to 50% of screen) */}
+              {/* Screenshot-Exact Direct Frame-Overlay Resize Mode (Orange Corner & Edge Handles + Reset / Move / Confirm Circles) */}
               {inlineResizeMode && (
                 <div
-                  className="absolute inset-0 z-50 flex items-center justify-center p-3 backdrop-blur-[1.5px]"
+                  className="absolute inset-0 z-50 select-none touch-none rounded-xl"
                   style={{
-                    backgroundColor: isLight ? 'rgba(248,250,252,0.48)' : 'rgba(6,8,12,0.52)',
+                    backgroundColor: isLight ? 'rgba(15,23,42,0.22)' : 'rgba(6,8,12,0.36)',
+                    boxShadow: 'inset 0 0 0 1.5px rgba(255, 109, 0, 0.55)',
+                    touchAction: 'none',
                   }}
-                  dir="rtl"
+                  dir="ltr"
                   onPointerDown={(e) => e.stopPropagation()}
                   onPointerUp={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {/* Subtle live dimension badge while dragging */}
                   <div
-                    className={`w-full max-w-[330px] rounded-2xl p-3.5 shadow-2xl border space-y-3 ${
-                      isLight
-                        ? 'bg-white/95 border-slate-200 text-slate-900'
-                        : 'bg-[#151821]/95 border-white/15 text-white'
+                    className={`pointer-events-none absolute top-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold tabular-nums transition-opacity duration-150 ${
+                      isDraggingResize ? 'opacity-100' : 'opacity-80'
                     }`}
+                    style={{
+                      backgroundColor: 'rgba(15, 17, 22, 0.86)',
+                      color: '#FFB070',
+                      border: '1px solid rgba(255, 109, 0, 0.45)',
+                    }}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <KurdiIcon name="ic_resize" className="w-4 h-4 text-sky-400" />
-                        <span className="text-xs font-extrabold">گۆڕینی قەبارەی کیبۆرد</span>
-                      </div>
-                      <span
-                        className="text-[11px] font-mono font-bold tabular-nums px-2 py-0.5 rounded-lg"
-                        style={{
-                          backgroundColor: `${theme.accent}24`,
-                          color: theme.accent,
-                        }}
-                      >
-                        {settings.keyboardHeightPx}px ·{' '}
-                        {Math.min(50, Math.round((settings.keyboardHeightPx / maxHalfScreenHeight) * 50))}%
-                      </span>
-                    </div>
+                    {settings.keyboardHeightPx}px · {kbWidthPct}%
+                    {kbBottomOffsetPx > 0 ? ` · ↑${kbBottomOffsetPx}px` : ''}
+                  </div>
 
-                    {/* Smooth Height Slider (up to 50% of screen) */}
-                    <div className="space-y-1">
-                      <input
-                        type="range"
-                        min={210}
-                        max={maxHalfScreenHeight}
-                        value={Math.min(maxHalfScreenHeight, Math.max(210, settings.keyboardHeightPx))}
-                        onChange={(e) => onUpdateSettings({ keyboardHeightPx: Number(e.target.value) })}
-                        className="w-full accent-sky-500 h-2 cursor-pointer"
-                      />
-                      <div className="flex justify-between text-[10px] opacity-65">
-                        <span>بچووک</span>
-                        <span>ئاسایی</span>
-                        <span>نیوەی شاشە (٥٠٪)</span>
-                      </div>
-                    </div>
+                  {/* TOP-LEFT Corner L-Bracket */}
+                  <div
+                    role="slider"
+                    aria-label="گۆشەی سەرەوە-چەپ"
+                    onPointerDown={(e) => startResizeDrag('tl', e)}
+                    onPointerMove={handleResizeDragMove}
+                    onPointerUp={endResizeDrag}
+                    onPointerCancel={endResizeDrag}
+                    className="absolute -top-1 -left-1 w-11 h-11 cursor-nwse-resize touch-none flex items-start justify-start p-1"
+                    style={{ touchAction: 'none' }}
+                  >
+                    <div className="w-7 h-7 border-t-[4px] border-l-[4px] border-[#FF6D00] rounded-tl-xl drop-shadow-[0_0_6px_rgba(255,109,0,0.45)]" />
+                  </div>
 
-                    {/* Quick 1-Tap Size Presets */}
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { label: 'بچووک', val: 224 },
-                        { label: 'ئاسایی', val: 248 },
-                        { label: 'نیوەی شاشە', val: maxHalfScreenHeight },
-                      ].map((preset) => {
-                        const isSel = Math.abs(settings.keyboardHeightPx - preset.val) <= 6;
-                        return (
-                          <button
-                            key={preset.label}
-                            type="button"
-                            onClick={() => {
-                              triggerSound('special');
-                              onUpdateSettings({ keyboardHeightPx: preset.val });
-                            }}
-                            className={`h-8 rounded-xl text-[11px] font-bold border transition-all active:scale-95 ${
-                              isSel
-                                ? 'text-white border-transparent'
-                                : isLight
-                                ? 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-                                : 'bg-white/[0.06] border-white/10 text-zinc-200 hover:bg-white/10'
-                            }`}
-                            style={isSel ? { backgroundColor: theme.accent } : undefined}
-                          >
-                            {preset.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  {/* TOP-RIGHT Corner L-Bracket */}
+                  <div
+                    role="slider"
+                    aria-label="گۆشەی سەرەوە-ڕاست"
+                    onPointerDown={(e) => startResizeDrag('tr', e)}
+                    onPointerMove={handleResizeDragMove}
+                    onPointerUp={endResizeDrag}
+                    onPointerCancel={endResizeDrag}
+                    className="absolute -top-1 -right-1 w-11 h-11 cursor-nesw-resize touch-none flex items-start justify-end p-1"
+                    style={{ touchAction: 'none' }}
+                  >
+                    <div className="w-7 h-7 border-t-[4px] border-r-[4px] border-[#FF6D00] rounded-tr-xl drop-shadow-[0_0_6px_rgba(255,109,0,0.45)]" />
+                  </div>
 
-                    {/* Bottom Action Buttons: Reset + Save/Done */}
-                    <div className="flex items-center gap-2 pt-0.5">
+                  {/* BOTTOM-LEFT Corner L-Bracket */}
+                  <div
+                    role="slider"
+                    aria-label="گۆشەی خوارەوە-چەپ"
+                    onPointerDown={(e) => startResizeDrag('bl', e)}
+                    onPointerMove={handleResizeDragMove}
+                    onPointerUp={endResizeDrag}
+                    onPointerCancel={endResizeDrag}
+                    className="absolute -bottom-1 -left-1 w-11 h-11 cursor-nesw-resize touch-none flex items-end justify-start p-1"
+                    style={{ touchAction: 'none' }}
+                  >
+                    <div className="w-7 h-7 border-b-[4px] border-l-[4px] border-[#FF6D00] rounded-bl-xl drop-shadow-[0_0_6px_rgba(255,109,0,0.45)]" />
+                  </div>
+
+                  {/* BOTTOM-RIGHT Corner L-Bracket */}
+                  <div
+                    role="slider"
+                    aria-label="گۆشەی خوارەوە-ڕاست"
+                    onPointerDown={(e) => startResizeDrag('br', e)}
+                    onPointerMove={handleResizeDragMove}
+                    onPointerUp={endResizeDrag}
+                    onPointerCancel={endResizeDrag}
+                    className="absolute -bottom-1 -right-1 w-11 h-11 cursor-nwse-resize touch-none flex items-end justify-end p-1"
+                    style={{ touchAction: 'none' }}
+                  >
+                    <div className="w-7 h-7 border-b-[4px] border-r-[4px] border-[#FF6D00] rounded-br-xl drop-shadow-[0_0_6px_rgba(255,109,0,0.45)]" />
+                  </div>
+
+                  {/* TOP CENTER Horizontal Edge Handle (Drag up/down for height up to 50% screen) */}
+                  <div
+                    role="slider"
+                    aria-label="بەرزی کیبۆرد"
+                    onPointerDown={(e) => startResizeDrag('top', e)}
+                    onPointerMove={handleResizeDragMove}
+                    onPointerUp={endResizeDrag}
+                    onPointerCancel={endResizeDrag}
+                    className="absolute -top-2 left-1/2 -translate-x-1/2 w-28 h-8 cursor-ns-resize touch-none flex items-start justify-center pt-1.5"
+                    style={{ touchAction: 'none' }}
+                  >
+                    <div className="w-14 h-[5px] rounded-full bg-[#FF6D00] shadow-[0_0_8px_rgba(255,109,0,0.55)]" />
+                  </div>
+
+                  {/* BOTTOM CENTER Horizontal Edge Handle (Drag up/down for bottom lift) */}
+                  <div
+                    role="slider"
+                    aria-label="بەرزکردنەوەی خوارەوە"
+                    onPointerDown={(e) => startResizeDrag('bottom', e)}
+                    onPointerMove={handleResizeDragMove}
+                    onPointerUp={endResizeDrag}
+                    onPointerCancel={endResizeDrag}
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-28 h-8 cursor-ns-resize touch-none flex items-end justify-center pb-1.5"
+                    style={{ touchAction: 'none' }}
+                  >
+                    <div className="w-14 h-[5px] rounded-full bg-[#FF6D00] shadow-[0_0_8px_rgba(255,109,0,0.55)]" />
+                  </div>
+
+                  {/* LEFT CENTER Vertical Edge Handle (Drag inward/outward for width) */}
+                  <div
+                    role="slider"
+                    aria-label="پانی لە چەپەوە"
+                    onPointerDown={(e) => startResizeDrag('left', e)}
+                    onPointerMove={handleResizeDragMove}
+                    onPointerUp={endResizeDrag}
+                    onPointerCancel={endResizeDrag}
+                    className="absolute top-1/2 -left-2 -translate-y-1/2 w-8 h-24 cursor-ew-resize touch-none flex items-center justify-start pl-1.5"
+                    style={{ touchAction: 'none' }}
+                  >
+                    <div className="w-[5px] h-12 rounded-full bg-[#FF6D00] shadow-[0_0_8px_rgba(255,109,0,0.55)]" />
+                  </div>
+
+                  {/* RIGHT CENTER Vertical Edge Handle (Drag inward/outward for width) */}
+                  <div
+                    role="slider"
+                    aria-label="پانی لە ڕاستەوە"
+                    onPointerDown={(e) => startResizeDrag('right', e)}
+                    onPointerMove={handleResizeDragMove}
+                    onPointerUp={endResizeDrag}
+                    onPointerCancel={endResizeDrag}
+                    className="absolute top-1/2 -right-2 -translate-y-1/2 w-8 h-24 cursor-ew-resize touch-none flex items-center justify-end pr-1.5"
+                    style={{ touchAction: 'none' }}
+                  >
+                    <div className="w-[5px] h-12 rounded-full bg-[#FF6D00] shadow-[0_0_8px_rgba(255,109,0,0.55)]" />
+                  </div>
+
+                  {/* 3 Centered Floating Circular Controls: Reset (Orange) · Move (Dark) · Confirm (Orange) */}
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <div className="pointer-events-auto flex items-center gap-6">
+                      {/* Reset Button (Orange Circle) */}
                       <button
                         type="button"
                         onClick={() => {
                           triggerSound('special');
-                          onUpdateSettings({ keyboardHeightPx: 248 });
+                          onUpdateSettings({
+                            keyboardHeightPx: 248,
+                            keyboardWidthPercent: 100,
+                            keyboardBottomOffsetPx: 0,
+                            keyboardHorizontalOffsetPx: 0,
+                            oneHandedMode: 'off',
+                          });
                         }}
-                        className={`h-9 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-colors active:scale-95 ${
-                          isLight
-                            ? 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-                            : 'bg-white/[0.07] border-white/10 text-zinc-200 hover:bg-white/15'
-                        }`}
+                        className="w-12 h-12 rounded-full bg-[#FF6D00] text-[#111318] shadow-[0_6px_20px_rgba(255,109,0,0.45)] flex items-center justify-center active:scale-90 transition-transform"
+                        title="گەڕاندنەوە بۆ بنەڕەتی"
+                        aria-label="گەڕاندنەوە بۆ بنەڕەتی"
                       >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                        <span>بنەڕەتی</span>
+                        <RotateCcw className="w-5 h-5 stroke-[2.5]" />
                       </button>
 
+                      {/* 4-Way Move Handle (Dark Circle) */}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onPointerDown={(e) => startResizeDrag('move', e)}
+                        onPointerMove={handleResizeDragMove}
+                        onPointerUp={endResizeDrag}
+                        onPointerCancel={endResizeDrag}
+                        className="w-[52px] h-[52px] rounded-full bg-[#111318] text-white border border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.65)] flex items-center justify-center cursor-move touch-none active:scale-95 transition-transform"
+                        style={{ touchAction: 'none' }}
+                        title="جووڵاندنی شوێنی کیبۆرد"
+                        aria-label="جووڵاندنی شوێنی کیبۆرد"
+                      >
+                        <Move className="w-5 h-5 stroke-[2.4]" />
+                      </div>
+
+                      {/* Confirm / Save Button (Orange Circle) */}
                       <button
                         type="button"
                         onClick={() => {
                           triggerSound('special');
                           setInlineResizeMode(false);
                         }}
-                        className="flex-1 h-9 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 text-white shadow-md active:scale-95 transition-transform"
-                        style={{ backgroundColor: theme.accent }}
+                        className="w-12 h-12 rounded-full bg-[#FF6D00] text-[#111318] shadow-[0_6px_20px_rgba(255,109,0,0.45)] flex items-center justify-center active:scale-90 transition-transform"
+                        title="پاشەکەوت و تەواو"
+                        aria-label="پاشەکەوت و تەواو"
                       >
-                        <Check className="w-4 h-4" />
-                        <span>تەواو و پاشەکەوت</span>
+                        <Check className="w-6 h-6 stroke-[2.8]" />
                       </button>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Lightweight Flying Letters Overlay */}
+              {settings.flyingLettersEnabled && flyingLetters.length > 0 && (
+                <div className="pointer-events-none absolute inset-0 z-40 overflow-visible">
+                  {flyingLetters.map((fl) => (
+                    <span
+                      key={fl.id}
+                      className="animate-flying-letter absolute font-extrabold drop-shadow-md"
+                      style={{
+                        left: `${fl.x}px`,
+                        top: `${fl.y}px`,
+                        color: theme.accent,
+                        fontSize: `${Math.round(
+                          22 * ((settings.flyingLettersSizeMultiplier || 90) / 100)
+                        )}px`,
+                      }}
+                    >
+                      {fl.char}
+                    </span>
+                  ))}
                 </div>
               )}
 
@@ -3405,6 +3649,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

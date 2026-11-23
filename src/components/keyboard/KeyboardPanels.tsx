@@ -1427,16 +1427,41 @@ export const ClipboardPanel: React.FC<ClipboardPanelProps> = ({
   const [editDraft, setEditDraft] = useState('');
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [swipeState, setSwipeState] = useState<{
+    id: string;
+    dx: number;
+    threshold: number;
+  } | null>(null);
+  const [swipeToast, setSwipeToast] = useState<string | null>(null);
 
   const longPressTimerRef = useRef<number | null>(null);
   const longPressTriggeredRef = useRef(false);
-  const pointerOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const swipedCardRef = useRef(false);
+  const toastTimerRef = useRef<number | null>(null);
+  const swipeDragRef = useRef<{
+    id: string;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    width: number;
+    locked: 'h' | 'v' | null;
+    crossed: boolean;
+    dx: number;
+    threshold: number;
+  } | null>(null);
 
   useEffect(() => {
     return () => {
       if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     };
   }, []);
+
+  const showSwipeToast = (msg: string) => {
+    setSwipeToast(msg);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setSwipeToast(null), 1600);
+  };
 
   const sorted = [...items].sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)));
 
@@ -1445,16 +1470,31 @@ export const ClipboardPanel: React.FC<ClipboardPanelProps> = ({
       window.clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-    pointerOriginRef.current = null;
   };
 
-  const handleCardPointerDown = (item: ClipboardItem, e: React.PointerEvent) => {
+  const handleCardPointerDown = (item: ClipboardItem, e: React.PointerEvent<HTMLDivElement>) => {
     if (selectMode) return;
     longPressTriggeredRef.current = false;
-    pointerOriginRef.current = { x: e.clientX, y: e.clientY };
+    swipedCardRef.current = false;
     clearHoldTimer();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const threshold = Math.max(46, Math.min(78, Math.round(rect.width * 0.34)));
+    swipeDragRef.current = {
+      id: item.id,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      width: rect.width,
+      locked: null,
+      crossed: false,
+      dx: 0,
+      threshold,
+    };
     longPressTimerRef.current = window.setTimeout(() => {
+      if (swipeDragRef.current?.locked === 'h') return;
       longPressTriggeredRef.current = true;
+      swipeDragRef.current = null;
+      setSwipeState(null);
       setMenuItem(item);
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         try {
@@ -1466,18 +1506,105 @@ export const ClipboardPanel: React.FC<ClipboardPanelProps> = ({
     }, 360);
   };
 
-  const handleCardPointerMove = (e: React.PointerEvent) => {
-    if (!pointerOriginRef.current || !longPressTimerRef.current) return;
-    const dx = Math.abs(e.clientX - pointerOriginRef.current.x);
-    const dy = Math.abs(e.clientY - pointerOriginRef.current.y);
-    if (dx > 10 || dy > 10) {
+  const handleCardPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = swipeDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const rawDx = e.clientX - drag.startX;
+    const rawDy = e.clientY - drag.startY;
+
+    if (Math.abs(rawDx) > 8 || Math.abs(rawDy) > 8) {
       clearHoldTimer();
     }
+
+    if (drag.locked === null) {
+      if (Math.abs(rawDy) > 10 && Math.abs(rawDy) > Math.abs(rawDx)) {
+        drag.locked = 'v';
+        return;
+      }
+      if (Math.abs(rawDx) > 10 && Math.abs(rawDx) >= Math.abs(rawDy) * 1.1) {
+        drag.locked = 'h';
+        swipedCardRef.current = true;
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          // ignore
+        }
+      } else {
+        return;
+      }
+    }
+
+    if (drag.locked === 'v') return;
+
+    e.preventDefault();
+    const maxPull = Math.max(92, Math.min(130, Math.round(drag.width * 0.58)));
+    const clampedDx = Math.max(-maxPull, Math.min(maxPull, rawDx));
+    drag.dx = clampedDx;
+
+    const isCrossedNow = Math.abs(clampedDx) >= drag.threshold;
+    if (isCrossedNow && !drag.crossed) {
+      drag.crossed = true;
+      if (settings.vibrationEnabled && typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate(14);
+        } catch {
+          // ignore
+        }
+      }
+    } else if (!isCrossedNow && drag.crossed) {
+      drag.crossed = false;
+    }
+
+    setSwipeState({ id: drag.id, dx: clampedDx, threshold: drag.threshold });
+  };
+
+  const handleCardPointerEnd = (item: ClipboardItem, e: React.PointerEvent<HTMLDivElement>) => {
+    clearHoldTimer();
+    const drag = swipeDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    swipeDragRef.current = null;
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // ignore
+    }
+
+    if (drag.locked === 'h') {
+      const finalDx = drag.dx;
+      const threshold = drag.threshold;
+      setSwipeState(null);
+      if (finalDx <= -threshold) {
+        // Swiped LEFT -> Delete item
+        onDeleteItem(item.id);
+        showSwipeToast('لەبەرگیراو سڕایەوە');
+      } else if (finalDx >= threshold) {
+        // Swiped RIGHT -> Pin / Unpin item
+        onTogglePin(item.id);
+        showSwipeToast(item.pinned ? 'جێگیرکردن لابرا' : 'جێگیرکرا (پین)');
+      }
+      window.setTimeout(() => {
+        swipedCardRef.current = false;
+      }, 60);
+    } else {
+      setSwipeState(null);
+    }
+  };
+
+  const handleCardPointerCancel = () => {
+    clearHoldTimer();
+    swipeDragRef.current = null;
+    setSwipeState(null);
   };
 
   const handleCardClick = (item: ClipboardItem) => {
     if (longPressTriggeredRef.current) {
       longPressTriggeredRef.current = false;
+      return;
+    }
+    if (swipedCardRef.current) {
+      swipedCardRef.current = false;
       return;
     }
     if (selectMode) {
@@ -1607,77 +1734,143 @@ export const ClipboardPanel: React.FC<ClipboardPanelProps> = ({
         </div>
       </div>
 
+      {/* Quick Swipe Action Feedback Toast */}
+      {swipeToast && (
+        <div className="pointer-events-none absolute top-13 left-1/2 -translate-x-1/2 z-30 px-3 py-1 rounded-full bg-[#111318]/92 border border-white/15 text-white text-[11px] font-bold shadow-lg">
+          {swipeToast}
+        </div>
+      )}
+
       {sorted.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 text-xs gap-2">
           <KurdiIcon name="ic_clipboards" className="w-7 h-7 opacity-40" />
           <span>هیچ دەقێکی لەبەرگیراو نییە</span>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2 overflow-y-auto custom-scroll pb-1 flex-1 content-start">
+        <div
+          className={`grid ${
+            settings.clipboardGridColumns === 1 ? 'grid-cols-1' : 'grid-cols-2'
+          } gap-2 overflow-y-auto custom-scroll pb-1 flex-1 content-start`}
+        >
           {sorted.map((item) => {
             const isSelected = selectedIds.includes(item.id);
-            return (
-              <div
-                key={item.id}
-                role="button"
-                tabIndex={0}
-                onPointerDown={(e) => handleCardPointerDown(item, e)}
-                onPointerMove={handleCardPointerMove}
-                onPointerUp={clearHoldTimer}
-                onPointerCancel={clearHoldTimer}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  clearHoldTimer();
-                  setMenuItem(item);
-                }}
-                onClick={() => handleCardClick(item)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleCardClick(item);
-                  }
-                }}
-                className={`rounded-2xl p-3 border flex flex-col justify-between gap-2.5 transition-all cursor-pointer active:scale-[0.98] ${
-                  isSelected
-                    ? 'border-[#FF7A00] bg-[#FF7A00]/15'
-                    : isLight
-                    ? 'bg-white border-slate-200 text-slate-900 hover:border-slate-300'
-                    : 'bg-[#16171C] border-white/[0.06] text-white hover:bg-[#1C1E25]'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-1.5">
-                  <p className="text-right text-xs leading-relaxed line-clamp-3 flex-1 break-words">
-                    {item.text}
-                  </p>
-                  {selectMode && (
-                    <span
-                      className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
-                        isSelected
-                          ? 'bg-[#FF7A00] border-[#FF7A00] text-white'
-                          : 'border-zinc-500'
-                      }`}
-                    >
-                      {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                    </span>
-                  )}
-                </div>
+            const activeSwipe = swipeState?.id === item.id ? swipeState : null;
+            const dx = activeSwipe?.dx ?? 0;
+            const threshold = activeSwipe?.threshold ?? 54;
+            const isSwipingLeft = dx < -4;
+            const isSwipingRight = dx > 4;
+            const isReady = Math.abs(dx) >= threshold;
 
-                {/* Permanent status pill (nothing auto-deletes) */}
+            return (
+              <div key={item.id} className="relative rounded-2xl overflow-hidden">
+                {/* Swipe Action Underlay: Left = Delete (Red), Right = Pin/Unpin (Orange) */}
+                {(isSwipingLeft || isSwipingRight) && (
+                  <div
+                    className={`absolute inset-0 flex items-center px-3.5 transition-colors ${
+                      isSwipingLeft
+                        ? isReady
+                          ? 'bg-rose-600 text-white justify-end'
+                          : 'bg-rose-600/75 text-white/90 justify-end'
+                        : isReady
+                        ? 'bg-[#FF7A00] text-[#111318] justify-start'
+                        : 'bg-[#FF7A00]/75 text-[#111318]/90 justify-start'
+                    }`}
+                    dir="ltr"
+                  >
+                    {isSwipingLeft ? (
+                      <div
+                        className={`flex items-center gap-1.5 font-extrabold text-xs transition-transform ${
+                          isReady ? 'scale-110' : 'scale-95'
+                        }`}
+                      >
+                        <span>سڕینەوە</span>
+                        <Trash2 className="w-4 h-4 shrink-0" />
+                      </div>
+                    ) : (
+                      <div
+                        className={`flex items-center gap-1.5 font-extrabold text-xs transition-transform ${
+                          isReady ? 'scale-110' : 'scale-95'
+                        }`}
+                      >
+                        {item.pinned ? (
+                          <PinOff className="w-4 h-4 shrink-0" />
+                        ) : (
+                          <Pin className="w-4 h-4 shrink-0" />
+                        )}
+                        <span>{item.pinned ? 'لابردنی پین' : 'پینکردن'}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div
-                  className={`w-full rounded-xl px-2.5 py-1 text-[10px] font-semibold flex items-center justify-center gap-1 ${
-                    item.pinned
-                      ? isLight
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-[#FF7A00]/15 text-[#FF9A3D]'
+                  role="button"
+                  tabIndex={0}
+                  onPointerDown={(e) => handleCardPointerDown(item, e)}
+                  onPointerMove={handleCardPointerMove}
+                  onPointerUp={(e) => handleCardPointerEnd(item, e)}
+                  onPointerCancel={handleCardPointerCancel}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    clearHoldTimer();
+                    setMenuItem(item);
+                  }}
+                  onClick={() => handleCardClick(item)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleCardClick(item);
+                    }
+                  }}
+                  style={{
+                    transform: dx !== 0 ? `translateX(${dx}px)` : undefined,
+                    transition: activeSwipe
+                      ? 'none'
+                      : 'transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
+                    touchAction: 'pan-y',
+                  }}
+                  className={`relative z-10 rounded-2xl p-3 border flex flex-col justify-between gap-2.5 cursor-pointer select-none ${
+                    isSelected
+                      ? 'border-[#FF7A00] bg-[#FF7A00]/15'
                       : isLight
-                      ? 'bg-slate-100 text-slate-500'
-                      : 'bg-[#22242C] text-zinc-400'
+                      ? 'bg-white border-slate-200 text-slate-900 hover:border-slate-300'
+                      : 'bg-[#16171C] border-white/[0.06] text-white hover:bg-[#1C1E25]'
                   }`}
                 >
-                  {item.pinned && <Pin className="w-2.5 h-2.5 shrink-0" />}
-                  <span className="truncate">
-                    {item.pinned ? 'جێگیرکراوە · پارێزراوە' : 'هەمیشەیی پارێزراوە'}
-                  </span>
+                  <div className="flex items-start justify-between gap-1.5">
+                    <p className="text-right text-xs leading-relaxed line-clamp-3 flex-1 break-words">
+                      {item.text}
+                    </p>
+                    {selectMode && (
+                      <span
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                          isSelected
+                            ? 'bg-[#FF7A00] border-[#FF7A00] text-white'
+                            : 'border-zinc-500'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Permanent status pill (nothing auto-deletes) */}
+                  <div
+                    className={`w-full rounded-xl px-2.5 py-1 text-[10px] font-semibold flex items-center justify-center gap-1 ${
+                      item.pinned
+                        ? isLight
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-[#FF7A00]/15 text-[#FF9A3D]'
+                        : isLight
+                        ? 'bg-slate-100 text-slate-500'
+                        : 'bg-[#22242C] text-zinc-400'
+                    }`}
+                  >
+                    {item.pinned && <Pin className="w-2.5 h-2.5 shrink-0" />}
+                    <span className="truncate">
+                      {item.pinned ? 'جێگیرکراوە · پارێزراوە' : 'هەمیشەیی پارێزراوە'}
+                    </span>
+                  </div>
                 </div>
               </div>
             );
@@ -1688,7 +1881,7 @@ export const ClipboardPanel: React.FC<ClipboardPanelProps> = ({
       {/* Subtle footer hint or clear action in select mode */}
       {!menuItem && !editingItem && sorted.length > 0 && (
         <div className="pt-1.5 flex items-center justify-between text-[10px] text-zinc-500 shrink-0 px-0.5">
-          <span>دەست لەسەر هەر لەبەرگیراوێک ڕابگرە بۆ وەرگێڕان، دەستکاری یان سڕینەوە</span>
+          <span>ڕاکێشان بۆ چەپ: سڕینەوە · بۆ ڕاست: پینکردن · دەستڕاگرتن: بژاردەکان</span>
           {selectMode && (
             <button
               type="button"

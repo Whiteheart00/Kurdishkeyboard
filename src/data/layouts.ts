@@ -711,8 +711,15 @@ export function resolveLayoutRows(
 
     rawRows = mergeModifierRows(mainWithOverrides, modRows);
 
-    // Prepend numeric row if enabled for this language
-    if (langConfig.numberRow) {
+    // Prepend numeric row according to numberRowMode ('always' | 'per_language' | 'never')
+    const effectiveNumberRow =
+      settings.numberRowMode === 'always'
+        ? true
+        : settings.numberRowMode === 'never'
+        ? false
+        : Boolean(langConfig.numberRow);
+
+    if (effectiveNumberRow) {
       const numNodes =
         langConfig.characterLayoutId === 'kurdi_hybrid'
           ? (bundle.layouts.numericRow.kurdi_hybrid?.[0] || getNumericRowNodes(settings.numberStyle, langConfig.numericRowId))
@@ -776,9 +783,13 @@ export function resolveLayoutRows(
   });
 
   // When number row is OFF on a 10-key top letter row, surface 1..0 as corner hints & long-press options (matching original KurdiKeyboard)
+  const effectiveNumRowOff =
+    settings.numberRowMode === 'never' ||
+    (settings.numberRowMode !== 'always' && !langConfig.numberRow);
+
   if (
     viewMode === 'characters' &&
-    !langConfig.numberRow &&
+    effectiveNumRowOff &&
     specRows[0] &&
     specRows[0].length === 10
   ) {
