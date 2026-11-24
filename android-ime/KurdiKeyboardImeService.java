@@ -27,6 +27,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,6 +50,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
     private int keyboardHeightDp = 390;
     private String lastSyncedTail = null;
     private long lastLocalCommitAt = 0L;
+    private OfflineKeyboardStt offlineKeyboardStt;
     private final Runnable syncTailRunnable = () -> {
         if (webView == null) return;
         final String tail = readFastFieldTail();
@@ -428,7 +430,34 @@ public class KurdiKeyboardImeService extends InputMethodService {
         return "application/octet-stream";
     }
 
+    private void emitKeyboardVoiceEvent(String state, String text) {
+        mainHandler.post(() -> {
+            if (webView == null) return;
+            webView.evaluateJavascript("window.__onKeyboardOfflineVoiceEvent && window.__onKeyboardOfflineVoiceEvent(" +
+                    JSONObject.quote(state == null ? "" : state) + "," +
+                    JSONObject.quote(text == null ? "" : text) + ");", null);
+        });
+    }
+
     public class AndroidImeBridge {
+        @JavascriptInterface
+        public void startOfflineVoice() {
+            mainHandler.post(() -> {
+                if (offlineKeyboardStt == null) {
+                    offlineKeyboardStt = new OfflineKeyboardStt(KurdiKeyboardImeService.this,
+                            (state, text) -> emitKeyboardVoiceEvent(state, text));
+                }
+                offlineKeyboardStt.start();
+            });
+        }
+        @JavascriptInterface
+        public void stopOfflineVoice() {
+            mainHandler.post(() -> { if (offlineKeyboardStt != null) offlineKeyboardStt.stop(); });
+        }
+        @JavascriptInterface
+        public void cancelOfflineVoice() {
+            mainHandler.post(() -> { if (offlineKeyboardStt != null) offlineKeyboardStt.cancel(); });
+        }
         @JavascriptInterface
         public void commitText(final String text) {
             if (text == null) return;
