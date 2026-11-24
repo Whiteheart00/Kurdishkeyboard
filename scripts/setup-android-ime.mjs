@@ -21,7 +21,11 @@ fs.copyFileSync(
   path.join(root, 'android-ime', 'MainActivity.java'),
   path.join(javaPkgDir, 'MainActivity.java')
 );
-console.log('Copied KurdiKeyboardImeService.java and MainActivity.java');
+fs.copyFileSync(
+  path.join(root, 'android-ime', 'OfflineKeyboardStt.java'),
+  path.join(javaPkgDir, 'OfflineKeyboardStt.java')
+);
+console.log('Copied KurdiKeyboardImeService.java, MainActivity.java, and OfflineKeyboardStt.java');
 
 // 2. Copy res/xml/method.xml
 const xmlDir = path.join(androidMain, 'res', 'xml');
@@ -36,6 +40,17 @@ console.log('Copied res/xml/method.xml');
 const manifestPath = path.join(androidMain, 'AndroidManifest.xml');
 let manifest = fs.readFileSync(manifestPath, 'utf8');
 let manifestModified = false;
+
+// Android 11+ package visibility is required before binding to Manga's explicit offline STT service.
+if (!manifest.includes('android:name="com.mangatranslator.app"')) {
+  if (manifest.includes('</queries>')) {
+    manifest = manifest.replace('</queries>', '        <package android:name="com.mangatranslator.app" />\n    </queries>');
+  } else {
+    manifest = manifest.replace('<application', '    <queries>\n        <package android:name="com.mangatranslator.app" />\n    </queries>\n\n    <application');
+  }
+  manifestModified = true;
+  console.log('Added Manga translator package visibility query');
+}
 
 const requiredPermissions = [
   'android.permission.VIBRATE',
