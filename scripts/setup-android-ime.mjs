@@ -25,7 +25,7 @@ fs.copyFileSync(
   path.join(root, 'android-ime', 'OfflineKeyboardStt.java'),
   path.join(javaPkgDir, 'OfflineKeyboardStt.java')
 );
-console.log('Copied KurdiKeyboardImeService.java, MainActivity.java, and OfflineKeyboardStt.java');
+fs.copyFileSync(path.join(root, 'android-ime', 'VoicePermissionActivity.java'), path.join(javaPkgDir, 'VoicePermissionActivity.java'));
 
 // 2. Copy res/xml/method.xml
 const xmlDir = path.join(androidMain, 'res', 'xml');
@@ -87,6 +87,11 @@ if (!manifest.includes('KurdiKeyboardImeService')) {
   manifest = manifest.replace('</application>', imeServiceXml);
   manifestModified = true;
   console.log('Patched AndroidManifest.xml with KurdiKeyboardImeService (directBootAware=true)');
+}
+
+if (!manifest.includes('VoicePermissionActivity')) {
+  manifest = manifest.replace('</application>', `    <activity android:name=".VoicePermissionActivity" android:exported="false" android:excludeFromRecents="true" android:theme="@android:style/Theme.Material.Light.Dialog.NoActionBar" />\n    </application>`);
+  manifestModified = true;
 }
 
 if (manifestModified) {
