@@ -2,193 +2,158 @@ package io.kurdikebord.app;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
+import android.content.*;
 import android.content.pm.PackageManager;
-import android.media.AudioFormat;
-import android.media.AudioRecord;
-import android.media.MediaRecorder;
+import android.media.*;
 import android.media.audiofx.NoiseSuppressor;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
-import android.os.Messenger;
-import android.os.ParcelFileDescriptor;
+import android.os.*;
+import android.system.*;
 import android.util.Log;
-
 import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Records PCM in the visible IME and delegates recognition to Manga's VekolStt service. */
+/** Main-looper state machine; all capture and pipe writes run off the UI thread. */
 public final class OfflineKeyboardStt {
     public interface Events { void event(String state, String text); }
-    private static final String TAG = "OfflineKeyboardStt";
-    private static final String ACTION = "com.mangatranslator.app.action.KEYBOARD_STT";
     private static final String APP = "com.mangatranslator.app";
-    private static final String SERVICE = "com.mangatranslator.app.KeyboardSttService";
-    private static final int PRELOAD = 1, TRANSCRIBE = 2, STATUS = 3, RESULT = 4, ERROR = 5;
-    private static final String PIPE = "pcm_pipe", VALUE = "value";
-    private static final int RATE = 16000, MAX_BYTES = RATE * 2 * 60;
-
+    private static final String ACTION = APP + ".action.KEYBOARD_STT";
+    private static final int PRELOAD=1, TRANSCRIBE=2, STATUS=3, RESULT=4, ERROR=5, CANCEL=6;
+    private static final int RATE=16000, MAX_BYTES=RATE*2*60;
     private final Context context;
     private final Events events;
     private final Handler main = new Handler(Looper.getMainLooper());
-    private final ByteArrayOutputStream pcm = new ByteArrayOutputStream();
-    private final AtomicBoolean recording = new AtomicBoolean(false);
-    private AudioRecord recorder;
-    private NoiseSuppressor noiseSuppressor;
-    private Thread recordThread;
-    private Messenger remote;
-    private boolean bound;
-    private final Messenger incoming;
-    private final ServiceConnection connection = new ServiceConnection() {
-        @Override public void onServiceConnected(ComponentName name, android.os.IBinder service) {
-            remote = new Messenger(service);
-            send(PRELOAD, null);
+    private final ThreadPoolExecutor io = new ThreadPoolExecutor(1,1,0,TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(1), r -> new Thread(r,"keyboard-stt-io"));
+    private Session active;
+    private int nextId;
+    private boolean closed;
+
+    private final class Session implements ServiceConnection {
+        final int id = ++nextId;
+        final AtomicBoolean stop = new AtomicBoolean(), cancelled = new AtomicBoolean();
+        final Messenger incoming = new Messenger(new Handler(Looper.getMainLooper(), m -> { receive(this,m); return true; }));
+        Messenger remote;
+        boolean bound;
+        String state = "connecting";
+        final Runnable timeout = () -> { if (active == this) finish(this,"error","timeout",true); };
+        @Override public void onServiceConnected(ComponentName n, IBinder binder) {
+            if (active != this) return;
+            remote = new Messenger(binder);
+            if (!send(this,PRELOAD,null)) finish(this,"error","ipc_failed",true);
         }
-        @Override public void onServiceDisconnected(ComponentName name) { remote = null; }
-    };
-
-    public OfflineKeyboardStt(Context context, Events events) {
-        this.context = context.getApplicationContext();
-        this.events = events;
-        this.incoming = new Messenger(new Handler(Looper.getMainLooper(), msg -> {
-            Bundle b = msg.getData();
-            String value = b == null ? "" : b.getString(VALUE, "");
-            if (msg.what == STATUS) {
-                if ("ready".equals(value)) this.events.event("ready", "");
-                else this.events.event("model_missing", "");
-            } else if (msg.what == RESULT) {
-                this.events.event("result", value);
-                unbind();
-            } else if (msg.what == ERROR) {
-                this.events.event("model_missing".equals(value) ? "model_missing" : "error", value);
-                unbind();
-            }
-            return true;
-        }));
+        @Override public void onServiceDisconnected(ComponentName n) { disconnected(); }
+        @Override public void onBindingDied(ComponentName n) { disconnected(); }
+        @Override public void onNullBinding(ComponentName n) { disconnected(); }
+        void disconnected() { if (active == this) finish(this,"error","service_disconnected",true); }
     }
-
+    public OfflineKeyboardStt(Context c, Events e) { context=c.getApplicationContext(); events=e; }
+    public void start() {
+        if (closed || active != null) return;
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED) {
+            events.event("permission",""); return;
+        }
+        Session s = new Session(); active=s; events.event("connecting","");
+        deadline(s,10000);
+        try {
+            s.bound=context.bindService(new Intent(ACTION).setClassName(APP,APP+".KeyboardSttService"),s,Context.BIND_AUTO_CREATE);
+            if (!s.bound) finish(s,"app_missing","",false);
+        } catch (SecurityException e) { finish(s,"error","ipc_denied",false); }
+        catch (RuntimeException e) { finish(s,"app_missing","",false); }
+    }
+    private void receive(Session s, Message m) {
+        if (active!=s) return;
+        Bundle b=m.getData();
+        if (b.containsKey("request_id") && b.getInt("request_id")!=s.id) return;
+        String value=b.getString("value","");
+        if (m.what==STATUS && "connecting".equals(s.state)) {
+            if (!"ready".equals(value)) { finish(s,"model_missing","",false); return; }
+            s.state="starting"; events.event("starting",""); deadline(s,10000);
+            try { io.execute(() -> capture(s)); }
+            catch (RejectedExecutionException e) { finish(s,"error","busy",true); }
+        } else if (m.what==RESULT && "transcribing".equals(s.state)) finish(s,"result",value,false);
+        else if (m.what==ERROR) finish(s,"model_missing".equals(value)?"model_missing":"error",value,false);
+    }
     @SuppressLint("MissingPermission")
-    public synchronized void start() {
-        if (recording.get()) { stop(); return; }
-        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            events.event("permission", ""); return;
-        }
+    private void capture(Session s) {
+        AudioRecord rec=null; NoiseSuppressor ns=null; byte[] result=null; String error=null;
         try {
-            Intent intent = new Intent(ACTION).setPackage(APP).setClassName(APP, SERVICE);
-            bound = context.bindService(intent, connection, Context.BIND_AUTO_CREATE);
-            if (!bound) { events.event("app_missing", ""); return; }
-        } catch (Throwable t) {
-            events.event("app_missing", t.getMessage() == null ? "" : t.getMessage()); return;
+            if (s.cancelled.get()) return;
+            int min=AudioRecord.getMinBufferSize(RATE,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
+            if (min<=0) throw new IllegalStateException("audio_unavailable");
+            rec=new AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION,RATE,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT,Math.max(min*2,8192));
+            if (rec.getState()!=AudioRecord.STATE_INITIALIZED) throw new IllegalStateException("audio_unavailable");
+            try { if (NoiseSuppressor.isAvailable()) ns=NoiseSuppressor.create(rec.getAudioSessionId()); if(ns!=null) ns.setEnabled(true); } catch(RuntimeException ignored) {}
+            if (s.cancelled.get()) return;
+            rec.startRecording();
+            if (rec.getRecordingState()!=AudioRecord.RECORDSTATE_RECORDING) throw new IllegalStateException("microphone_failed");
+            main.post(() -> { if(active==s && !s.stop.get()) { s.state="recording"; events.event("recording",""); deadline(s,65000); } });
+            ByteArrayOutputStream pcm=new ByteArrayOutputStream(32768);
+            byte[] chunk=new byte[4096]; long end=SystemClock.elapsedRealtime()+60000;
+            while(!s.stop.get() && !s.cancelled.get() && pcm.size()<MAX_BYTES && SystemClock.elapsedRealtime()<end) {
+                int n=rec.read(chunk,0,Math.min(chunk.length,MAX_BYTES-pcm.size()),AudioRecord.READ_NON_BLOCKING);
+                if(n<0) throw new IllegalStateException("audio_read_failed");
+                if(n==0) { Thread.sleep(10); continue; }
+                pcm.write(chunk,0,n);
+            }
+            if(!s.cancelled.get()) result=pcm.toByteArray();
+        } catch(Exception e) { error=e instanceof SecurityException?"permission":"microphone_failed"; Log.w("KeyboardSTT","Capture failed",e); }
+        finally {
+            if(rec!=null) { try { rec.stop(); } catch(RuntimeException ignored) {} }
+            if(ns!=null) try { ns.release(); } catch(RuntimeException ignored) {}
+            if(rec!=null) try { rec.release(); } catch(RuntimeException ignored) {}
         }
-        int min = AudioRecord.getMinBufferSize(RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-        if (min <= 0) { events.event("error", "audio_unavailable"); return; }
+        final byte[] audio=result; final String failure=error;
+        main.post(() -> {
+            if(active!=s) return;
+            if(failure!=null) { finish(s,"permission".equals(failure)?"permission":"error",failure,true); return; }
+            if(audio==null || audio.length<RATE) { finish(s,"error","no_speech",true); return; }
+            s.state="transcribing"; events.event("transcribing",""); deadline(s,180000); sendAudio(s,audio);
+        });
+    }
+    public void stop() {
+        Session s=active;
+        if(s==null || !"recording".equals(s.state)) return;
+        s.stop.set(true); s.state="transcribing"; events.event("transcribing",""); deadline(s,180000);
+    }
+    public void cancel() { if(active!=null) finish(active,"cancelled","",true); }
+    public void close() { closed=true; cancel(); io.shutdown(); }
+    private void deadline(Session s,long ms) { main.removeCallbacks(s.timeout); main.postDelayed(s.timeout,ms); }
+    private boolean send(Session s,int what,Bundle data) {
+        if(s.remote==null) return false;
+        try { Message m=Message.obtain(null,what); if(data==null) data=new Bundle(); data.putInt("request_id",s.id); m.setData(data); m.replyTo=s.incoming; s.remote.send(m); return true; }
+        catch(RemoteException | RuntimeException e) { return false; }
+    }
+    private void sendAudio(Session s,byte[] audio) {
+        ParcelFileDescriptor[] pipe=null;
         try {
-            recorder = new AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, RATE,
-                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, Math.max(min * 4, 8192));
-            if (recorder.getState() != AudioRecord.STATE_INITIALIZED) throw new IllegalStateException("audio_unavailable");
-            try { if (NoiseSuppressor.isAvailable()) noiseSuppressor = NoiseSuppressor.create(recorder.getAudioSessionId()); if (noiseSuppressor != null) noiseSuppressor.setEnabled(true); } catch (Throwable ignored) {}
-            synchronized (pcm) { pcm.reset(); }
-            recorder.startRecording();
-            recording.set(true);
-            events.event("recording", "");
-            recordThread = new Thread(() -> {
-                byte[] chunk = new byte[4096];
-                try {
-                    while (recording.get()) {
-                        int n = recorder.read(chunk, 0, chunk.length);
-                        if (n <= 0) break;
-                        synchronized (pcm) {
-                            if (pcm.size() + n > MAX_BYTES) {
-                                int take = MAX_BYTES - pcm.size();
-                                if (take > 0) pcm.write(chunk, 0, take);
-                                main.post(this::stop);
-                                break;
-                            }
-                            pcm.write(chunk, 0, n);
-                        }
-                    }
-                } catch (Throwable t) { Log.w(TAG, "Audio capture stopped", t); }
-            }, "kurdi-keyboard-audio");
-            recordThread.start();
-            main.postDelayed(() -> { if (recording.get()) stop(); }, 60_000);
-        } catch (Throwable t) {
-            releaseRecorder();
-            events.event("error", t.getMessage() == null ? "microphone_failed" : t.getMessage());
-            unbind();
-        }
-    }
-
-    public synchronized void stop() {
-        if (!recording.getAndSet(false)) return;
-        events.event("transcribing", "");
-        try { if (recorder != null) recorder.stop(); } catch (Throwable ignored) {}
-        try { if (recordThread != null) recordThread.join(700); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
-        releaseRecorder();
-        final byte[] audio;
-        synchronized (pcm) { audio = pcm.toByteArray(); pcm.reset(); }
-        if (audio.length < RATE) { events.event("error", "no_speech"); unbind(); return; }
-        if (remote == null) {
-            // bind callback may still be pending; retry briefly without holding the UI thread
-            new Thread(() -> {
-                for (int i = 0; i < 30 && remote == null; i++) try { Thread.sleep(100); } catch (InterruptedException e) { return; }
-                main.post(() -> { if (remote == null) { events.event("app_missing", ""); unbind(); } else sendAudio(audio); });
-            }, "kurdi-stt-bind-wait").start();
-        } else sendAudio(audio);
-    }
-
-    public synchronized void cancel() {
-        recording.set(false);
-        try { if (recorder != null) recorder.stop(); } catch (Throwable ignored) {}
-        try { if (recordThread != null) recordThread.join(300); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
-        releaseRecorder();
-        synchronized (pcm) { pcm.reset(); }
-        events.event("cancelled", "");
-        unbind();
-    }
-
-    private void sendAudio(byte[] audio) {
-        try {
-            ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
-            Bundle data = new Bundle();
-            data.putParcelable(PIPE, pipe[0]);
-            Message msg = Message.obtain(null, TRANSCRIBE);
-            msg.setData(data);
-            msg.replyTo = incoming;
-            remote.send(msg);
+            pipe=ParcelFileDescriptor.createPipe();
+            Bundle b=new Bundle(); b.putParcelable("pcm_pipe",pipe[0]);
+            if(!send(s,TRANSCRIBE,b)) throw new IllegalStateException("ipc_failed");
             pipe[0].close();
-            new Thread(() -> {
-                try (OutputStream out = new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1])) { out.write(audio); }
-                catch (Throwable t) { Log.e(TAG, "Could not stream audio to Manga", t); }
-            }, "kurdi-stt-audio-pipe").start();
-        } catch (Throwable t) {
-            events.event("error", t.getMessage() == null ? "ipc_failed" : t.getMessage());
-            unbind();
-        }
+            final ParcelFileDescriptor writer=pipe[1];
+            io.execute(() -> writeAudio(s,writer,audio));
+        } catch(Exception e) { if(pipe!=null) for(ParcelFileDescriptor p:pipe) try { p.close(); } catch(Exception ignored) {} finish(s,"error","ipc_failed",true); }
     }
-
-    private void send(int what, Bundle data) {
-        try {
-            Message msg = Message.obtain(null, what);
-            if (data != null) msg.setData(data);
-            msg.replyTo = incoming;
-            if (remote != null) remote.send(msg);
-        } catch (Throwable t) { Log.w(TAG, "IPC request failed", t); }
+    private void writeAudio(Session s,ParcelFileDescriptor writer,byte[] audio) {
+        try(ParcelFileDescriptor p=writer) {
+            java.io.FileDescriptor fd=p.getFileDescriptor();
+            Os.fcntlInt(fd,OsConstants.F_SETFL,Os.fcntlInt(fd,OsConstants.F_GETFL,0)|OsConstants.O_NONBLOCK);
+            StructPollfd poll=new StructPollfd(); poll.fd=fd; poll.events=(short)OsConstants.POLLOUT;
+            long end=SystemClock.elapsedRealtime()+20000; int off=0;
+            while(off<audio.length && !s.cancelled.get()) {
+                if(SystemClock.elapsedRealtime()>=end) throw new IllegalStateException("pipe_timeout");
+                if(Os.poll(new StructPollfd[]{poll},200)==0) continue;
+                try { off+=Os.write(fd,audio,off,Math.min(4096,audio.length-off)); }
+                catch(ErrnoException e) { if(e.errno!=OsConstants.EAGAIN && e.errno!=OsConstants.EINTR) throw e; }
+            }
+        } catch(Exception e) { main.post(() -> { if(active==s) finish(s,"error","ipc_failed",true); }); }
     }
-
-    private void releaseRecorder() {
-        if (recorder != null) { try { recorder.release(); } catch (Throwable ignored) {} recorder = null; }
-        if (noiseSuppressor != null) { try { noiseSuppressor.release(); } catch (Throwable ignored) {} noiseSuppressor = null; }
-        recordThread = null;
-    }
-
-    private synchronized void unbind() {
-        remote = null;
-        if (bound) { try { context.unbindService(connection); } catch (Throwable ignored) {} bound = false; }
+    private void finish(Session s,String state,String text,boolean notifyRemote) {
+        if(active!=s) return;
+        active=null; s.cancelled.set(true); s.stop.set(true); main.removeCallbacks(s.timeout);
+        if(notifyRemote) send(s,CANCEL,null);
+        if(s.bound) { try { context.unbindService(s); } catch(RuntimeException ignored) {} s.bound=false; }
+        s.remote=null; events.event(state,text);
     }
 }

@@ -49,10 +49,66 @@ public class KurdiKeyboardImeService extends InputMethodService {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private int keyboardHeightDp = 390;
     private String lastSyncedTail = null;
-    private long lastLocalCommitAt = 0L;
+    private volatile long lastLocalCommitAt = 0L;
     private OfflineKeyboardStt offlineKeyboardStt;
+    private InputConnection voiceEditor;
+    private volatile boolean inputVisible;
+    private volatile long editorGeneration;
+    private long voiceGeneration;
+    private long lastRendererRecovery;
+    private int rendererFailures;
+    private final java.util.concurrent.ThreadPoolExecutor diagnostics = new java.util.concurrent.ThreadPoolExecutor(1,1,0,TimeUnit.MILLISECONDS,
+            new java.util.concurrent.ArrayBlockingQueue<>(8), r -> new Thread(r,"ime-diagnostics"), new java.util.concurrent.ThreadPoolExecutor.DiscardPolicy());
+    private void logWebEvent(String category,String severity,String title,String description,String operation) {
+        diagnostics.execute(() -> MainActivity.recordNativeEvent(getApplicationContext(),category,severity,title,description,"KurdiKeyboardImeService",operation,"FAILED",null));
+    }
+
+    private void cancelVoice() {
+        voiceEditor = null;
+        if (offlineKeyboardStt != null) offlineKeyboardStt.cancel();
+    }
+    @Override public void onStartInput(EditorInfo info, boolean restarting) {
+        editorGeneration++; cancelVoice(); super.onStartInput(info, restarting);
+    }
+    @Override public void onFinishInputView(boolean finishingInput) {
+        inputVisible = false; cancelVoice(); mainHandler.removeCallbacks(syncTailRunnable);
+        super.onFinishInputView(finishingInput);
+    }
+    @Override public void onFinishInput() {
+        inputVisible = false; editorGeneration++; cancelVoice(); mainHandler.removeCallbacks(syncTailRunnable);
+        super.onFinishInput();
+    }
+    @Override public void onWindowHidden() {
+        inputVisible = false; cancelVoice(); mainHandler.removeCallbacks(syncTailRunnable);
+        mainHandler.removeCallbacks(delayedRepaintRunnable);
+        super.onWindowHidden();
+    }
+    @Override public void onDestroy() {
+        inputVisible = false;
+        if (offlineKeyboardStt != null) { offlineKeyboardStt.close(); offlineKeyboardStt = null; }
+        mainHandler.removeCallbacksAndMessages(null);
+        diagnostics.shutdown();
+        destroyWebView();
+        super.onDestroy();
+    }
+    private void destroyWebView() {
+        WebView old = webView; webView = null;
+        if (old != null) {
+            if (old.getParent() instanceof ViewGroup) ((ViewGroup)old.getParent()).removeView(old);
+            try { old.removeJavascriptInterface("AndroidIME"); old.destroy(); } catch (RuntimeException ignored) {}
+        }
+    }
+    private boolean sensitiveEditor() {
+        EditorInfo info = getCurrentInputEditorInfo();
+        if (info == null) return true;
+        int type = info.inputType;
+        int cls = type & android.text.InputType.TYPE_MASK_CLASS;
+        int variation = type & android.text.InputType.TYPE_MASK_VARIATION;
+        return (cls == android.text.InputType.TYPE_CLASS_TEXT && (variation == android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD || variation == android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD || variation == android.text.InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD)) ||
+                (cls == android.text.InputType.TYPE_CLASS_NUMBER && variation == android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+    }
     private final Runnable syncTailRunnable = () -> {
-        if (webView == null) return;
+        if (webView == null || !inputVisible) return;
         final String tail = readFastFieldTail();
         if (tail.equals(lastSyncedTail)) return;
         lastSyncedTail = tail;
@@ -125,10 +181,10 @@ public class KurdiKeyboardImeService extends InputMethodService {
         wv.setHapticFeedbackEnabled(false);
         wv.setOnLongClickListener(v -> true);
 
-        // Keep IME renderer high priority even while hidden so Android 14–16 does not evict GPU surfaces
+        // Keep visible IME important, allow renderer priority to drop when hidden.
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             try {
-                wv.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
+                wv.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true);
             } catch (Exception ignored) {
             }
         }
@@ -138,6 +194,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
         ws.setDomStorageEnabled(true);
         ws.setDatabaseEnabled(true);
         ws.setAllowFileAccess(false);
+        ws.setAllowContentAccess(false);
         ws.setMediaPlaybackRequiresUserGesture(false);
         ws.setSupportZoom(false);
         ws.setBuiltInZoomControls(false);
@@ -146,10 +203,18 @@ public class KurdiKeyboardImeService extends InputMethodService {
 
         wv.addJavascriptInterface(new AndroidImeBridge(), "AndroidIME");
         wv.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view,url);
+                if (view == webView && inputVisible) { lastSyncedTail=null; scheduleSyncEditorTail(200); }
+            }
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                return !request.isForMainFrame() || !"https".equals(uri.getScheme()) || !VIRTUAL_HOST.equalsIgnoreCase(uri.getHost());
+            }
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
-                if (uri != null && VIRTUAL_HOST.equalsIgnoreCase(uri.getHost())) {
+                if (uri != null && "https".equals(uri.getScheme()) && VIRTUAL_HOST.equalsIgnoreCase(uri.getHost())) {
                     String path = uri.getPath();
                     if (path == null || path.equals("/") || path.isEmpty()) {
                         path = "/index.html";
@@ -159,12 +224,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
                         InputStream is = getAssets().open(assetPath);
                         return buildAssetResponse(guessMimeType(path), is);
                     } catch (IOException e) {
-                        try {
-                            InputStream fallback = getAssets().open("public/index.html");
-                            return buildAssetResponse("text/html", fallback);
-                        } catch (IOException ignored) {
-                            return null;
-                        }
+                        return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found", new HashMap<>(), new java.io.ByteArrayInputStream(new byte[0]));
                     }
                 }
                 return super.shouldInterceptRequest(view, request);
@@ -179,17 +239,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
                         return;
                     }
                     CharSequence desc = error != null ? error.getDescription() : "WebView resource error";
-                    MainActivity.recordNativeEvent(
-                            KurdiKeyboardImeService.this,
-                            "ERRORS",
-                            "ERROR",
-                            "IME WebView Resource Error",
-                            "WebView error on " + path + ": " + desc,
-                            "KurdiKeyboardImeService",
-                            "onReceivedError",
-                            "FAILED",
-                            null
-                    );
+                    logWebEvent("ERRORS", "ERROR", "IME WebView Resource Error", "WebView error on " + path + ": " + desc, "onReceivedError");
                 } catch (Exception ignored) {
                 }
             }
@@ -203,17 +253,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
                         return;
                     }
                     int status = errorResponse != null ? errorResponse.getStatusCode() : 0;
-                    MainActivity.recordNativeEvent(
-                            KurdiKeyboardImeService.this,
-                            "NETWORK",
-                            status >= 500 ? "ERROR" : "WARNING",
-                            "IME WebView HTTP " + status,
-                            "WebView HTTP error " + status + " for " + path,
-                            "KurdiKeyboardImeService",
-                            "onReceivedHttpError",
-                            "FAILED",
-                            null
-                    );
+                    logWebEvent("NETWORK", status >= 500 ? "ERROR" : "WARNING", "IME WebView HTTP " + status, "WebView HTTP error " + status + " for " + path, "onReceivedHttpError");
                 } catch (Exception ignored) {
                 }
             }
@@ -222,41 +262,21 @@ public class KurdiKeyboardImeService extends InputMethodService {
             public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
                 try {
                     boolean crashed = detail != null && detail.didCrash();
-                    MainActivity.recordNativeEvent(
-                            KurdiKeyboardImeService.this,
-                            "CRASHES",
-                            "CRITICAL",
-                            "IME WebView Render Process Gone",
-                            crashed ? "IME WebView renderer crashed unexpectedly." : "IME WebView renderer killed by OS under memory pressure.",
-                            "KurdiKeyboardImeService",
-                            "onRenderProcessGone",
-                            "FAILED",
-                            null
-                    );
+                    logWebEvent("CRASHES", "CRITICAL", "IME WebView Render Process Gone", crashed ? "IME WebView renderer crashed unexpectedly." : "IME WebView renderer killed by OS under memory pressure.", "onRenderProcessGone");
                 } catch (Exception ignored) {
                 }
-                // Self-heal if Android killed the WebView renderer process so the keyboard never stays black
-                mainHandler.post(() -> {
-                    try {
-                        if (rootContainer != null) {
-                            rootContainer.removeAllViews();
-                            if (webView != null) {
-                                try {
-                                    webView.destroy();
-                                } catch (Exception ignored2) {
-                                }
-                            }
-                            webView = createConfiguredWebView();
-                            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                                    ViewGroup.LayoutParams.MATCH_PARENT,
-                                    dpToPx(keyboardHeightDp)
-                            );
-                            rootContainer.addView(webView, lp);
-                            webView.loadUrl("https://" + VIRTUAL_HOST + "/index.html?ime=1");
-                        }
-                    } catch (Exception ignored2) {
-                    }
-                });
+                if (view != webView) { try { view.destroy(); } catch (RuntimeException ignored) {} return true; }
+                destroyWebView(); cancelVoice();
+                long now = android.os.SystemClock.elapsedRealtime();
+                rendererFailures = now - lastRendererRecovery < 30000 ? rendererFailures + 1 : 1;
+                lastRendererRecovery = now;
+                if (rootContainer != null) {
+                    android.widget.Button retry = new android.widget.Button(KurdiKeyboardImeService.this);
+                    retry.setText("دووبارە کردنەوەی کیبۆرد");
+                    retry.setOnClickListener(v -> { rendererFailures=0; attachWebView(); });
+                    rootContainer.removeAllViews(); rootContainer.addView(retry);
+                    if (inputVisible && rendererFailures <= 2) mainHandler.postDelayed(() -> { if (inputVisible && webView == null) attachWebView(); }, 250L * rendererFailures);
+                }
                 return true;
             }
         });
@@ -266,19 +286,18 @@ public class KurdiKeyboardImeService extends InputMethodService {
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     public View onCreateInputView() {
+        destroyWebView();
         rootContainer = new FrameLayout(this);
         rootContainer.setBackgroundColor(Color.BLACK);
-
-        webView = createConfiguredWebView();
-
-        int heightPx = dpToPx(keyboardHeightDp);
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                heightPx
-        );
-        rootContainer.addView(webView, lp);
-        webView.loadUrl("https://" + VIRTUAL_HOST + "/index.html?ime=1");
+        attachWebView();
         return rootContainer;
+    }
+    private void attachWebView() {
+        if (rootContainer == null || webView != null) return;
+        rootContainer.removeAllViews();
+        webView = createConfiguredWebView();
+        rootContainer.addView(webView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(keyboardHeightDp)));
+        webView.loadUrl("https://" + VIRTUAL_HOST + "/index.html?ime=1");
     }
 
     private WebResourceResponse buildAssetResponse(String mimeType, InputStream stream) {
@@ -293,6 +312,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
     }
 
     private String readCurrentFieldText(boolean preferSelection) {
+        if (sensitiveEditor()) return "";
         try {
             InputConnection ic = getCurrentInputConnection();
             if (ic == null) return "";
@@ -329,6 +349,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
     }
 
     private String readFastFieldTail() {
+        if (sensitiveEditor()) return "";
         try {
             InputConnection ic = getCurrentInputConnection();
             if (ic == null) return "";
@@ -342,12 +363,16 @@ public class KurdiKeyboardImeService extends InputMethodService {
     @Override
     public void onWindowShown() {
         super.onWindowShown();
+        inputVisible = true;
+        if (webView == null && rendererFailures <= 2) attachWebView();
         forceWebViewRepaint();
     }
 
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
+        inputVisible = true;
+        if (webView == null && rendererFailures <= 2) attachWebView();
         forceWebViewRepaint();
         syncLatestSystemClipboard();
         final String rawTail = readFastFieldTail();
@@ -431,38 +456,59 @@ public class KurdiKeyboardImeService extends InputMethodService {
     }
 
     private void emitKeyboardVoiceEvent(String state, String text) {
+        if ("result".equals(state)) {
+            String clean = text == null ? "" : text.trim();
+            InputConnection ic = getCurrentInputConnection();
+            if (!inputVisible || voiceGeneration != editorGeneration || voiceEditor == null || voiceEditor != ic || sensitiveEditor()) {
+                state = "cancelled"; text = "";
+            } else if (!clean.isEmpty()) {
+                try {
+                    if (ic.commitText(clean + " ", 1)) { text = clean; lastLocalCommitAt = android.os.SystemClock.uptimeMillis(); scheduleSyncEditorTail(80); }
+                    else { state = "error"; text = "editor_unavailable"; }
+                } catch (RuntimeException e) { state = "error"; text = "editor_unavailable"; }
+            }
+        }
+        if (!"connecting".equals(state) && !"starting".equals(state) && !"recording".equals(state) && !"transcribing".equals(state)) voiceEditor = null;
+        if (webView == null) return;
+        try { webView.evaluateJavascript("window.__onKeyboardOfflineVoiceEvent && window.__onKeyboardOfflineVoiceEvent(" +
+                JSONObject.quote(state) + "," + JSONObject.quote(text == null ? "" : text) + ");", null); }
+        catch (RuntimeException ignored) {}
+    }
+
+    private void postEditorOperation(Runnable action) {
+        final long generation = editorGeneration;
         mainHandler.post(() -> {
-            if (webView == null) return;
-            webView.evaluateJavascript("window.__onKeyboardOfflineVoiceEvent && window.__onKeyboardOfflineVoiceEvent(" +
-                    JSONObject.quote(state == null ? "" : state) + "," +
-                    JSONObject.quote(text == null ? "" : text) + ");", null);
+            if (generation != editorGeneration || !inputVisible) return;
+            try { action.run(); } catch (RuntimeException ignored) { scheduleSyncEditorTail(100); }
         });
     }
 
     public class AndroidImeBridge {
-        @JavascriptInterface
-        public void startOfflineVoice() {
-            mainHandler.post(() -> {
-                if (offlineKeyboardStt == null) {
-                    offlineKeyboardStt = new OfflineKeyboardStt(KurdiKeyboardImeService.this,
-                            (state, text) -> emitKeyboardVoiceEvent(state, text));
-                }
+        @JavascriptInterface public void startOfflineVoice() {
+            postEditorOperation(() -> {
+                if (!inputVisible || sensitiveEditor() || getCurrentInputConnection() == null) { emitKeyboardVoiceEvent("error", "editor_unavailable"); return; }
+                if (voiceEditor != null) return;
+                voiceEditor = getCurrentInputConnection(); voiceGeneration = editorGeneration;
+                if (offlineKeyboardStt == null) offlineKeyboardStt = new OfflineKeyboardStt(KurdiKeyboardImeService.this, KurdiKeyboardImeService.this::emitKeyboardVoiceEvent);
                 offlineKeyboardStt.start();
             });
         }
-        @JavascriptInterface
-        public void stopOfflineVoice() {
+        @JavascriptInterface public void stopOfflineVoice() {
             mainHandler.post(() -> { if (offlineKeyboardStt != null) offlineKeyboardStt.stop(); });
         }
-        @JavascriptInterface
-        public void cancelOfflineVoice() {
-            mainHandler.post(() -> { if (offlineKeyboardStt != null) offlineKeyboardStt.cancel(); });
+        @JavascriptInterface public void cancelOfflineVoice() { mainHandler.post(() -> cancelVoice()); }
+        @JavascriptInterface public void requestVoicePermission() {
+            mainHandler.post(() -> {
+                if (!inputVisible) return;
+                try { startActivity(new Intent(KurdiKeyboardImeService.this, VoicePermissionActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
+                catch (RuntimeException e) { emitKeyboardVoiceEvent("permission", ""); }
+            });
         }
         @JavascriptInterface
         public void commitText(final String text) {
             if (text == null) return;
             lastLocalCommitAt = android.os.SystemClock.uptimeMillis();
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic != null) {
                     ic.commitText(text, 1);
@@ -473,14 +519,14 @@ public class KurdiKeyboardImeService extends InputMethodService {
         @JavascriptInterface
         public void deleteBackward() {
             lastLocalCommitAt = android.os.SystemClock.uptimeMillis();
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic != null) {
                     CharSequence selected = ic.getSelectedText(0);
                     if (!TextUtils.isEmpty(selected)) {
                         ic.commitText("", 1);
                     } else {
-                        ic.deleteSurroundingText(1, 0);
+                        if (!ic.deleteSurroundingTextInCodePoints(1, 0)) ic.deleteSurroundingText(1, 0);
                     }
                 }
             });
@@ -489,7 +535,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
         @JavascriptInterface
         public void deleteWord() {
             lastLocalCommitAt = android.os.SystemClock.uptimeMillis();
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic == null) return;
                 CharSequence before = ic.getTextBeforeCursor(64, 0);
@@ -509,7 +555,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
         @JavascriptInterface
         public void replaceSurroundingText(final int deleteBefore, final String insertText) {
             lastLocalCommitAt = android.os.SystemClock.uptimeMillis();
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic == null) return;
                 try {
@@ -520,22 +566,16 @@ public class KurdiKeyboardImeService extends InputMethodService {
                     if (insertText != null && !insertText.isEmpty()) {
                         ic.commitText(insertText, 1);
                     }
-                    ic.endBatchEdit();
                 } catch (Exception ignored) {
-                    if (deleteBefore > 0) {
-                        ic.deleteSurroundingText(deleteBefore, 0);
-                    }
-                    if (insertText != null && !insertText.isEmpty()) {
-                        ic.commitText(insertText, 1);
-                    }
-                }
+                    // Never replay a partially completed edit.
+                } finally { try { ic.endBatchEdit(); } catch (Exception ignored) {} }
                 scheduleSyncEditorTail(120);
             });
         }
 
         @JavascriptInterface
         public void sendEnter() {
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 EditorInfo ei = getCurrentInputEditorInfo();
                 if (ic == null) return;
@@ -557,7 +597,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
 
         @JavascriptInterface
         public void moveCursor(final int delta) {
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic == null) return;
                 int keyCode = delta < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT;
@@ -569,7 +609,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
 
         @JavascriptInterface
         public void moveCursorEx(final int dx, final int dy, final boolean select) {
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic == null) return;
                 int keyCode;
@@ -587,7 +627,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
 
         @JavascriptInterface
         public void moveLineEdge(final boolean toEnd, final boolean select) {
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic == null) return;
                 int keyCode = toEnd ? KeyEvent.KEYCODE_MOVE_END : KeyEvent.KEYCODE_MOVE_HOME;
@@ -600,7 +640,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
 
         @JavascriptInterface
         public void selectAll() {
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic != null) ic.performContextMenuAction(android.R.id.selectAll);
             });
@@ -608,7 +648,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
 
         @JavascriptInterface
         public void copy() {
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic != null) {
                     ic.performContextMenuAction(android.R.id.copy);
@@ -619,7 +659,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
 
         @JavascriptInterface
         public void cut() {
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic != null) {
                     ic.performContextMenuAction(android.R.id.cut);
@@ -631,7 +671,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
 
         @JavascriptInterface
         public void paste() {
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic != null) {
                     ic.performContextMenuAction(android.R.id.paste);
@@ -682,9 +722,10 @@ public class KurdiKeyboardImeService extends InputMethodService {
         @JavascriptInterface
         public void replaceAllText(final String newText, final boolean preferSelection) {
             if (newText == null) return;
-            mainHandler.post(() -> {
+            postEditorOperation(() -> {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic == null) return;
+                boolean batch = false;
                 try {
                     if (preferSelection) {
                         CharSequence selected = ic.getSelectedText(0);
@@ -693,7 +734,7 @@ public class KurdiKeyboardImeService extends InputMethodService {
                             return;
                         }
                     }
-                    ic.beginBatchEdit();
+                    batch = ic.beginBatchEdit();
                     CharSequence before = ic.getTextBeforeCursor(4000, 0);
                     CharSequence after = ic.getTextAfterCursor(4000, 0);
                     int beforeLen = before != null ? before.length() : 0;
@@ -702,10 +743,9 @@ public class KurdiKeyboardImeService extends InputMethodService {
                         ic.deleteSurroundingText(beforeLen, afterLen);
                     }
                     ic.commitText(newText, 1);
-                    ic.endBatchEdit();
                 } catch (Exception ignored) {
-                    ic.commitText(newText, 1);
-                }
+                    // Avoid duplicate text on partial failure.
+                } finally { if (batch) try { ic.endBatchEdit(); } catch (Exception ignored) {} }
             });
         }
 
