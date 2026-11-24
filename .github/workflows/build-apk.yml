@@ -17,16 +17,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Run keyboard stability unit tests
+        run: |
+          node --experimental-strip-types --test tests/keyboard-stability.test.mjs
+          mkdir -p /tmp/ime-test
+          javac -d /tmp/ime-test android-ime/ImeOperationGate.java tests/ImeOperationGateTest.java
+          java -cp /tmp/ime-test io.kurdikebord.app.ImeOperationGateTest
 
       - name: Install web dependencies
         run: npm install --legacy-peer-deps
