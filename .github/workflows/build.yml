@@ -23,7 +23,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ${{ github.workspace }}/build-source
+        working-directory: build-source
 
     steps:
       - name: Checkout repository
@@ -177,7 +177,6 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ${{ runner.temp }}/kurdi-vercel-source
 
     steps:
       - name: Checkout repository
@@ -247,9 +246,11 @@ jobs:
           node-version: '22'
 
       - name: Install Vercel CLI
+        working-directory: ${{ runner.temp }}/kurdi-vercel-source
         run: npm install --global vercel@latest
 
       - name: Configure web build from extracted source
+        working-directory: ${{ runner.temp }}/kurdi-vercel-source
         run: |
           node --input-type=module <<'JS'
           import fs from 'node:fs';
@@ -262,6 +263,7 @@ jobs:
           JS
 
       - name: Pull existing Vercel project and production environment
+        working-directory: ${{ runner.temp }}/kurdi-vercel-source
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -269,6 +271,7 @@ jobs:
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Build Vite and serverless API for Vercel
+        working-directory: ${{ runner.temp }}/kurdi-vercel-source
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -284,6 +287,7 @@ jobs:
           fi
 
       - name: Deploy prebuilt output to existing Vercel production project
+        working-directory: ${{ runner.temp }}/kurdi-vercel-source
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
