@@ -7,11 +7,12 @@ export interface ModelCandidate {
 
 /**
  * Multi-model failover chain (each model carries its own independent quota per API key).
- * Uses active supported models only (retired gemini-2.0-* and gemini-2.5-* models removed).
+ * Uses active supported models only. Prioritizes gemini-3.1-flash-lite for instant low-latency
+ * keyboard operations with automatic failover to gemini-4-hydrogen.
  */
 export const MODEL_CANDIDATES: ModelCandidate[] = [
-  { id: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW },
   { id: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL },
+  { id: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW },
 ];
 
 const PLACEHOLDER_KEYS = new Set(['MY_GEMINI_API_KEY', 'YOUR_GEMINI_API_KEY', '']);
@@ -100,11 +101,14 @@ let roundRobinCursor = 0;
 const clientCache = new Map<string, GoogleGenAI>();
 const pairCooldownUntil = new Map<string, number>();
 const modelNotFoundUntil = new Map<string, number>();
+const modelOverloadedUntil = new Map<string, number>();
 const keyInvalidUntil = new Map<number, number>();
 const responseCache = new Map<string, { value: string; expiresAt: number }>();
 
 const MAX_CACHE_ENTRIES = 300;
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const PER_ATTEMPT_TIMEOUT_MS = 8500; // Client-side AbortController timeout (never sent as X-Server-Timeout)
+const TOTAL_FAILOVER_BUDGET_MS = 20000;
 
 function getClientForKey(apiKey: string): GoogleGenAI {
   let client = clientCache.get(apiKey);
@@ -147,9 +151,20 @@ export function setCachedAiResponse(cacheKey: string, value: string): void {
   });
 }
 
-type ErrorKind = 'quota' | 'invalid_key' | 'not_found' | 'transient' | 'other';
+type ErrorKind =
+  | 'quota'
+  | 'invalid_key'
+  | 'not_found'
+  | 'model_overloaded'
+  | 'timeout'
+  | 'transient'
+  | 'other';
 
 function classifyGeminiError(err: unknown): { kind: ErrorKind; message: string } {
+  const isAbortError =
+    err instanceof Error &&
+    (err.name === 'AbortError' || /abort|timed?\s*out/i.test(err.message));
+
   const rawMsg =
     err instanceof Error
       ? err.message
@@ -158,6 +173,38 @@ function classifyGeminiError(err: unknown): { kind: ErrorKind; message: string }
       : JSON.stringify(err ?? '');
   const lower = rawMsg.toLowerCase();
 
+  // 1. Key / project permission errors MUST be checked FIRST so a single bad/unbilled key
+  //    never falsely poisons a healthy model.
+  if (
+    lower.includes('api_key_invalid') ||
+    lower.includes('api key not valid') ||
+    lower.includes('permission_denied') ||
+    lower.includes('free tier is not available') ||
+    lower.includes('set up billing') ||
+    lower.includes('bytestring') ||
+    lower.includes('greater than 255') ||
+    lower.includes('"code":403') ||
+    lower.includes('"code": 403') ||
+    lower.includes('403') ||
+    lower.includes('unauthorized') ||
+    lower.includes('"code":401') ||
+    lower.includes('401')
+  ) {
+    return { kind: 'invalid_key', message: rawMsg };
+  }
+
+  // 2. Model not found / retired
+  if (
+    lower.includes('"code":404') ||
+    lower.includes('"code": 404') ||
+    lower.includes('not_found') ||
+    lower.includes('is not found') ||
+    lower.includes('no longer available')
+  ) {
+    return { kind: 'not_found', message: rawMsg };
+  }
+
+  // 3. Per-key / per-model quota exhaustion
   if (
     lower.includes('429') ||
     lower.includes('resource_exhausted') ||
@@ -167,29 +214,29 @@ function classifyGeminiError(err: unknown): { kind: ErrorKind; message: string }
   ) {
     return { kind: 'quota', message: rawMsg };
   }
+
+  // 4. Genuine model-wide 503 overload / high demand
   if (
-    lower.includes('api_key_invalid') ||
-    lower.includes('api key not valid') ||
-    lower.includes('permission_denied') ||
-    lower.includes('bytestring') ||
-    lower.includes('greater than 255') ||
-    lower.includes('403') ||
-    lower.includes('unauthorized') ||
-    lower.includes('401')
+    lower.includes('503') ||
+    lower.includes('service unavailable') ||
+    lower.includes('"status":"unavailable"') ||
+    lower.includes('"status": "unavailable"') ||
+    lower.includes('overloaded') ||
+    lower.includes('high demand')
   ) {
-    return { kind: 'invalid_key', message: rawMsg };
+    return { kind: 'model_overloaded', message: rawMsg };
   }
-  if (lower.includes('404') || lower.includes('not_found') || lower.includes('not found')) {
-    return { kind: 'not_found', message: rawMsg };
+
+  // 5. Client-side timeout / abort
+  if (isAbortError || lower.includes('timeout') || lower.includes('etimedout')) {
+    return { kind: 'timeout', message: rawMsg };
   }
+
+  // 6. Other transient network errors
   if (
     lower.includes('500') ||
     lower.includes('502') ||
-    lower.includes('503') ||
     lower.includes('504') ||
-    lower.includes('unavailable') ||
-    lower.includes('overloaded') ||
-    lower.includes('timeout') ||
     lower.includes('fetch failed') ||
     lower.includes('econnreset')
   ) {
@@ -207,6 +254,11 @@ function recordFailure(keyIdx: number, modelId: string, kind: ErrorKind): void {
     pairCooldownUntil.set(pairKey, now + 65 * 1000);
   } else if (kind === 'not_found') {
     modelNotFoundUntil.set(modelId, now + 20 * 60 * 1000);
+  } else if (kind === 'model_overloaded') {
+    // 503 high demand is usually brief — deprioritize this model for 15s so we still retry it soon
+    modelOverloadedUntil.set(modelId, now + 15 * 1000);
+  } else if (kind === 'timeout') {
+    modelOverloadedUntil.set(modelId, now + 15 * 1000);
   } else if (kind === 'transient') {
     pairCooldownUntil.set(pairKey, now + 15 * 1000);
   }
@@ -215,8 +267,8 @@ function recordFailure(keyIdx: number, modelId: string, kind: ErrorKind): void {
 /**
  * Builds an ordered list of (keyIdx, apiKey, model) attempts:
  * - Rotates starting key via round-robin so traffic spreads evenly across all keys.
- * - Tries all active keys on the fastest model first, then falls back through secondary models.
- * - Skips globally unsupported (404) models and cooled-down pairs first.
+ * - Prioritizes healthy models first, placing temporarily overloaded (503) models at the end as backup.
+ * - Skips globally unsupported (404) models and known-invalid keys.
  */
 function buildAttemptPlan(keys: string[]): { keyIdx: number; apiKey: string; model: ModelCandidate }[] {
   const now = Date.now();
@@ -224,10 +276,12 @@ function buildAttemptPlan(keys: string[]): { keyIdx: number; apiKey: string; mod
   roundRobinCursor = (roundRobinCursor + 1) % 1000000;
 
   const ready: { keyIdx: number; apiKey: string; model: ModelCandidate }[] = [];
+  const overloadedFallback: { keyIdx: number; apiKey: string; model: ModelCandidate }[] = [];
   const cooledFallback: { keyIdx: number; apiKey: string; model: ModelCandidate; until: number }[] = [];
 
   for (const model of MODEL_CANDIDATES) {
     if ((modelNotFoundUntil.get(model.id) || 0) > now) continue;
+    const isModelOverloaded = (modelOverloadedUntil.get(model.id) || 0) > now;
 
     for (let step = 0; step < keys.length; step++) {
       const keyIdx = (startOffset + step) % keys.length;
@@ -238,14 +292,18 @@ function buildAttemptPlan(keys: string[]): { keyIdx: number; apiKey: string; mod
       const coolUntil = pairCooldownUntil.get(pairKey) || 0;
       if (coolUntil > now) {
         cooledFallback.push({ keyIdx, apiKey: keys[keyIdx], model, until: coolUntil });
+      } else if (isModelOverloaded) {
+        // Enqueue all non-invalid keys so an invalid/403 key never aborts fallback prematurely;
+        // skippedModels still stops hammering an overloaded model on the first 503.
+        overloadedFallback.push({ keyIdx, apiKey: keys[keyIdx], model });
       } else {
         ready.push({ keyIdx, apiKey: keys[keyIdx], model });
       }
     }
   }
 
-  if (ready.length > 0) {
-    return ready;
+  if (ready.length > 0 || overloadedFallback.length > 0) {
+    return [...ready, ...overloadedFallback];
   }
 
   // If all pairs are in cooldown, try the ones closest to expiring (up to 4 attempts)
@@ -253,13 +311,49 @@ function buildAttemptPlan(keys: string[]): { keyIdx: number; apiKey: string; mod
   return cooledFallback.slice(0, 4).map(({ keyIdx, apiKey, model }) => ({ keyIdx, apiKey, model }));
 }
 
-function buildConfig(systemInstruction: string, model: ModelCandidate) {
+function buildConfig(
+  systemInstruction: string,
+  model: ModelCandidate,
+  abortSignal?: AbortSignal
+) {
   return model.thinkingLevel
     ? {
         thinkingConfig: { thinkingLevel: model.thinkingLevel },
         systemInstruction,
+        abortSignal,
       }
-    : { systemInstruction };
+    : { systemInstruction, abortSignal };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function formatCompactTrace(summary: string[]): string {
+  return summary.length > 0 ? ` [${summary.slice(-4).join(', ')}]` : '';
+}
+
+function buildFinalError(lastError: unknown, summary: string[]): Error {
+  const { kind, message } = classifyGeminiError(lastError);
+  const trace = formatCompactTrace(summary);
+  if (kind === 'quota') {
+    return new Error(
+      `هەموو کلیلەکان کاتی سنووری خولەکیان پڕ بووە، تکایە چەند چرکەیەک دواتر هەوڵ بدەرەوە.${trace}`
+    );
+  }
+  if (kind === 'model_overloaded' || kind === 'timeout') {
+    return new Error(
+      `سێرڤەری Gemini لەم ساتەدا زۆر قەرەباڵغە (503)، تکایە چەند چرکەیەک دواتر هەوڵ بدەرەوە.${trace}`
+    );
+  }
+  if (kind === 'invalid_key') {
+    return new Error(
+      `کلیلەکانی Gemini لە Vercel پێویستیان بە پشکنین یان چالاککردن هەیە (403/401).${trace}`
+    );
+  }
+  return new Error(
+    message ? `${message.slice(0, 180)}${trace}` : `هەڵە لە پەیوەندی بە ژیری دەسکرددا ڕوویدا.${trace}`
+  );
 }
 
 export async function generateTextWithFailover(params: {
@@ -277,44 +371,60 @@ export async function generateTextWithFailover(params: {
     throw new Error('NO_GEMINI_KEYS');
   }
 
-  const plan = buildAttemptPlan(keys);
   const startedAt = Date.now();
-  const skippedModels = new Set<string>();
   const skippedKeys = new Set<number>();
+  const failureSummary: string[] = [];
   let attempts = 0;
   let lastError: unknown = null;
 
-  for (const attempt of plan) {
-    if (skippedModels.has(attempt.model.id) || skippedKeys.has(attempt.keyIdx)) continue;
-    if (attempts >= 8 || Date.now() - startedAt > 14000) break;
-    attempts += 1;
+  // Up to 2 passes: if all models hit a brief 503 spike on pass 1, pause briefly and retry once
+  for (let pass = 0; pass < 2; pass++) {
+    if (pass === 1) {
+      const { kind } = classifyGeminiError(lastError);
+      if (kind !== 'model_overloaded' && kind !== 'transient') break;
+      if (Date.now() - startedAt > TOTAL_FAILOVER_BUDGET_MS - 4000) break;
+      await sleep(600);
+    }
 
-    try {
-      const ai = getClientForKey(attempt.apiKey);
-      const response = await ai.models.generateContent({
-        model: attempt.model.id,
-        contents: params.contents,
-        config: buildConfig(params.systemInstruction, attempt.model),
-      });
-      const text = (response.text ?? '').trim();
-      if (text && params.cacheKey) {
-        setCachedAiResponse(params.cacheKey, text);
+    const plan = buildAttemptPlan(keys);
+    const skippedModels = new Set<string>();
+
+    for (const attempt of plan) {
+      if (skippedModels.has(attempt.model.id) || skippedKeys.has(attempt.keyIdx)) continue;
+      if (attempts >= 10 || Date.now() - startedAt > TOTAL_FAILOVER_BUDGET_MS) break;
+      attempts += 1;
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), PER_ATTEMPT_TIMEOUT_MS);
+
+      try {
+        const ai = getClientForKey(attempt.apiKey);
+        const response = await ai.models.generateContent({
+          model: attempt.model.id,
+          contents: params.contents,
+          config: buildConfig(params.systemInstruction, attempt.model, controller.signal),
+        });
+        const text = (response.text ?? '').trim();
+        if (text && params.cacheKey) {
+          setCachedAiResponse(params.cacheKey, text);
+        }
+        return text;
+      } catch (err) {
+        lastError = err;
+        const { kind } = classifyGeminiError(err);
+        failureSummary.push(`${attempt.model.id}:${kind}`);
+        recordFailure(attempt.keyIdx, attempt.model.id, kind);
+        if (kind === 'not_found' || kind === 'model_overloaded' || kind === 'timeout') {
+          skippedModels.add(attempt.model.id);
+        }
+        if (kind === 'invalid_key') skippedKeys.add(attempt.keyIdx);
+      } finally {
+        clearTimeout(timer);
       }
-      return text;
-    } catch (err) {
-      lastError = err;
-      const { kind } = classifyGeminiError(err);
-      recordFailure(attempt.keyIdx, attempt.model.id, kind);
-      if (kind === 'not_found') skippedModels.add(attempt.model.id);
-      if (kind === 'invalid_key') skippedKeys.add(attempt.keyIdx);
     }
   }
 
-  const { kind, message } = classifyGeminiError(lastError);
-  if (kind === 'quota') {
-    throw new Error('هەموو کلیلەکان کاتی سنووری خولەکیان پڕ بووە، تکایە چەند چرکەیەک دواتر هەوڵ بدەرەوە.');
-  }
-  throw new Error(message || 'هەڵە لە پەیوەندی بە ژیری دەسکرددا ڕوویدا.');
+  throw buildFinalError(lastError, failureSummary);
 }
 
 /**
@@ -343,62 +453,78 @@ export async function streamTextWithFailover(params: {
     throw new Error('NO_GEMINI_KEYS');
   }
 
-  const plan = buildAttemptPlan(keys);
   const startedAt = Date.now();
-  const skippedModels = new Set<string>();
   const skippedKeys = new Set<number>();
+  const failureSummary: string[] = [];
   let attempts = 0;
   let lastError: unknown = null;
 
-  for (const attempt of plan) {
-    if (skippedModels.has(attempt.model.id) || skippedKeys.has(attempt.keyIdx)) continue;
-    if (attempts >= 8 || Date.now() - startedAt > 14000) break;
-    attempts += 1;
+  for (let pass = 0; pass < 2; pass++) {
+    if (pass === 1) {
+      const { kind } = classifyGeminiError(lastError);
+      if (kind !== 'model_overloaded' && kind !== 'transient') break;
+      if (Date.now() - startedAt > TOTAL_FAILOVER_BUDGET_MS - 4000) break;
+      await sleep(600);
+    }
 
-    let started = false;
-    let accumulated = '';
-    try {
-      const ai = getClientForKey(attempt.apiKey);
-      const stream = await ai.models.generateContentStream({
-        model: attempt.model.id,
-        contents: params.contents,
-        config: buildConfig(params.systemInstruction, attempt.model),
-      });
+    const plan = buildAttemptPlan(keys);
+    const skippedModels = new Set<string>();
 
-      for await (const chunk of stream) {
-        const piece = chunk.text;
-        if (!piece) continue;
+    for (const attempt of plan) {
+      if (skippedModels.has(attempt.model.id) || skippedKeys.has(attempt.keyIdx)) continue;
+      if (attempts >= 10 || Date.now() - startedAt > TOTAL_FAILOVER_BUDGET_MS) break;
+      attempts += 1;
+
+      let started = false;
+      let accumulated = '';
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), PER_ATTEMPT_TIMEOUT_MS);
+
+      try {
+        const ai = getClientForKey(attempt.apiKey);
+        const stream = await ai.models.generateContentStream({
+          model: attempt.model.id,
+          contents: params.contents,
+          config: buildConfig(params.systemInstruction, attempt.model, controller.signal),
+        });
+
+        for await (const chunk of stream) {
+          const piece = chunk.text;
+          if (!piece) continue;
+          if (!started) {
+            clearTimeout(timer);
+            started = true;
+            params.onStart();
+          }
+          accumulated += piece;
+          params.onChunk(piece);
+        }
+
         if (!started) {
-          started = true;
           params.onStart();
         }
-        accumulated += piece;
-        params.onChunk(piece);
-      }
-
-      if (!started) {
-        params.onStart();
-      }
-      if (accumulated.trim() && params.cacheKey) {
-        setCachedAiResponse(params.cacheKey, accumulated.trim());
-      }
-      return;
-    } catch (err) {
-      lastError = err;
-      const { kind } = classifyGeminiError(err);
-      recordFailure(attempt.keyIdx, attempt.model.id, kind);
-      if (kind === 'not_found') skippedModels.add(attempt.model.id);
-      if (kind === 'invalid_key') skippedKeys.add(attempt.keyIdx);
-      // If we already streamed partial text to the client, cannot seamlessly switch mid-stream
-      if (started) {
+        if (accumulated.trim() && params.cacheKey) {
+          setCachedAiResponse(params.cacheKey, accumulated.trim());
+        }
         return;
+      } catch (err) {
+        lastError = err;
+        const { kind } = classifyGeminiError(err);
+        failureSummary.push(`${attempt.model.id}:${kind}`);
+        recordFailure(attempt.keyIdx, attempt.model.id, kind);
+        if (kind === 'not_found' || kind === 'model_overloaded' || kind === 'timeout') {
+          skippedModels.add(attempt.model.id);
+        }
+        if (kind === 'invalid_key') skippedKeys.add(attempt.keyIdx);
+        // If we already streamed partial text to the client, cannot seamlessly switch mid-stream
+        if (started) {
+          return;
+        }
+      } finally {
+        clearTimeout(timer);
       }
     }
   }
 
-  const { kind, message } = classifyGeminiError(lastError);
-  if (kind === 'quota') {
-    throw new Error('هەموو کلیلەکان کاتی سنووری خولەکیان پڕ بووە، تکایە چەند چرکەیەک دواتر هەوڵ بدەرەوە.');
-  }
-  throw new Error(message || 'هەڵە لە پەیوەندی بە ژیری دەسکرددا ڕوویدا.');
+  throw buildFinalError(lastError, failureSummary);
 }
