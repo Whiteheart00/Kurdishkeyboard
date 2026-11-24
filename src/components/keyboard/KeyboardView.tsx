@@ -354,7 +354,9 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const clipboardHoldTimerRef = useRef<number | null>(null);
   const clipboardHoldTriggeredRef = useRef(false);
   const backspaceRepeatRef = useRef<number | null>(null);
-  const offlineVoiceBusyRef = useRef(false);
+  const offlineVoiceState = useRef('idle');
+  const [nativeVoiceState, setNativeVoiceState] = useState('idle');
+  const voiceNoticeTimer = useRef<number | null>(null);
   const spaceDragStartRef = useRef<{
     startX: number;
     startY: number;
@@ -367,8 +369,6 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const bkspDragStartXRef = useRef<{ startX: number; lastX: number } | null>(null);
   const bkspDraggedRef = useRef<boolean>(false);
   const speechRecRef = useRef<{ stop: () => void } | null>(null);
-  const offlineInsertRef = useRef(onInsertText);
-  offlineInsertRef.current = onInsertText;
 
   const theme = useMemo(
     () => findThemeById(settings.activeThemeId, settings.customTheme),
@@ -415,46 +415,28 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 
   useEffect(() => {
     const host = window as any;
-    host.__onKeyboardOfflineVoiceEvent = (state: string, text: string) => {
-      if (state === 'recording') {
-        offlineVoiceBusyRef.current = false;
-        setIsListeningVoice(true);
-        setVoiceNotice(null);
-      } else if (state === 'transcribing') {
-        offlineVoiceBusyRef.current = true;
-        setIsListeningVoice(false);
-        setVoiceNotice('دەنگەکە بە ئۆفلاین دەگۆڕدرێت بۆ نووسین...');
-      } else if (state === 'result') {
-        offlineVoiceBusyRef.current = false;
-        setIsListeningVoice(false);
-        if (text.trim()) {
-          offlineInsertRef.current(`${text.trim()} `);
-          setVoiceNotice('دەقە کوردییەکە نووسرا.');
-        } else setVoiceNotice('هیچ قسەیەک نەبیسترا، دووبارە هەوڵبدەرەوە.');
-        window.setTimeout(() => setVoiceNotice(null), 3500);
-      } else if (state === 'model_missing') {
-        offlineVoiceBusyRef.current = false;
-        setVoiceNotice('مۆدێلی Vekol لە ئەپی مانگا دابەزێنە و دواتر دووبارە هەوڵبدەرەوە.');
-      } else if (state === 'permission') {
-        offlineVoiceBusyRef.current = false;
-        setIsListeningVoice(false);
-        setVoiceNotice('مۆڵەتی مایکرۆفۆن بۆ تەختەکلیل لە ڕێکخستنەکانی ئەندرۆید چالاک بکە.');
-      } else if (state === 'app_missing') {
-        offlineVoiceBusyRef.current = false;
-        setIsListeningVoice(false);
-        setVoiceNotice('ئەپی وەڕگێڕی مانگا دامەزرێنە بۆ بەکارهێنانی دەنگی ئۆفلاین.');
-      } else if (state === 'cancelled') {
-        offlineVoiceBusyRef.current = false;
-        setIsListeningVoice(false);
-        setVoiceNotice(null);
-      } else {
-        offlineVoiceBusyRef.current = false;
-        setIsListeningVoice(false);
-        setVoiceNotice('گۆڕینی دەنگ سەرنەکەوت. مۆدێلی Vekol و مۆڵەتی مایک بپشکنە.');
-        window.setTimeout(() => setVoiceNotice(null), 4000);
+    const update = (state: string, text: string) => {
+      if (state === 'ready') return; // legacy preload notification is not an error
+      if (voiceNoticeTimer.current !== null) window.clearTimeout(voiceNoticeTimer.current);
+      offlineVoiceState.current = state;
+      setNativeVoiceState(state);
+      setIsListeningVoice(state === 'recording');
+      switch (state) {
+        case 'connecting': setVoiceNotice('پەیوەندی بە ئەپی مانگا دەکرێت...'); break;
+        case 'starting': setVoiceNotice('مایکرۆفۆن ئامادە دەکرێت...'); break;
+        case 'recording': setVoiceNotice('گوێ دەگرێت... کرتەی وەستان بکە بۆ نووسین.'); break;
+        case 'transcribing': setVoiceNotice('دەنگەکە بە ئۆفلاین دەگۆڕدرێت بۆ نووسین...'); break;
+        case 'result': setVoiceNotice(text.trim() ? 'دەقە کوردییەکە نووسرا.' : 'هیچ قسەیەک نەبیسترا.'); break;
+        case 'model_missing': setVoiceNotice('مۆدێلی Vekol لە ئەپی مانگا دابەزێنە.'); break;
+        case 'permission': setVoiceNotice('مۆڵەتی مایکرۆفۆن پێویستە.'); break;
+        case 'app_missing': setVoiceNotice('ئەپی وەڕگێڕی مانگا دامەزرێنە.'); break;
+        case 'cancelled': case 'idle': setVoiceNotice(null); break;
+        default: setVoiceNotice(({busy:'سیستەمەکە سەرقاڵە؛ دووبارە هەوڵبدەرەوە.', timeout:'کاتی چاوەڕوانی تەواو بوو.', low_memory:'بیرگەی مۆبایل بەس نییە؛ ئەپەکانی تر دابخە و دووبارە هەوڵبدەرەوە.', no_speech:'دەنگ زۆر کورت بوو.', service_disconnected:'پەیوەندی بە مانگا پچڕا.', editor_unavailable:'لەم خانەیەدا نووسینی دەنگی بەردەست نییە.'} as Record<string,string>)[text] || 'گۆڕینی دەنگ سەرنەکەوت؛ دووبارە هەوڵبدەرەوە.');
       }
+      if (state === 'result' || state === 'error') voiceNoticeTimer.current = window.setTimeout(() => { setVoiceNotice(null); setNativeVoiceState('idle'); }, 4500);
     };
-    return () => { delete host.__onKeyboardOfflineVoiceEvent; };
+    host.__onKeyboardOfflineVoiceEvent = update;
+    return () => { if (voiceNoticeTimer.current !== null) window.clearTimeout(voiceNoticeTimer.current); delete host.__onKeyboardOfflineVoiceEvent; };
   }, []);
 
   const triggerSound = (type: 'char' | 'space' | 'backspace' | 'enter' | 'special') => {
@@ -1463,21 +1445,28 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 
   const toggleVoiceTyping = () => {
     const nativeVoice = (window as any).AndroidIME as
-      | { startOfflineVoice?: () => void; stopOfflineVoice?: () => void }
+      | { startOfflineVoice?: () => void; stopOfflineVoice?: () => void; cancelOfflineVoice?: () => void }
       | undefined;
-    if ((settings.activeLanguage === 'ckb' || settings.activeLanguage === 'ku') &&
-        nativeVoice?.startOfflineVoice && nativeVoice?.stopOfflineVoice) {
-      if (offlineVoiceBusyRef.current) return;
-      if (isListeningVoice) {
-        offlineVoiceBusyRef.current = true;
-        nativeVoice.stopOfflineVoice();
+    if (nativeVoice?.startOfflineVoice && nativeVoice?.stopOfflineVoice &&
+        (['ckb','ku'].includes(settings.activeLanguage) || ['connecting','starting','recording','transcribing'].includes(offlineVoiceState.current))) {
+      const state = offlineVoiceState.current;
+      if (state === 'connecting' || state === 'starting' || state === 'transcribing') {
+        nativeVoice.cancelOfflineVoice?.();
+        return;
+      }
+      if (state === 'recording') {
+        offlineVoiceState.current = 'transcribing';
+        setNativeVoiceState('transcribing');
         setIsListeningVoice(false);
         setVoiceNotice('دەنگەکە بە ئۆفلاین دەگۆڕدرێت بۆ نووسین...');
+        nativeVoice.stopOfflineVoice();
       } else {
+        if (voiceNoticeTimer.current !== null) window.clearTimeout(voiceNoticeTimer.current);
+        offlineVoiceState.current = 'connecting';
+        setNativeVoiceState('connecting');
         setActivePanel('keys');
+        setVoiceNotice('پەیوەندی بە ئەپی مانگا دەکرێت...');
         nativeVoice.startOfflineVoice();
-        setIsListeningVoice(true);
-        setVoiceNotice('گوێ دەگرێت... کرتەی دووەم بکە بۆ وەستان و نووسین.');
       }
       return;
     }
@@ -2823,6 +2812,12 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
           dir="rtl"
         >
           <span>{voiceNotice || 'گوێ دەگرێت... بە کوردی یان ئینگلیزی قسە بکە'}</span>
+          {nativeVoiceState === 'permission' && (
+            <button type="button" onClick={() => (window as any).AndroidIME?.requestVoicePermission?.()} className="shrink-0 px-2 py-1 rounded-md bg-sky-500/25">مۆڵەت بدە</button>
+          )}
+          {['connecting','starting','transcribing'].includes(nativeVoiceState) && (
+            <button type="button" onClick={toggleVoiceTyping} className="shrink-0 px-2 py-1 rounded-md bg-rose-500/20">هەڵوەشاندنەوە</button>
+          )}
           {isListeningVoice && (
             <button
               type="button"
