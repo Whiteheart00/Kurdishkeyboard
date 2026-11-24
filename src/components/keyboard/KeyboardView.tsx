@@ -351,6 +351,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const lastShiftTapRef = useRef<number>(0);
   const longPressTimerRef = useRef<number | null>(null);
   const backspaceRepeatRef = useRef<number | null>(null);
+  const offlineVoiceBusyRef = useRef(false);
   const spaceDragStartRef = useRef<{
     startX: number;
     startY: number;
@@ -363,6 +364,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const bkspDragStartXRef = useRef<{ startX: number; lastX: number } | null>(null);
   const bkspDraggedRef = useRef<boolean>(false);
   const speechRecRef = useRef<{ stop: () => void } | null>(null);
+  const offlineInsertRef = useRef(onInsertText);
+  offlineInsertRef.current = onInsertText;
 
   const theme = useMemo(
     () => findThemeById(settings.activeThemeId, settings.customTheme),
@@ -402,7 +405,52 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
       if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
       if (backspaceRepeatRef.current) window.clearInterval(backspaceRepeatRef.current);
       if (speechRecRef.current) speechRecRef.current.stop();
+      (window as any).AndroidIME?.cancelOfflineVoice?.();
     };
+  }, []);
+
+  useEffect(() => {
+    const host = window as any;
+    host.__onKeyboardOfflineVoiceEvent = (state: string, text: string) => {
+      if (state === 'recording') {
+        offlineVoiceBusyRef.current = false;
+        setIsListeningVoice(true);
+        setVoiceNotice(null);
+      } else if (state === 'transcribing') {
+        offlineVoiceBusyRef.current = true;
+        setIsListeningVoice(false);
+        setVoiceNotice('دەنگەکە بە ئۆفلاین دەگۆڕدرێت بۆ نووسین...');
+      } else if (state === 'result') {
+        offlineVoiceBusyRef.current = false;
+        setIsListeningVoice(false);
+        if (text.trim()) {
+          offlineInsertRef.current(`${text.trim()} `);
+          setVoiceNotice('دەقە کوردییەکە نووسرا.');
+        } else setVoiceNotice('هیچ قسەیەک نەبیسترا، دووبارە هەوڵبدەرەوە.');
+        window.setTimeout(() => setVoiceNotice(null), 3500);
+      } else if (state === 'model_missing') {
+        offlineVoiceBusyRef.current = false;
+        setVoiceNotice('مۆدێلی Vekol لە ئەپی مانگا دابەزێنە و دواتر دووبارە هەوڵبدەرەوە.');
+      } else if (state === 'permission') {
+        offlineVoiceBusyRef.current = false;
+        setIsListeningVoice(false);
+        setVoiceNotice('مۆڵەتی مایکرۆفۆن بۆ تەختەکلیل لە ڕێکخستنەکانی ئەندرۆید چالاک بکە.');
+      } else if (state === 'app_missing') {
+        offlineVoiceBusyRef.current = false;
+        setIsListeningVoice(false);
+        setVoiceNotice('ئەپی وەڕگێڕی مانگا دامەزرێنە بۆ بەکارهێنانی دەنگی ئۆفلاین.');
+      } else if (state === 'cancelled') {
+        offlineVoiceBusyRef.current = false;
+        setIsListeningVoice(false);
+        setVoiceNotice(null);
+      } else {
+        offlineVoiceBusyRef.current = false;
+        setIsListeningVoice(false);
+        setVoiceNotice('گۆڕینی دەنگ سەرنەکەوت. مۆدێلی Vekol و مۆڵەتی مایک بپشکنە.');
+        window.setTimeout(() => setVoiceNotice(null), 4000);
+      }
+    };
+    return () => { delete host.__onKeyboardOfflineVoiceEvent; };
   }, []);
 
   const triggerSound = (type: 'char' | 'space' | 'backspace' | 'enter' | 'special') => {
@@ -1410,6 +1458,25 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   };
 
   const toggleVoiceTyping = () => {
+    const nativeVoice = (window as any).AndroidIME as
+      | { startOfflineVoice?: () => void; stopOfflineVoice?: () => void }
+      | undefined;
+    if ((settings.activeLanguage === 'ckb' || settings.activeLanguage === 'ku') &&
+        nativeVoice?.startOfflineVoice && nativeVoice?.stopOfflineVoice) {
+      if (offlineVoiceBusyRef.current) return;
+      if (isListeningVoice) {
+        offlineVoiceBusyRef.current = true;
+        nativeVoice.stopOfflineVoice();
+        setIsListeningVoice(false);
+        setVoiceNotice('دەنگەکە بە ئۆفلاین دەگۆڕدرێت بۆ نووسین...');
+      } else {
+        setActivePanel('keys');
+        nativeVoice.startOfflineVoice();
+        setIsListeningVoice(true);
+        setVoiceNotice('گوێ دەگرێت... کرتەی دووەم بکە بۆ وەستان و نووسین.');
+      }
+      return;
+    }
     if (isListeningVoice) {
       speechRecRef.current?.stop();
       setIsListeningVoice(false);
