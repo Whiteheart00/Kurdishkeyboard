@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard from ZIP
+name: Build KurdiKeyboard and deploy Vercel from ZIP
 
 on:
   push:
@@ -166,3 +166,127 @@ jobs:
           name: KurdiKeyboard-APK
           path: build-source/release-apk/KurdiKeyboard-debug.apk
           retention-days: 1
+
+  deploy-vercel:
+    name: Deploy Vercel Web & AI API (Production)
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ runner.temp }}/kurdi-vercel-source
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check Vercel configuration
+        working-directory: ${{ github.workspace }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          for key in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!key}" ]; then
+              echo "::error::Missing GitHub Actions secret: $key"
+              exit 1
+            fi
+          done
+
+      - name: Extract and validate project.zip
+        working-directory: ${{ github.workspace }}
+        run: |
+          python3 - <<'PYTHON'
+          from pathlib import Path, PurePosixPath
+          import os, shutil, stat, tempfile, zipfile
+
+          archive = Path('project.zip')
+          if not archive.is_file():
+              raise SystemExit('Upload project.zip at the repository root.')
+          required = ('package.json', 'capacitor.config.json',
+                      'scripts/setup-android-ime.mjs', 'android-ime/KurdiKeyboardImeService.java',
+                      'tests/keyboard-stability.test.mjs', 'tests/ImeOperationGateTest.java')
+          with tempfile.TemporaryDirectory() as tmp:
+              root = Path(tmp)
+              with zipfile.ZipFile(archive) as z:
+                  entries = z.infolist()
+                  if len(entries) > 30000 or sum(e.file_size for e in entries) > 1024**3:
+                      raise SystemExit('ZIP exceeds extraction limits.')
+                  seen = set()
+                  for e in entries:
+                      path = PurePosixPath(e.filename)
+                      if (path.is_absolute() or '..' in path.parts or '\\' in e.filename
+                          or ':' in path.parts[0] or '.git' in path.parts
+                          or stat.S_ISLNK(e.external_attr >> 16)):
+                          raise SystemExit('Unsafe ZIP entry: ' + e.filename)
+                      if path in seen:
+                          raise SystemExit('Duplicate ZIP entry: ' + e.filename)
+                      seen.add(path)
+                  z.extractall(root)
+              candidates = [f.parent for f in root.rglob('package.json')
+                            if all((f.parent / x).is_file() for x in required)
+                            and 'node_modules' not in f.relative_to(root).parts]
+              if len(candidates) != 1:
+                  raise SystemExit('ZIP must contain exactly one complete Stability V2 project.')
+              target = Path(os.environ['RUNNER_TEMP']) / 'kurdi-vercel-source'
+              if target.exists() or target.is_symlink():
+                  raise SystemExit('Vercel staging directory already exists.')
+              shutil.copytree(candidates[0], target, ignore=shutil.ignore_patterns('node_modules', 'dist', 'android', 'android-ime', '.github', '.vercel', '__MACOSX'))
+          print('Project extracted and validated.')
+          PYTHON
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Configure web build from extracted source
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const config = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
+          // Explicit install command: do not depend on the ZIP-only repository or bun.lock.
+          config.installCommand = 'npm install --legacy-peer-deps --include=dev';
+          config.buildCommand = 'npm run build';
+          config.outputDirectory = 'dist';
+          fs.writeFileSync('vercel.json', JSON.stringify(config, null, 2) + '\n');
+          JS
+
+      - name: Pull existing Vercel project and production environment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build Vite and serverless API for Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          vercel build --prod --token="$VERCEL_TOKEN"
+          test -f .vercel/output/config.json
+          test -d .vercel/output/static
+          test -d .vercel/output/functions
+          if ! find .vercel/output/functions -type d -name '*.func' -print -quit | grep -q .; then
+            echo "::error::No serverless functions produced by Vercel build."
+            exit 1
+          fi
+
+      - name: Deploy prebuilt output to existing Vercel production project
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          vercel deploy --prebuilt --prod --archive=tgz --token="$VERCEL_TOKEN"
