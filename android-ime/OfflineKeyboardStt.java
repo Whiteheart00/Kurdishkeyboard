@@ -44,21 +44,7 @@ public final class OfflineKeyboardStt {
     private Thread recordThread;
     private Messenger remote;
     private boolean bound;
-    private final Messenger incoming = new Messenger(new Handler(Looper.getMainLooper(), msg -> {
-        Bundle b = msg.getData();
-        String value = b == null ? "" : b.getString(VALUE, "");
-        if (msg.what == STATUS) {
-            if ("ready".equals(value)) events.event("ready", "");
-            else events.event("model_missing", "");
-        } else if (msg.what == RESULT) {
-            events.event("result", value);
-            unbind();
-        } else if (msg.what == ERROR) {
-            events.event("model_missing".equals(value) ? "model_missing" : "error", value);
-            unbind();
-        }
-        return true;
-    }));
+    private final Messenger incoming;
     private final ServiceConnection connection = new ServiceConnection() {
         @Override public void onServiceConnected(ComponentName name, android.os.IBinder service) {
             remote = new Messenger(service);
@@ -70,6 +56,21 @@ public final class OfflineKeyboardStt {
     public OfflineKeyboardStt(Context context, Events events) {
         this.context = context.getApplicationContext();
         this.events = events;
+        this.incoming = new Messenger(new Handler(Looper.getMainLooper(), msg -> {
+            Bundle b = msg.getData();
+            String value = b == null ? "" : b.getString(VALUE, "");
+            if (msg.what == STATUS) {
+                if ("ready".equals(value)) this.events.event("ready", "");
+                else this.events.event("model_missing", "");
+            } else if (msg.what == RESULT) {
+                this.events.event("result", value);
+                unbind();
+            } else if (msg.what == ERROR) {
+                this.events.event("model_missing".equals(value) ? "model_missing" : "error", value);
+                unbind();
+            }
+            return true;
+        }));
     }
 
     @SuppressLint("MissingPermission")
