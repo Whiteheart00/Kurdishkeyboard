@@ -23,7 +23,7 @@ const MISSING_FACEBOOK_BASE_CODES = [
   '1f9d1-200d-1f9bd-200d-27a1-fe0f', '1f9d1-200d-1f9d1-200d-1f9d2',
   '1f9d1-200d-1f9d1-200d-1f9d2-200d-1f9d2', '1f9d1-200d-1f9d2-200d-1f9d2',
   '1f9d1-200d-1f9d2', '1fa89', '1fa8f', '1fabe', '1fac6', '1fadc', '1fadf',
-  '1fae9', '26d3-fe0f-200d-1f4a5',
+  '1fae9', '263b-fe0f', '26d3-fe0f-200d-1f4a5',
 ];
 
 // Cache failed image codes in memory so missing/offline glyphs fall back instantaneously with zero retries

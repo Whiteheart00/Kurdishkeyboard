@@ -32,9 +32,26 @@ fs.copyFileSync(
 );
 console.log('Copied res/xml/method.xml');
 
-// 3. Patch AndroidManifest.xml to register KurdiKeyboardImeService with directBootAware="true"
+// 3. Patch AndroidManifest.xml with required permissions (VIBRATE, RECORD_AUDIO) and KurdiKeyboardImeService (directBootAware="true")
 const manifestPath = path.join(androidMain, 'AndroidManifest.xml');
 let manifest = fs.readFileSync(manifestPath, 'utf8');
+let manifestModified = false;
+
+const requiredPermissions = [
+  'android.permission.VIBRATE',
+  'android.permission.RECORD_AUDIO',
+];
+
+for (const perm of requiredPermissions) {
+  if (!manifest.includes(perm)) {
+    manifest = manifest.replace(
+      '<application',
+      `    <uses-permission android:name="${perm}" />\n\n    <application`
+    );
+    manifestModified = true;
+    console.log(`Added ${perm} to AndroidManifest.xml`);
+  }
+}
 
 if (!manifest.includes('KurdiKeyboardImeService')) {
   const imeServiceXml = `
@@ -53,8 +70,12 @@ if (!manifest.includes('KurdiKeyboardImeService')) {
         </service>
     </application>`;
   manifest = manifest.replace('</application>', imeServiceXml);
-  fs.writeFileSync(manifestPath, manifest, 'utf8');
+  manifestModified = true;
   console.log('Patched AndroidManifest.xml with KurdiKeyboardImeService (directBootAware=true)');
+}
+
+if (manifestModified) {
+  fs.writeFileSync(manifestPath, manifest, 'utf8');
 }
 
 // 4. Trim non-runtime files from android assets/public/assets/aistudio (keep only fx_* sounds)

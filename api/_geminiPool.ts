@@ -7,13 +7,11 @@ export interface ModelCandidate {
 
 /**
  * Multi-model failover chain (each model carries its own independent quota per API key).
- * Uses active supported models only (retired gemini-2.0-* models removed).
+ * Uses active supported models only (retired gemini-2.0-* and gemini-2.5-* models removed).
  */
 export const MODEL_CANDIDATES: ModelCandidate[] = [
   { id: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW },
   { id: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL },
-  { id: 'gemini-2.5-flash-lite' },
-  { id: 'gemini-2.5-flash' },
 ];
 
 const PLACEHOLDER_KEYS = new Set(['MY_GEMINI_API_KEY', 'YOUR_GEMINI_API_KEY', '']);
@@ -114,7 +112,6 @@ function getClientForKey(apiKey: string): GoogleGenAI {
     client = new GoogleGenAI({
       apiKey,
       httpOptions: {
-        timeout: 6500,
         headers: {
           'User-Agent': 'aistudio-build',
         },
@@ -289,7 +286,7 @@ export async function generateTextWithFailover(params: {
 
   for (const attempt of plan) {
     if (skippedModels.has(attempt.model.id) || skippedKeys.has(attempt.keyIdx)) continue;
-    if (attempts >= 12 || Date.now() - startedAt > 8500) break;
+    if (attempts >= 8 || Date.now() - startedAt > 14000) break;
     attempts += 1;
 
     try {
@@ -355,7 +352,7 @@ export async function streamTextWithFailover(params: {
 
   for (const attempt of plan) {
     if (skippedModels.has(attempt.model.id) || skippedKeys.has(attempt.keyIdx)) continue;
-    if (attempts >= 12 || Date.now() - startedAt > 8500) break;
+    if (attempts >= 8 || Date.now() - startedAt > 14000) break;
     attempts += 1;
 
     let started = false;
