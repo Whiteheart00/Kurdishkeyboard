@@ -10,6 +10,7 @@ import {
   CornerDownLeft,
   Loader2,
   Maximize2,
+  Mic,
   MicOff,
   Move,
   RotateCcw,
@@ -350,6 +351,8 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   const lastSpaceTapRef = useRef<number>(0);
   const lastShiftTapRef = useRef<number>(0);
   const longPressTimerRef = useRef<number | null>(null);
+  const clipboardHoldTimerRef = useRef<number | null>(null);
+  const clipboardHoldTriggeredRef = useRef(false);
   const backspaceRepeatRef = useRef<number | null>(null);
   const offlineVoiceBusyRef = useRef(false);
   const spaceDragStartRef = useRef<{
@@ -403,6 +406,7 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
   useEffect(() => {
     return () => {
       if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
+      if (clipboardHoldTimerRef.current) window.clearTimeout(clipboardHoldTimerRef.current);
       if (backspaceRepeatRef.current) window.clearInterval(backspaceRepeatRef.current);
       if (speechRecRef.current) speechRecRef.current.stop();
       (window as any).AndroidIME?.cancelOfflineVoice?.();
@@ -2728,14 +2732,15 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
             type="button"
             onClick={() => {
               triggerSound('special');
-              setActivePanel((p) => (p === 'clipboard' ? 'keys' : 'clipboard'));
+              toggleVoiceTyping();
             }}
             className={`w-10 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-all ${
-              activePanel === 'clipboard' ? 'text-sky-400 bg-sky-500/15' : toolbarIconColor
+              isListeningVoice ? 'text-rose-400 bg-rose-500/15' : toolbarIconColor
             }`}
-            title="لەبەرگیراوەکان"
+            title={isListeningVoice ? 'وەستانی تۆمارکردنی دەنگ' : 'دەنگ بۆ نووسین'}
+            aria-label="دەنگ بۆ نووسین"
           >
-            <KurdiIcon name="ic_clipboards" className="w-[20px] h-[20px]" />
+            <Mic className="w-[20px] h-[20px]" />
           </button>
 
           <button
@@ -2765,12 +2770,46 @@ export const KeyboardView: React.FC<KeyboardViewProps> = ({
 
           <button
             type="button"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              clipboardHoldTriggeredRef.current = false;
+              if (clipboardHoldTimerRef.current) window.clearTimeout(clipboardHoldTimerRef.current);
+              clipboardHoldTimerRef.current = window.setTimeout(() => {
+                clipboardHoldTriggeredRef.current = true;
+                triggerSound('special');
+                setActivePanel('clipboard');
+                clipboardHoldTimerRef.current = null;
+              }, 450);
+            }}
+            onPointerUp={() => {
+              if (clipboardHoldTimerRef.current) {
+                window.clearTimeout(clipboardHoldTimerRef.current);
+                clipboardHoldTimerRef.current = null;
+              }
+            }}
+            onPointerLeave={() => {
+              if (clipboardHoldTimerRef.current) {
+                window.clearTimeout(clipboardHoldTimerRef.current);
+                clipboardHoldTimerRef.current = null;
+              }
+            }}
+            onPointerCancel={() => {
+              if (clipboardHoldTimerRef.current) {
+                window.clearTimeout(clipboardHoldTimerRef.current);
+                clipboardHoldTimerRef.current = null;
+              }
+            }}
             onClick={() => {
+              if (clipboardHoldTriggeredRef.current) {
+                clipboardHoldTriggeredRef.current = false;
+                return;
+              }
               triggerSound('special');
               onPaste();
             }}
-            className={`w-10 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-all ${toolbarIconColor}`}
-            title="لکاندن"
+            className={`w-10 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-all ${toolbarIconColor} touch-none`}
+            title="کرتە: پەیست — کرتەی درێژ: clipboard"
+            aria-label="کرتە بۆ پەیست، کرتەی درێژ بۆ کلیپ‌بۆرد"
           >
             <KurdiIcon name="ic_pastes" className="w-[20px] h-[20px]" />
           </button>
