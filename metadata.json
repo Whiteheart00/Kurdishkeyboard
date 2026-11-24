@@ -1,6 +1,0 @@
-{
-  "name": "تەختەکلیلی کوردی — KurdiKeyboard",
-  "description": "تەختەکلیلی پێشکەوتووی کوردی بە هەموو تایبەتمەندییەکانی ڕووکار، زیکر، کاومۆجی، جوانکاری نووسین، لەبەرگیراوەکان، وەرگێڕان و ژیری دەسکرد.",
-  "requestFramePermissions": ["microphone"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
