@@ -89,6 +89,10 @@ jobs:
 
       - name: Run Stability V2 and native source static tests
         run: |
+          # This must run in the same job, before native-ime-engine.test.mjs.
+          # That test imports esbuild from the extracted project's node_modules.
+          npm install --legacy-peer-deps --include=dev
+          node --input-type=module -e "import('esbuild').then(() => console.log('esbuild module: OK'))"
           node --experimental-strip-types --test tests/keyboard-stability.test.mjs
           mkdir -p /tmp/ime-test
           javac -d /tmp/ime-test android-ime/ImeOperationGate.java android-ime/ImeTailRequests.java tests/ImeOperationGateTest.java
