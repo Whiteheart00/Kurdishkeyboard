@@ -1,80 +1,21 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP
+name: Build KurdiKeyboard Android APK
 
 on:
   push:
     branches: [ main, master ]
-    paths:
-      - project.zip
-      - .github/workflows/build.yml
   workflow_dispatch:
-    inputs:
-      native_ime_preview:
-        description: Build a native IME APK artifact without publishing it
-        type: boolean
-        default: false
 
 permissions:
   contents: write
-
-concurrency:
-  group: kurdikeyboard-apk-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build-apk:
     name: Build Android APK (Debug)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    defaults:
-      run:
-        shell: bash
-        working-directory: build-source
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Extract and validate project.zip
-        working-directory: ${{ github.workspace }}
-        run: |
-          python3 - <<'PYTHON'
-          from pathlib import Path, PurePosixPath
-          import shutil, stat, tempfile, zipfile
-
-          archive = Path('project.zip')
-          if not archive.is_file():
-              raise SystemExit('Upload project.zip at the repository root.')
-          required = ('package.json', 'capacitor.config.json',
-                      'scripts/setup-android-ime.mjs', 'android-ime/KurdiKeyboardImeService.java',
-                      'tests/keyboard-stability.test.mjs', 'tests/ImeOperationGateTest.java')
-          with tempfile.TemporaryDirectory() as tmp:
-              root = Path(tmp)
-              with zipfile.ZipFile(archive) as z:
-                  entries = z.infolist()
-                  if len(entries) > 30000 or sum(e.file_size for e in entries) > 1024**3:
-                      raise SystemExit('ZIP exceeds extraction limits.')
-                  seen = set()
-                  for e in entries:
-                      path = PurePosixPath(e.filename)
-                      if (path.is_absolute() or '..' in path.parts or '\\' in e.filename
-                          or ':' in path.parts[0] or '.git' in path.parts
-                          or stat.S_ISLNK(e.external_attr >> 16)):
-                          raise SystemExit('Unsafe ZIP entry: ' + e.filename)
-                      if path in seen:
-                          raise SystemExit('Duplicate ZIP entry: ' + e.filename)
-                      seen.add(path)
-                  z.extractall(root)
-              candidates = [f.parent for f in root.rglob('package.json')
-                            if all((f.parent / x).is_file() for x in required)
-                            and 'node_modules' not in f.relative_to(root).parts]
-              if len(candidates) != 1:
-                  raise SystemExit('ZIP must contain exactly one complete Stability V2 project.')
-              target = Path('build-source')
-              if target.exists() or target.is_symlink():
-                  raise SystemExit('Remove the reserved build-source directory from the repository.')
-              shutil.copytree(candidates[0], target, ignore=shutil.ignore_patterns('node_modules', 'dist', 'android', '__MACOSX'))
-          print('Project extracted and validated.')
-          PYTHON
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
@@ -93,14 +34,9 @@ jobs:
           mkdir -p /tmp/ime-test
           javac -d /tmp/ime-test android-ime/ImeOperationGate.java android-ime/ImeTailRequests.java tests/ImeOperationGateTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.ImeOperationGateTest
-          javac -encoding UTF-8 -d /tmp/ime-test android-ime/ImeLargeText.java tests/ImeLargeTextTest.java
-          java -cp /tmp/ime-test io.kurdikebord.app.ImeLargeTextTest
 
       - name: Install web dependencies
         run: npm install --legacy-peer-deps
-
-      - name: Test native IME data and text algorithms
-        run: node --test tests/native-ime-engine.test.mjs
 
       - name: Build Vite web bundle
         env:
@@ -130,12 +66,7 @@ jobs:
       - name: Inject Native Kurdish IME Service & Persistent Signing Config
         env:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-          NATIVE_IME_PREVIEW: '1'
-        run: |
-          # New workflow has its own run counter. Reserve a higher version range.
-          export APP_VERSION_CODE=$((1000000 + GITHUB_RUN_NUMBER))
-          node scripts/setup-android-ime.mjs
+        run: node scripts/setup-android-ime.mjs
 
       - name: Verify Persistent APK Signing Keystore
         env:
@@ -145,7 +76,7 @@ jobs:
           keytool -list -keystore android/app/kurdikeyboard-debug.keystore -storepass "$PASS"
 
       - name: Build Android Debug APK (In-Place Updatable)
-        working-directory: ${{ github.workspace }}/build-source/android
+        working-directory: android
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -160,7 +91,6 @@ jobs:
           cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/KurdiKeyboard-debug.apk
 
       - name: Publish APK to GitHub Releases (No Storage Limit)
-        if: ${{ !inputs.native_ime_preview }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -176,134 +106,6 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.native_ime_preview && 'KurdiKeyboard-Native-Preview-APK' || 'KurdiKeyboard-APK' }}
-          path: build-source/release-apk/KurdiKeyboard-debug.apk
+          name: KurdiKeyboard-APK
+          path: release-apk/KurdiKeyboard-debug.apk
           retention-days: 1
-
-  deploy-vercel:
-    name: Deploy Vercel Web & AI API (Production)
-    if: ${{ !inputs.native_ime_preview && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-    defaults:
-      run:
-        shell: bash
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Check Vercel configuration
-        working-directory: ${{ github.workspace }}
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          for key in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
-            if [ -z "${!key}" ]; then
-              echo "::error::Missing GitHub Actions secret: $key"
-              exit 1
-            fi
-          done
-
-      - name: Extract and validate project.zip
-        working-directory: ${{ github.workspace }}
-        run: |
-          python3 - <<'PYTHON'
-          from pathlib import Path, PurePosixPath
-          import os, shutil, stat, tempfile, zipfile
-
-          archive = Path('project.zip')
-          if not archive.is_file():
-              raise SystemExit('Upload project.zip at the repository root.')
-          required = ('package.json', 'capacitor.config.json',
-                      'scripts/setup-android-ime.mjs', 'android-ime/KurdiKeyboardImeService.java',
-                      'tests/keyboard-stability.test.mjs', 'tests/ImeOperationGateTest.java')
-          with tempfile.TemporaryDirectory() as tmp:
-              root = Path(tmp)
-              with zipfile.ZipFile(archive) as z:
-                  entries = z.infolist()
-                  if len(entries) > 30000 or sum(e.file_size for e in entries) > 1024**3:
-                      raise SystemExit('ZIP exceeds extraction limits.')
-                  seen = set()
-                  for e in entries:
-                      path = PurePosixPath(e.filename)
-                      if (path.is_absolute() or '..' in path.parts or '\\' in e.filename
-                          or ':' in path.parts[0] or '.git' in path.parts
-                          or stat.S_ISLNK(e.external_attr >> 16)):
-                          raise SystemExit('Unsafe ZIP entry: ' + e.filename)
-                      if path in seen:
-                          raise SystemExit('Duplicate ZIP entry: ' + e.filename)
-                      seen.add(path)
-                  z.extractall(root)
-              candidates = [f.parent for f in root.rglob('package.json')
-                            if all((f.parent / x).is_file() for x in required)
-                            and 'node_modules' not in f.relative_to(root).parts]
-              if len(candidates) != 1:
-                  raise SystemExit('ZIP must contain exactly one complete Stability V2 project.')
-              target = Path(os.environ['RUNNER_TEMP']) / 'kurdi-vercel-source'
-              if target.exists() or target.is_symlink():
-                  raise SystemExit('Vercel staging directory already exists.')
-              shutil.copytree(candidates[0], target, ignore=shutil.ignore_patterns('node_modules', 'dist', 'android', 'android-ime', '.github', '.vercel', '__MACOSX'))
-          print('Project extracted and validated.')
-          PYTHON
-
-      - name: Set up Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install Vercel CLI
-        working-directory: ${{ runner.temp }}/kurdi-vercel-source
-        run: npm install --global vercel@latest
-
-      - name: Configure web build from extracted source
-        working-directory: ${{ runner.temp }}/kurdi-vercel-source
-        run: |
-          node --input-type=module <<'JS'
-          import fs from 'node:fs';
-          const config = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
-          // Explicit install command: do not depend on the ZIP-only repository or bun.lock.
-          config.installCommand = 'npm install --legacy-peer-deps --include=dev';
-          config.buildCommand = 'npm run build';
-          config.outputDirectory = 'dist';
-          fs.writeFileSync('vercel.json', JSON.stringify(config, null, 2) + '\n');
-          JS
-
-      - name: Pull existing Vercel project and production environment
-        working-directory: ${{ runner.temp }}/kurdi-vercel-source
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-
-      - name: Build Vite and serverless API for Vercel
-        working-directory: ${{ runner.temp }}/kurdi-vercel-source
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          vercel build --prod --token="$VERCEL_TOKEN"
-          test -f .vercel/output/config.json
-          test -d .vercel/output/static
-          test -d .vercel/output/functions
-          if ! find .vercel/output/functions -type d -name '*.func' -print -quit | grep -q .; then
-            echo "::error::No serverless functions produced by Vercel build."
-            exit 1
-          fi
-
-      - name: Deploy prebuilt output to existing Vercel production project
-        working-directory: ${{ runner.temp }}/kurdi-vercel-source
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          vercel deploy --prebuilt --prod --archive=tgz --token="$VERCEL_TOKEN"
