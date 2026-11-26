@@ -11,7 +11,7 @@ on:
       native_ime_preview:
         description: Build a native IME APK artifact without publishing it
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: write
@@ -44,7 +44,7 @@ jobs:
           archive = Path('project.zip')
           if not archive.is_file():
               raise SystemExit('Upload project.zip at the repository root.')
-          required = ('package.json', 'capacitor.config.json',
+          required = ('package.json', 'native-android/app/build.gradle',
                       'scripts/setup-android-ime.mjs', 'android-ime/KurdiKeyboardImeService.java',
                       'tests/keyboard-stability.test.mjs', 'tests/ImeOperationGateTest.java')
           with tempfile.TemporaryDirectory() as tmp:
@@ -68,7 +68,7 @@ jobs:
                             if all((f.parent / x).is_file() for x in required)
                             and 'node_modules' not in f.relative_to(root).parts]
               if len(candidates) != 1:
-                  raise SystemExit('ZIP must contain exactly one complete Stability V2 project.')
+                  raise SystemExit('ZIP must contain exactly one complete Native Android project.')
               target = Path('build-source')
               if target.exists() or target.is_symlink():
                   raise SystemExit('Remove the reserved build-source directory from the repository.')
@@ -102,19 +102,16 @@ jobs:
       - name: Test native IME data and text algorithms
         run: node --test tests/native-ime-engine.test.mjs
 
-      - name: Build Vite web bundle
-        env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-        run: npm run build
+      - name: Set up standalone Android build tools
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.2.1'
 
-      - name: Install Capacitor 6 for Android
-        run: npm install --no-save --legacy-peer-deps @capacitor/core@^6.2.0 @capacitor/cli@^6.2.0 @capacitor/android@^6.2.0
+      - name: Install Android SDK
+        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0'
 
-      - name: Generate Android project & sync web assets
-        run: |
-          rm -rf android
-          npx cap add android
-          npx cap sync android
+      - name: Native source audit
+        run: python3 scripts/audit-native.py
 
       - name: Restore optional custom signing keystore from GitHub Secrets
         env:
@@ -127,7 +124,7 @@ jobs:
             echo "Using repository persistent signing keystore (android-ime/kurdikeyboard-debug.keystore)"
           fi
 
-      - name: Inject Native Kurdish IME Service & Persistent Signing Config
+      - name: Generate standalone Android project and preserve signing
         env:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
@@ -151,8 +148,14 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          gradle assembleDebug --no-daemon
+
+      - name: Verify APK signature
+        run: |
+          "${ANDROID_HOME}/build-tools/34.0.0/apksigner" verify --verbose android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Audit APK before publication
+        run: python3 scripts/audit-native.py android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Prepare APK file
         run: |
@@ -160,7 +163,7 @@ jobs:
           cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/KurdiKeyboard-debug.apk
 
       - name: Publish APK to GitHub Releases (No Storage Limit)
-        if: ${{ !inputs.native_ime_preview }}
+        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.native_ime_preview }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -172,17 +175,17 @@ jobs:
               --notes "تەختەکلیلی کوردی — فایلی ئەندرۆید (APK) بە پشتگیری Direct Boot و ١٠ فۆنتە کوردییەکە."
           fi
 
-      - name: Upload KurdiKeyboard APK Artifact (Optional)
-        continue-on-error: true
+      - name: Upload KurdiKeyboard APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.native_ime_preview && 'KurdiKeyboard-Native-Preview-APK' || 'KurdiKeyboard-APK' }}
+          if-no-files-found: error
+          name: ${{ (github.event_name != 'workflow_dispatch' || inputs.native_ime_preview) && 'KurdiKeyboard-Native-Preview-APK' || 'KurdiKeyboard-APK' }}
           path: build-source/release-apk/KurdiKeyboard-debug.apk
-          retention-days: 1
+          retention-days: 7
 
   deploy-vercel:
     name: Deploy Vercel Web & AI API (Production)
-    if: ${{ !inputs.native_ime_preview && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.native_ime_preview && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -221,7 +224,7 @@ jobs:
           archive = Path('project.zip')
           if not archive.is_file():
               raise SystemExit('Upload project.zip at the repository root.')
-          required = ('package.json', 'capacitor.config.json',
+          required = ('package.json', 'native-android/app/build.gradle',
                       'scripts/setup-android-ime.mjs', 'android-ime/KurdiKeyboardImeService.java',
                       'tests/keyboard-stability.test.mjs', 'tests/ImeOperationGateTest.java')
           with tempfile.TemporaryDirectory() as tmp:
@@ -245,11 +248,11 @@ jobs:
                             if all((f.parent / x).is_file() for x in required)
                             and 'node_modules' not in f.relative_to(root).parts]
               if len(candidates) != 1:
-                  raise SystemExit('ZIP must contain exactly one complete Stability V2 project.')
+                  raise SystemExit('ZIP must contain exactly one complete Native Android project.')
               target = Path(os.environ['RUNNER_TEMP']) / 'kurdi-vercel-source'
               if target.exists() or target.is_symlink():
                   raise SystemExit('Vercel staging directory already exists.')
-              shutil.copytree(candidates[0], target, ignore=shutil.ignore_patterns('node_modules', 'dist', 'android', 'android-ime', '.github', '.vercel', '__MACOSX'))
+              shutil.copytree(candidates[0], target, ignore=shutil.ignore_patterns('node_modules', 'dist', 'android', 'android-ime', 'native-android', '.github', '.vercel', '__MACOSX'))
           print('Project extracted and validated.')
           PYTHON
 
