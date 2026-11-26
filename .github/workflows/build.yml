@@ -87,75 +87,59 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Run keyboard stability unit tests
+      - name: Run Stability V2 and native source static tests
         run: |
           node --experimental-strip-types --test tests/keyboard-stability.test.mjs
           mkdir -p /tmp/ime-test
           javac -d /tmp/ime-test android-ime/ImeOperationGate.java android-ime/ImeTailRequests.java tests/ImeOperationGateTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.ImeOperationGateTest
+          javac -encoding UTF-8 -d /tmp/ime-test android-ime/ImeLargeText.java tests/ImeLargeTextTest.java
+          java -cp /tmp/ime-test io.kurdikebord.app.ImeLargeTextTest
+          node --test tests/native-ime-engine.test.mjs
+          python3 native-android/validate_native_sources.py
 
-      - name: Install web dependencies
-        run: npm install --legacy-peer-deps
+      - name: Install Android SDK command-line tools
+        uses: android-actions/setup-android@v3
 
-      - name: Test native IME data and text algorithms
-        run: node --test tests/native-ime-engine.test.mjs
-
-      - name: Build Vite web bundle
-        env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-        run: npm run build
-
-      - name: Install Capacitor 6 for Android
-        run: npm install --no-save --legacy-peer-deps @capacitor/core@^6.2.0 @capacitor/cli@^6.2.0 @capacitor/android@^6.2.0
-
-      - name: Generate Android project & sync web assets
+      - name: Install required Android SDK packages
         run: |
-          rm -rf android
-          npx cap add android
-          npx cap sync android
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager --list_installed
 
-      - name: Restore optional custom signing keystore from GitHub Secrets
+      - name: Configure Gradle 8.9 for native-only APK build
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore optional signing keystore for native APK
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android-ime/kurdikeyboard-debug.keystore
-            echo "Loaded custom keystore from ANDROID_KEYSTORE_BASE64 secret"
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > native-android/app/kurdikeyboard-debug.keystore
           else
-            echo "Using repository persistent signing keystore (android-ime/kurdikeyboard-debug.keystore)"
+            test -f native-android/app/kurdikeyboard-debug.keystore
           fi
 
-      - name: Inject Native Kurdish IME Service & Persistent Signing Config
-        env:
-          GITHUB_RUN_NUMBER: ${{ github.run_number }}
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-          NATIVE_IME_PREVIEW: '1'
-        run: |
-          # New workflow has its own run counter. Reserve a higher version range.
-          export APP_VERSION_CODE=$((1000000 + GITHUB_RUN_NUMBER))
-          node scripts/setup-android-ime.mjs
-
-      - name: Verify Persistent APK Signing Keystore
+      - name: Verify native signing keystore
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           PASS="${ANDROID_KEYSTORE_PASSWORD:-android}"
-          keytool -list -keystore android/app/kurdikeyboard-debug.keystore -storepass "$PASS"
+          keytool -list -keystore native-android/app/kurdikeyboard-debug.keystore -storepass "$PASS"
 
-      - name: Build Android Debug APK (In-Place Updatable)
-        working-directory: ${{ github.workspace }}/build-source/android
+      - name: Compile Native Android IME debug APK (no WebView / Capacitor build)
+        working-directory: build-source/native-android
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Prepare APK file
+      - name: Prepare native APK file
         run: |
           mkdir -p release-apk
-          cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/KurdiKeyboard-debug.apk
+          cp native-android/app/build/outputs/apk/debug/app-debug.apk release-apk/KurdiKeyboard-debug.apk
 
       - name: Publish APK to GitHub Releases (No Storage Limit)
         if: ${{ !inputs.native_ime_preview }}
