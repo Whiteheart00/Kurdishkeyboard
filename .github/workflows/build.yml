@@ -102,8 +102,11 @@ jobs:
           node --test tests/native-ime-engine.test.mjs
           python3 native-android/validate_native_sources.py
 
-      - name: Install Android SDK command-line tools
-        uses: android-actions/setup-android@v3
+      - name: Set up Android SDK (avoid deprecated tools package)
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: 'false'
 
       - name: Install required Android SDK packages
         run: |
