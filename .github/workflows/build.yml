@@ -120,6 +120,9 @@ jobs:
           test -f "$ANDROID_HOME/platforms/android-34/android.jar"
           test -x "$ANDROID_HOME/build-tools/34.0.0/apksigner"
 
+      - name: Test native vector paths
+        run: python3 tests/test-native-path-parser.py
+
       - name: Native source audit
         run: python3 scripts/audit-native.py
 
@@ -158,6 +161,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          gradle :app:dependencies --configuration debugRuntimeClasspath --no-daemon
           gradle assembleDebug --no-daemon
 
       - name: Verify APK signature
