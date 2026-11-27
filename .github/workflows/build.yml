@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP - DEX TRACE V3
+name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V4
 
 on:
   push:
@@ -40,8 +40,8 @@ jobs:
       - name: Verify diagnostic ZIP version
         working-directory: ${{ github.workspace }}
         run: |
-          echo 'DEX TRACE V3'
-          echo 'b519963d39b52ee3c5c8aa5fc697161d2742c4f99ea6532bb6e6d70dd7389dfd  project.zip' | sha256sum -c -
+          echo 'NATIVE FIREBASE REST V4'
+          echo '2c35553b8dff72f2ec6cb52237b68ecb90121016862d6ca282b65cdc08e9897c  project.zip' | sha256sum -c -
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -104,6 +104,8 @@ jobs:
           java -cp /tmp/ime-test io.kurdikebord.app.ImeOperationGateTest
           javac -encoding UTF-8 -d /tmp/ime-test android-ime/ImeLargeText.java tests/ImeLargeTextTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.ImeLargeTextTest
+          javac -encoding UTF-8 -d /tmp/ime-test android-ime/NativeBackupCrypto.java tests/NativeBackupCryptoTest.java
+          java -cp /tmp/ime-test io.kurdikebord.app.NativeBackupCryptoTest
 
       - name: Install web dependencies
         run: npm install --legacy-peer-deps
@@ -225,9 +227,9 @@ jobs:
         run: |
           "${ANDROID_HOME}/build-tools/34.0.0/apksigner" verify --verbose android/app/build/outputs/apk/debug/app-debug.apk
 
-      - name: DEX TRACE V3 - exact types and library owners
+      - name: NATIVE FIREBASE REST V4 - exact types and library owners
         run: |
-          echo 'DEX TRACE V3 - before strict audit'
+          echo 'NATIVE FIREBASE REST V4 - before strict audit'
           python3 - <<'PYTHON'
           import re, zipfile
           apk = 'android/app/build/outputs/apk/debug/app-debug.apk'
@@ -249,7 +251,7 @@ jobs:
             --mapping android/app/build/outputs/mapping/debug/mapping.txt \
             --cache "${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1"
 
-      - name: Strict APK audit - V3 - before publication
+      - name: Strict APK audit - REST V4 - before publication
         id: native_apk_audit
         run: python3 -u scripts/audit-native.py --require-facebook android/app/build/outputs/apk/debug/app-debug.apk
 
