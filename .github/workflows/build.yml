@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V7 - SECURITY
+name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V7 - SECURITY - VERCEL FIX
 
 on:
   push:
@@ -407,6 +407,8 @@ jobs:
           config.installCommand = 'npm ci --legacy-peer-deps --include=dev';
           config.buildCommand = 'npm run build';
           config.outputDirectory = 'dist';
+          // Match the existing Upstash Redis primary region (us-east-1).
+          config.regions = ['iad1'];
           fs.writeFileSync('vercel.json', JSON.stringify(config, null, 2) + '\n');
           JS
 
@@ -414,6 +416,8 @@ jobs:
         working-directory: ${{ runner.temp }}/kurdi-vercel-source
         run: |
           npm install --legacy-peer-deps --include=dev
+          test -x node_modules/.bin/vite
+          npm exec --no -- vite --version
           npm audit --audit-level=high
 
       - name: Pull existing Vercel project and production environment
