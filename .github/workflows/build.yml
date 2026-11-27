@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V9 - SMART TYPING - SECURITY - SPACE CURSOR FIX
+name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V9 - SETTINGS AND CLIPBOARD FIX
 
 on:
   push:
@@ -40,8 +40,8 @@ jobs:
       - name: Verify diagnostic ZIP version
         working-directory: ${{ github.workspace }}
         run: |
-          echo 'NATIVE FIREBASE REST V9 - SMART TYPING - SECURITY - SPACE CURSOR FIX'
-          echo '6f95255edd76a7aa04e3760a97afeba288d5e6e39d34621605f19a446168d8e3  project.zip' | sha256sum -c -
+          echo 'NATIVE FIREBASE REST V9 - SETTINGS AND CLIPBOARD FIX'
+          echo 'a136f514de083b84511801182b4e7f2137c18350917b170625b6552bd312e68b  project.zip' | sha256sum -c -
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -107,11 +107,14 @@ jobs:
           javac -encoding UTF-8 -d /tmp/ime-test android-ime/NativeBackupCrypto.java tests/NativeBackupCryptoTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.NativeBackupCryptoTest
 
-      - name: Test V9 offline smart text and space cursor gestures
+      - name: Test V9 automatic voice routing and fast space cursor
         run: |
           mkdir -p /tmp/ime-test
           javac -encoding UTF-8 -d /tmp/ime-test android-ime/ImeSmartText.java tests/ImeSmartTextTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.ImeSmartTextTest
+
+      - name: Test V9 settings, clipboard and custom layout regression
+        run: python3 tests/test-v9-settings.py
 
       - name: Test calculator and keyboard preferences regression
         run: python3 tests/test-keyboard-prefs-calculator.py
