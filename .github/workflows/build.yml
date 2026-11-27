@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V8 - SECURITY - VERCEL FIX
+name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V8 - SECURITY - CLIPBOARD LIVE - AUTO NUMERIC
 
 on:
   push:
@@ -40,8 +40,8 @@ jobs:
       - name: Verify diagnostic ZIP version
         working-directory: ${{ github.workspace }}
         run: |
-          echo 'NATIVE FIREBASE REST V8 - SECURITY'
-          echo '71d26b995bdbc8609f0e54d5fd6553d1fb4396e99461be58d62c753ce34855dc  project.zip' | sha256sum -c -
+          echo 'NATIVE FIREBASE REST V8 - SECURITY - CLIPBOARD LIVE - AUTO NUMERIC'
+          echo '899ceada96859afdcbe735665071606a48f8ddb6b01593d4cc43cf75b6cccd81  project.zip' | sha256sum -c -
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -107,6 +107,12 @@ jobs:
           javac -encoding UTF-8 -d /tmp/ime-test android-ime/NativeBackupCrypto.java tests/NativeBackupCryptoTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.NativeBackupCryptoTest
 
+      - name: Test automatic numeric keyboard
+        run: |
+          mkdir -p /tmp/ime-test
+          javac -encoding UTF-8 -d /tmp/ime-test android-ime/ImeNumericInput.java tests/ImeNumericInputTest.java
+          java -cp /tmp/ime-test io.kurdikebord.app.ImeNumericInputTest
+
       - name: Test native privacy filters
         run: |
           mkdir -p /tmp/ime-test
@@ -118,6 +124,8 @@ jobs:
           mkdir -p /tmp/ime-test
           javac -encoding UTF-8 -d /tmp/ime-test android-ime/ClipboardVaultCrypto.java tests/ClipboardVaultCryptoTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.ClipboardVaultCryptoTest
+          javac -encoding UTF-8 -d /tmp/ime-test android-ime/NativePrivacy.java android-ime/ImeClipboardCapture.java tests/ImeClipboardCaptureTest.java
+          java -cp /tmp/ime-test io.kurdikebord.app.ImeClipboardCaptureTest
           node --experimental-strip-types --test tests/rate-limit.test.mjs
 
       - name: Install web dependencies
