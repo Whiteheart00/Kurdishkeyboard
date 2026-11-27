@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V5 - FIREBASE ONLY
+name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V7 - SECURITY
 
 on:
   push:
@@ -14,7 +14,7 @@ on:
         default: true
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: kurdikeyboard-apk-${{ github.ref }}
@@ -40,8 +40,8 @@ jobs:
       - name: Verify diagnostic ZIP version
         working-directory: ${{ github.workspace }}
         run: |
-          echo 'NATIVE FIREBASE REST V5 - FIREBASE ONLY'
-          echo '2ba81d95944004b315bf3771cb285420c8aad83705281827c0e6873048c58aba  project.zip' | sha256sum -c -
+          echo 'NATIVE FIREBASE REST V7 - SECURITY'
+          echo 'f7a4c2026288796a071265eb120d2a464fb988fac828f61090ce02c6e1b2c867  project.zip' | sha256sum -c -
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -107,8 +107,24 @@ jobs:
           javac -encoding UTF-8 -d /tmp/ime-test android-ime/NativeBackupCrypto.java tests/NativeBackupCryptoTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.NativeBackupCryptoTest
 
+      - name: Test native privacy filters
+        run: |
+          mkdir -p /tmp/ime-test
+          javac -encoding UTF-8 -d /tmp/ime-test android-ime/NativePrivacy.java tests/NativePrivacyTest.java
+          java -cp /tmp/ime-test io.kurdikebord.app.NativePrivacyTest
+
+      - name: Test local clipboard encryption and AI rate limit
+        run: |
+          mkdir -p /tmp/ime-test
+          javac -encoding UTF-8 -d /tmp/ime-test android-ime/ClipboardVaultCrypto.java tests/ClipboardVaultCryptoTest.java
+          java -cp /tmp/ime-test io.kurdikebord.app.ClipboardVaultCryptoTest
+          node --experimental-strip-types --test tests/rate-limit.test.mjs
+
       - name: Install web dependencies
         run: npm install --legacy-peer-deps
+
+      - name: Audit resolved npm dependencies (high and critical gate)
+        run: npm audit --audit-level=high
 
       - name: Test native IME data and text algorithms
         run: node --test tests/native-ime-engine.test.mjs
@@ -203,7 +219,7 @@ jobs:
           NATIVE_IME_PREVIEW: '1'
         run: |
           # New workflow has its own run counter. Reserve a higher version range.
-          export APP_VERSION_CODE=$((1000000 + GITHUB_RUN_NUMBER))
+          export APP_VERSION_CODE=$((1100000 + GITHUB_RUN_NUMBER))
           node scripts/setup-android-ime.mjs
 
       - name: Verify Persistent APK Signing Keystore
@@ -221,37 +237,32 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           gradle :app:dependencies --configuration debugRuntimeClasspath --no-daemon
+          gradle -I ../scripts/security-inventory.gradle securityInventory --no-daemon
+          python3 ../scripts/audit-maven-osv.py security-maven.tsv
           gradle assembleDebug --no-daemon
 
       - name: Verify APK signature
         run: |
-          "${ANDROID_HOME}/build-tools/34.0.0/apksigner" verify --verbose android/app/build/outputs/apk/debug/app-debug.apk
+          apk=android/app/build/outputs/apk/debug/app-debug.apk
+          certs=$("${ANDROID_HOME}/build-tools/34.0.0/apksigner" verify --verbose --print-certs "$apk")
+          printf '%s\n' "$certs"
+          printf '%s\n' "$certs" | grep -Fqi 'Signer #1 certificate SHA-256 digest: 32d882b8f764442e4d06d23a5d8b19f7588d595d2ff7b93ed293b3e2f96353df'
+          badging=$("${ANDROID_HOME}/build-tools/34.0.0/aapt" dump badging "$apk")
+          if grep -q '^application-debuggable' <<< "$badging"; then
+            echo '::error::APK is debuggable; refusing publication.'
+            exit 1
+          fi
+          echo 'Signing fingerprint and non-debuggable APK verified.'
 
-      - name: NATIVE FIREBASE REST V5 - FIREBASE ONLY - exact types and library owners
+      - name: NATIVE FIREBASE REST V7 - SECURITY - exact types and library owners
         run: |
-          echo 'NATIVE FIREBASE REST V5 - FIREBASE ONLY - before strict audit'
-          python3 - <<'PYTHON'
-          import re, zipfile
-          apk = 'android/app/build/outputs/apk/debug/app-debug.apk'
-          markers = (b'Landroid/webkit/', b'Landroidx/webkit/', b'Lcom/getcapacitor/', b'android.webkit.WebView')
-          with zipfile.ZipFile(apk) as z:
-              for name in z.namelist():
-                  if not re.fullmatch(r'classes[0-9]*\.dex', name):
-                      continue
-                  data = z.read(name)
-                  for marker in markers:
-                      count = data.count(marker)
-                      if count:
-                          print(f'{name}: {marker.decode()} occurrences={count}')
-                  for value in sorted(set(re.findall(rb'L(?:android/webkit|androidx/webkit|com/getcapacitor)/[A-Za-z0-9_$/]+;', data))):
-                      print('EXACT TYPE:', value.decode('ascii'))
-          PYTHON
+          echo 'NATIVE FIREBASE REST V7 - SECURITY - before strict audit'
           python3 -u scripts/diagnose-webkit.py android/app/build/outputs/apk/debug/app-debug.apk \
             --dexdump "$ANDROID_HOME/build-tools/34.0.0/dexdump" \
             --mapping android/app/build/outputs/mapping/debug/mapping.txt \
             --cache "${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1"
 
-      - name: Strict APK audit - REST V5 - before publication
+      - name: Strict APK audit - REST V7 - before publication
         id: native_apk_audit
         run: python3 -u scripts/audit-native.py --require-facebook android/app/build/outputs/apk/debug/app-debug.apk
 
@@ -261,19 +272,6 @@ jobs:
           mkdir -p release-apk
           cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/KurdiKeyboard-debug.apk
 
-      - name: Publish APK to GitHub Releases (No Storage Limit)
-        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.native_ime_preview }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if gh release view latest-apk >/dev/null 2>&1; then
-            gh release upload latest-apk release-apk/KurdiKeyboard-debug.apk --clobber
-          else
-            gh release create latest-apk release-apk/KurdiKeyboard-debug.apk \
-              --title "KurdiKeyboard Android APK (Latest)" \
-              --notes "تەختەکلیلی کوردی — فایلی ئەندرۆید (APK) بە پشتگیری Direct Boot و ١٠ فۆنتە کوردییەکە."
-          fi
-
       - name: Upload KurdiKeyboard APK Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -282,7 +280,42 @@ jobs:
           path: build-source/release-apk/KurdiKeyboard-debug.apk
           retention-days: 7
 
+      - name: Remove staged signing and Firebase files
+        if: ${{ always() }}
+        working-directory: ${{ github.workspace }}
+        run: |
+          rm -f build-source/android-ime/kurdikeyboard-debug.keystore build-source/android/app/kurdikeyboard-debug.keystore \
+            build-source/native-android/app/google-services.json build-source/android/app/google-services.json
+
+  publish-apk:
+    name: Publish verified APK
+    needs: build-apk
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.native_ime_preview && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: KurdiKeyboard-APK
+          path: release-apk
+      - name: Publish verified APK to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          test -s release-apk/KurdiKeyboard-debug.apk
+          if gh release view latest-apk >/dev/null 2>&1; then
+            gh release upload latest-apk release-apk/KurdiKeyboard-debug.apk --clobber
+          else
+            gh release create latest-apk release-apk/KurdiKeyboard-debug.apk \
+              --title "KurdiKeyboard Android APK (Latest)" \
+              --notes "Native KurdiKeyboard Android APK."
+          fi
+
   deploy-vercel:
+    needs: build-apk
     name: Deploy Vercel Web & AI API (Production)
     if: ${{ github.event_name == 'workflow_dispatch' && !inputs.native_ime_preview && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
     runs-on: ubuntu-latest
@@ -371,11 +404,17 @@ jobs:
           import fs from 'node:fs';
           const config = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
           // Explicit install command: do not depend on the ZIP-only repository or bun.lock.
-          config.installCommand = 'npm install --legacy-peer-deps --include=dev';
+          config.installCommand = 'npm ci --legacy-peer-deps --include=dev';
           config.buildCommand = 'npm run build';
           config.outputDirectory = 'dist';
           fs.writeFileSync('vercel.json', JSON.stringify(config, null, 2) + '\n');
           JS
+
+      - name: Resolve and audit exact Vercel web dependency lock
+        working-directory: ${{ runner.temp }}/kurdi-vercel-source
+        run: |
+          npm install --legacy-peer-deps --include=dev
+          npm audit --audit-level=high
 
       - name: Pull existing Vercel project and production environment
         working-directory: ${{ runner.temp }}/kurdi-vercel-source
@@ -384,6 +423,16 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Confirm production AI limiter setup before deployment
+        env:
+          AI_RATE_LIMIT_CONFIGURED: ${{ vars.AI_RATE_LIMIT_CONFIGURED }}
+        run: |
+          if [ "$AI_RATE_LIMIT_CONFIGURED" != "true" ]; then
+            echo 'Configure and test the three server-only Vercel rate limit variables, then confirm AI_RATE_LIMIT_CONFIGURED=true in repository variables.'
+            exit 1
+          fi
+          echo 'Rate limiter configuration acknowledged; live connectivity still needs testing.'
 
       - name: Build Vite and serverless API for Vercel
         working-directory: ${{ runner.temp }}/kurdi-vercel-source
