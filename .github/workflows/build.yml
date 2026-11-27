@@ -23,6 +23,7 @@ concurrency:
 jobs:
   build-apk:
     name: Build Android APK (Debug)
+    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -33,6 +34,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -146,16 +149,44 @@ jobs:
       - name: Native source audit
         run: python3 scripts/audit-native.py --require-facebook
 
-      - name: Restore optional custom signing keystore from GitHub Secrets
+      - name: Restore Firebase configuration from GitHub Secrets
+        env:
+          FIREBASE_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}
+        run: |
+          umask 077
+          python3 - <<'PYTHON'
+          import os, json
+          from pathlib import Path
+          raw = os.environ.get('FIREBASE_GOOGLE_SERVICES_JSON', '')
+          if not raw:
+              raise SystemExit('Missing repository secret FIREBASE_GOOGLE_SERVICES_JSON.')
+          try:
+              config = json.loads(raw)
+              clients = [c for c in config['client'] if c['client_info']['android_client_info']['package_name'] == 'io.kurdikebord.app']
+              assert len(clients) == 1
+              assert config['project_info']['project_id'] == 'gen-lang-client-0732467678'
+              assert any(c.get('client_type') == 3 for c in clients[0]['oauth_client'])
+              assert any(c.get('client_type') == 1 and c.get('android_info', {}).get('certificate_hash', '').lower() == '244c6bcee7fe5a1fb892c080cb98f74ccd329f66' for c in clients[0]['oauth_client'])
+              assert clients[0]['api_key'][0]['current_key']
+          except (ValueError, KeyError, TypeError, AssertionError, IndexError):
+              raise SystemExit('Invalid Firebase configuration, package, project or OAuth signing certificate.') from None
+          target = Path('native-android/app/google-services.json')
+          target.write_text(json.dumps(config), encoding='utf-8')
+          target.chmod(0o600)
+          print('Firebase configuration validated (values not printed).')
+          PYTHON
+
+      - name: Restore persistent signing keystore from GitHub Secrets
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android-ime/kurdikeyboard-debug.keystore
-            echo "Loaded custom keystore from ANDROID_KEYSTORE_BASE64 secret"
-          else
-            echo "Using repository persistent signing keystore (android-ime/kurdikeyboard-debug.keystore)"
+          umask 077
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::Missing ANDROID_KEYSTORE_BASE64; keep the existing private signing key."
+            exit 1
           fi
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android-ime/kurdikeyboard-debug.keystore
+          test -s android-ime/kurdikeyboard-debug.keystore
 
       - name: Generate standalone Android project and preserve signing
         env:
