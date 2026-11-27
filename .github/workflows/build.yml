@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V9 - SETTINGS AND CLIPBOARD FIX
+name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V9 - REPEAT VOICE FIX
 
 on:
   push:
@@ -40,8 +40,8 @@ jobs:
       - name: Verify diagnostic ZIP version
         working-directory: ${{ github.workspace }}
         run: |
-          echo 'NATIVE FIREBASE REST V9 - SETTINGS AND CLIPBOARD FIX'
-          echo 'a136f514de083b84511801182b4e7f2137c18350917b170625b6552bd312e68b  project.zip' | sha256sum -c -
+          echo 'NATIVE FIREBASE REST V9 - REPEAT VOICE FIX'
+          echo '4872c9003145f28dde06bbd1e316843d8c5281ce131fdc4284114bb55c506e91  project.zip' | sha256sum -c -
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -112,6 +112,12 @@ jobs:
           mkdir -p /tmp/ime-test
           javac -encoding UTF-8 -d /tmp/ime-test android-ime/ImeSmartText.java tests/ImeSmartTextTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.ImeSmartTextTest
+
+      - name: Test repeat voice session state
+        run: |
+          mkdir -p /tmp/ime-test
+          javac -encoding UTF-8 -d /tmp/ime-test android-ime/ImeVoiceSessionState.java tests/ImeVoiceSessionStateTest.java
+          java -cp /tmp/ime-test io.kurdikebord.app.ImeVoiceSessionStateTest
 
       - name: Test V9 settings, clipboard and custom layout regression
         run: python3 tests/test-v9-settings.py
