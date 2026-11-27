@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V8 - SECURITY - CLIPBOARD LIVE - AUTO NUMERIC
+name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V8 - SECURITY - CLIPBOARD LIVE - AUTO NUMERIC - CALCULATOR PREFS FIX
 
 on:
   push:
@@ -40,8 +40,8 @@ jobs:
       - name: Verify diagnostic ZIP version
         working-directory: ${{ github.workspace }}
         run: |
-          echo 'NATIVE FIREBASE REST V8 - SECURITY - CLIPBOARD LIVE - AUTO NUMERIC'
-          echo '899ceada96859afdcbe735665071606a48f8ddb6b01593d4cc43cf75b6cccd81  project.zip' | sha256sum -c -
+          echo 'NATIVE FIREBASE REST V8 - SECURITY - CLIPBOARD LIVE - AUTO NUMERIC - CALCULATOR PREFS FIX'
+          echo '4fcc0a4a54428fa1bd8eacb91fc18cc3cc16e4e5f1f9bd5f9177414965bb9b11  project.zip' | sha256sum -c -
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -106,6 +106,9 @@ jobs:
           java -cp /tmp/ime-test io.kurdikebord.app.ImeLargeTextTest
           javac -encoding UTF-8 -d /tmp/ime-test android-ime/NativeBackupCrypto.java tests/NativeBackupCryptoTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.NativeBackupCryptoTest
+
+      - name: Test calculator and keyboard preferences regression
+        run: python3 tests/test-keyboard-prefs-calculator.py
 
       - name: Test automatic numeric keyboard
         run: |
