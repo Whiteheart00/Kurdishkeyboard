@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V9 - SMART TYPING - SECURITY
+name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V9 - SMART TYPING - SECURITY - SPACE CURSOR FIX
 
 on:
   push:
@@ -40,8 +40,8 @@ jobs:
       - name: Verify diagnostic ZIP version
         working-directory: ${{ github.workspace }}
         run: |
-          echo 'NATIVE FIREBASE REST V9 - SMART TYPING - SECURITY'
-          echo '35e0552bce896c08d5aa9b2751cb2d78af792ac91c8cacd2b44e3c1cdfd02a9c  project.zip' | sha256sum -c -
+          echo 'NATIVE FIREBASE REST V9 - SMART TYPING - SECURITY - SPACE CURSOR FIX'
+          echo '6f95255edd76a7aa04e3760a97afeba288d5e6e39d34621605f19a446168d8e3  project.zip' | sha256sum -c -
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -107,7 +107,7 @@ jobs:
           javac -encoding UTF-8 -d /tmp/ime-test android-ime/NativeBackupCrypto.java tests/NativeBackupCryptoTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.NativeBackupCryptoTest
 
-      - name: Test V9 offline smart text and bounded gestures
+      - name: Test V9 offline smart text and space cursor gestures
         run: |
           mkdir -p /tmp/ime-test
           javac -encoding UTF-8 -d /tmp/ime-test android-ime/ImeSmartText.java tests/ImeSmartTextTest.java
