@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V4
+name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V5 - FIREBASE ONLY
 
 on:
   push:
@@ -40,8 +40,8 @@ jobs:
       - name: Verify diagnostic ZIP version
         working-directory: ${{ github.workspace }}
         run: |
-          echo 'NATIVE FIREBASE REST V4'
-          echo '2c35553b8dff72f2ec6cb52237b68ecb90121016862d6ca282b65cdc08e9897c  project.zip' | sha256sum -c -
+          echo 'NATIVE FIREBASE REST V5 - FIREBASE ONLY'
+          echo '2ba81d95944004b315bf3771cb285420c8aad83705281827c0e6873048c58aba  project.zip' | sha256sum -c -
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -227,9 +227,9 @@ jobs:
         run: |
           "${ANDROID_HOME}/build-tools/34.0.0/apksigner" verify --verbose android/app/build/outputs/apk/debug/app-debug.apk
 
-      - name: NATIVE FIREBASE REST V4 - exact types and library owners
+      - name: NATIVE FIREBASE REST V5 - FIREBASE ONLY - exact types and library owners
         run: |
-          echo 'NATIVE FIREBASE REST V4 - before strict audit'
+          echo 'NATIVE FIREBASE REST V5 - FIREBASE ONLY - before strict audit'
           python3 - <<'PYTHON'
           import re, zipfile
           apk = 'android/app/build/outputs/apk/debug/app-debug.apk'
@@ -251,7 +251,7 @@ jobs:
             --mapping android/app/build/outputs/mapping/debug/mapping.txt \
             --cache "${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1"
 
-      - name: Strict APK audit - REST V4 - before publication
+      - name: Strict APK audit - REST V5 - before publication
         id: native_apk_audit
         run: python3 -u scripts/audit-native.py --require-facebook android/app/build/outputs/apk/debug/app-debug.apk
 
