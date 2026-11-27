@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V7 - SECURITY - VERCEL FIX
+name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V8 - SECURITY - VERCEL FIX
 
 on:
   push:
@@ -40,8 +40,8 @@ jobs:
       - name: Verify diagnostic ZIP version
         working-directory: ${{ github.workspace }}
         run: |
-          echo 'NATIVE FIREBASE REST V7 - SECURITY'
-          echo 'f7a4c2026288796a071265eb120d2a464fb988fac828f61090ce02c6e1b2c867  project.zip' | sha256sum -c -
+          echo 'NATIVE FIREBASE REST V8 - SECURITY'
+          echo '71d26b995bdbc8609f0e54d5fd6553d1fb4396e99461be58d62c753ce34855dc  project.zip' | sha256sum -c -
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -132,12 +132,12 @@ jobs:
       - name: Set up standalone Android build tools
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.2.1'
+          gradle-version: '8.13'
 
       - name: Set up Android SDK command-line tools
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 build-tools;35.0.0'
           accept-android-sdk-licenses: 'true'
 
       - name: Verify Android SDK installation
@@ -146,6 +146,7 @@ jobs:
           sdkmanager --version
           test -f "$ANDROID_HOME/platforms/android-34/android.jar"
           test -x "$ANDROID_HOME/build-tools/34.0.0/apksigner"
+          test -x "$ANDROID_HOME/build-tools/35.0.0/aapt2"
 
       - name: Test native vector paths
         run: python3 tests/test-native-path-parser.py
@@ -238,6 +239,10 @@ jobs:
         run: |
           gradle :app:dependencies --configuration debugRuntimeClasspath --no-daemon
           gradle -I ../scripts/security-inventory.gradle securityInventory --no-daemon
+          echo "=== App dependencies (compile/runtime) ==="
+          cat security-maven-app.tsv
+          echo "=== Build-tool dependencies ==="
+          cat security-maven-build.tsv
           python3 ../scripts/audit-maven-osv.py security-maven.tsv
           gradle assembleDebug --no-daemon
 
@@ -254,15 +259,15 @@ jobs:
           fi
           echo 'Signing fingerprint and non-debuggable APK verified.'
 
-      - name: NATIVE FIREBASE REST V7 - SECURITY - exact types and library owners
+      - name: NATIVE FIREBASE REST V8 - SECURITY - exact types and library owners
         run: |
-          echo 'NATIVE FIREBASE REST V7 - SECURITY - before strict audit'
+          echo 'NATIVE FIREBASE REST V8 - SECURITY - before strict audit'
           python3 -u scripts/diagnose-webkit.py android/app/build/outputs/apk/debug/app-debug.apk \
             --dexdump "$ANDROID_HOME/build-tools/34.0.0/dexdump" \
             --mapping android/app/build/outputs/mapping/debug/mapping.txt \
             --cache "${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1"
 
-      - name: Strict APK audit - REST V7 - before publication
+      - name: Strict APK audit - REST V8 - before publication
         id: native_apk_audit
         run: python3 -u scripts/audit-native.py --require-facebook android/app/build/outputs/apk/debug/app-debug.apk
 
