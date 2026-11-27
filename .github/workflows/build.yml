@@ -123,8 +123,28 @@ jobs:
       - name: Test native vector paths
         run: python3 tests/test-native-path-parser.py
 
+      - name: Prepare offline Facebook emoji from release font
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FACEBOOK_FONT_AUTHORIZED: ${{ vars.FACEBOOK_FONT_AUTHORIZED }}
+        run: |
+          if [ "$FACEBOOK_FONT_AUTHORIZED" != "true" ]; then
+            echo "::error::Set repository variable FACEBOOK_FONT_AUTHORIZED=true only if you have permission to package the Facebook font artwork."
+            exit 1
+          fi
+          if ! python3 -c 'import ctypes.util; assert ctypes.util.find_library("harfbuzz")'; then
+            sudo apt-get update
+            sudo apt-get install -y libharfbuzz0b
+          fi
+          font_dir="$(mktemp -d)"
+          trap 'rm -rf "$font_dir"' EXIT
+          gh release download latest-apk --repo Whiteheart00/Kurdishkeyboard --pattern 'Facebook15.0.ttf' --dir "$font_dir"
+          python3 -m venv "$font_dir/venv"
+          "$font_dir/venv/bin/python" -m pip install --disable-pip-version-check 'Pillow>=11,<13' 'fonttools>=4.55,<5'
+          "$font_dir/venv/bin/python" scripts/prepare-facebook-font.py "$font_dir/Facebook15.0.ttf" --authorized
+
       - name: Native source audit
-        run: python3 scripts/audit-native.py
+        run: python3 scripts/audit-native.py --require-facebook
 
       - name: Restore optional custom signing keystore from GitHub Secrets
         env:
@@ -169,7 +189,7 @@ jobs:
           "${ANDROID_HOME}/build-tools/34.0.0/apksigner" verify --verbose android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Audit APK before publication
-        run: python3 scripts/audit-native.py android/app/build/outputs/apk/debug/app-debug.apk
+        run: python3 scripts/audit-native.py --require-facebook android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Prepare APK file
         run: |
