@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP
+name: Build KurdiKeyboard and deploy Vercel from ZIP - DEX TRACE V3
 
 on:
   push:
@@ -36,6 +36,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      - name: Verify diagnostic ZIP version
+        working-directory: ${{ github.workspace }}
+        run: |
+          echo 'DEX TRACE V3'
+          echo 'b519963d39b52ee3c5c8aa5fc697161d2742c4f99ea6532bb6e6d70dd7389dfd  project.zip' | sha256sum -c -
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -219,8 +225,34 @@ jobs:
         run: |
           "${ANDROID_HOME}/build-tools/34.0.0/apksigner" verify --verbose android/app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Audit APK before publication
-        run: python3 scripts/audit-native.py --require-facebook android/app/build/outputs/apk/debug/app-debug.apk
+      - name: DEX TRACE V3 - exact types and library owners
+        run: |
+          echo 'DEX TRACE V3 - before strict audit'
+          python3 - <<'PYTHON'
+          import re, zipfile
+          apk = 'android/app/build/outputs/apk/debug/app-debug.apk'
+          markers = (b'Landroid/webkit/', b'Landroidx/webkit/', b'Lcom/getcapacitor/', b'android.webkit.WebView')
+          with zipfile.ZipFile(apk) as z:
+              for name in z.namelist():
+                  if not re.fullmatch(r'classes[0-9]*\.dex', name):
+                      continue
+                  data = z.read(name)
+                  for marker in markers:
+                      count = data.count(marker)
+                      if count:
+                          print(f'{name}: {marker.decode()} occurrences={count}')
+                  for value in sorted(set(re.findall(rb'L(?:android/webkit|androidx/webkit|com/getcapacitor)/[A-Za-z0-9_$/]+;', data))):
+                      print('EXACT TYPE:', value.decode('ascii'))
+          PYTHON
+          python3 -u scripts/diagnose-webkit.py android/app/build/outputs/apk/debug/app-debug.apk \
+            --dexdump "$ANDROID_HOME/build-tools/34.0.0/dexdump" \
+            --mapping android/app/build/outputs/mapping/debug/mapping.txt \
+            --cache "${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1"
+
+      - name: Strict APK audit - V3 - before publication
+        id: native_apk_audit
+        run: python3 -u scripts/audit-native.py --require-facebook android/app/build/outputs/apk/debug/app-debug.apk
+
 
       - name: Prepare APK file
         run: |
