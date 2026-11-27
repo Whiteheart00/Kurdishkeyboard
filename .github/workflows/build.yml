@@ -1,4 +1,4 @@
-name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V8 - SECURITY - CLIPBOARD LIVE - AUTO NUMERIC - CALCULATOR PREFS FIX
+name: Build KurdiKeyboard and deploy Vercel from ZIP - NATIVE FIREBASE REST V9 - SMART TYPING - SECURITY
 
 on:
   push:
@@ -40,8 +40,8 @@ jobs:
       - name: Verify diagnostic ZIP version
         working-directory: ${{ github.workspace }}
         run: |
-          echo 'NATIVE FIREBASE REST V8 - SECURITY - CLIPBOARD LIVE - AUTO NUMERIC - CALCULATOR PREFS FIX'
-          echo '4fcc0a4a54428fa1bd8eacb91fc18cc3cc16e4e5f1f9bd5f9177414965bb9b11  project.zip' | sha256sum -c -
+          echo 'NATIVE FIREBASE REST V9 - SMART TYPING - SECURITY'
+          echo '35e0552bce896c08d5aa9b2751cb2d78af792ac91c8cacd2b44e3c1cdfd02a9c  project.zip' | sha256sum -c -
 
       - name: Extract and validate project.zip
         working-directory: ${{ github.workspace }}
@@ -106,6 +106,12 @@ jobs:
           java -cp /tmp/ime-test io.kurdikebord.app.ImeLargeTextTest
           javac -encoding UTF-8 -d /tmp/ime-test android-ime/NativeBackupCrypto.java tests/NativeBackupCryptoTest.java
           java -cp /tmp/ime-test io.kurdikebord.app.NativeBackupCryptoTest
+
+      - name: Test V9 offline smart text and bounded gestures
+        run: |
+          mkdir -p /tmp/ime-test
+          javac -encoding UTF-8 -d /tmp/ime-test android-ime/ImeSmartText.java tests/ImeSmartTextTest.java
+          java -cp /tmp/ime-test io.kurdikebord.app.ImeSmartTextTest
 
       - name: Test calculator and keyboard preferences regression
         run: python3 tests/test-keyboard-prefs-calculator.py
@@ -270,15 +276,15 @@ jobs:
           fi
           echo 'Signing fingerprint and non-debuggable APK verified.'
 
-      - name: NATIVE FIREBASE REST V8 - SECURITY - exact types and library owners
+      - name: NATIVE FIREBASE REST V9 - SECURITY - exact types and library owners
         run: |
-          echo 'NATIVE FIREBASE REST V8 - SECURITY - before strict audit'
+          echo 'NATIVE FIREBASE REST V9 - SECURITY - before strict audit'
           python3 -u scripts/diagnose-webkit.py android/app/build/outputs/apk/debug/app-debug.apk \
             --dexdump "$ANDROID_HOME/build-tools/34.0.0/dexdump" \
             --mapping android/app/build/outputs/mapping/debug/mapping.txt \
             --cache "${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1"
 
-      - name: Strict APK audit - REST V8 - before publication
+      - name: Strict APK audit - REST V9 - before publication
         id: native_apk_audit
         run: python3 -u scripts/audit-native.py --require-facebook android/app/build/outputs/apk/debug/app-debug.apk
 
